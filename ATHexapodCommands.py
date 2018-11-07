@@ -316,8 +316,3 @@ class ATHexapodCommand:
         Get error code of the last occurred error and reset the error to 0.
         """
         return "ERR?"
-
-
-test = ATHexapodCommand()
-#print(test.setTargetPosition(X=10.22, Y=110.2, W='d'))
-print(test.getTargetPosition('YM'))
