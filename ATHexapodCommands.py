@@ -2,6 +2,8 @@ from enum import Enum
 
 class ATHexapodCommand:
 
+    hexapodAxis = ['X', 'Y', 'Z', 'U', 'V', 'W']
+
     def __init__(self):
         pass
 
@@ -75,13 +77,6 @@ class ATHexapodCommand:
         """
         return "#6"
 
-    def requestMotionStatus(self):
-        """
-
-        """
-        remove=1
-        return "#6"
-
     def requestControllerReadyStatus(self):
         """
         (p. 141) Request Controller
@@ -121,17 +116,208 @@ class ATHexapodCommand:
         position in mm), axis U moves to
         5 (target position in °)
         """
-        print(inspect.getargspec(inspect.currentframe()))
-
         target = ""
-        target += " X " + str(X) if X is not None else ""
-        target += " Y " + str(Y) if Y is not None else ""
-        target += " Z " + str(Z) if Z is not None else ""
-        target += " U " + str(U) if U is not None else ""
-        target += " V " + str(V) if V is not None else ""
-        target += " W " + str(W) if W is not None else ""
+        target += " X " + str(float(X)) if X is not None else ""
+        target += " Y " + str(float(Y)) if Y is not None else ""
+        target += " Z " + str(float(Z)) if Z is not None else ""
+        target += " U " + str(float(U)) if U is not None else ""
+        target += " V " + str(float(V)) if V is not None else ""
+        target += " W " + str(float(W)) if W is not None else ""
         return "MOV" + target
+
+    def getTargetPosition(self):
+        """
+        (p. 208) Get Target Position
+
+        MOV? gets the commanded positions. Use POS? (p. 216) to get the current positions.
+        """
+        return "MOV? X Y Z U V W"
+
+    def setLowPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+        """
+        (p. 212) Set Low Position Soft Limit
+
+        Limits the low end of the axis travel range in closed-loop operation ("soft limit").
+        """
+        target = ""
+        target += " X " + str(float(X)) if X is not None else ""
+        target += " Y " + str(float(Y)) if Y is not None else ""
+        target += " Z " + str(float(Z)) if Z is not None else ""
+        target += " U " + str(float(U)) if U is not None else ""
+        target += " V " + str(float(V)) if V is not None else ""
+        target += " W " + str(float(W)) if W is not None else ""
+        return "NLM" + target
+
+    def getLowPositionSoftLimit(self):
+        """
+        Get the position "soft limit" which determines the low end of
+        the axis travel range in closed-loop operation.
+        """
+        return "NML? X Y Z U V W"
+
+    def getOnTargetState(self):
+        """
+        (p. 213) Get On Target State
+
+        Gets on-target state of given axis.
+
+        if all arguments are omitted, gets state of all axes.
+        """
+        return "ONT?"
+
+    def setHighPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+        """
+        (p. 214) Set High Position Soft Limit
+
+        Limits the high end of the axis travel range in closed-loop operation ("soft limit").
+        """
+        target = ""
+        target += " X " + str(float(X)) if X is not None else ""
+        target += " Y " + str(float(Y)) if Y is not None else ""
+        target += " Z " + str(float(Z)) if Z is not None else ""
+        target += " U " + str(float(U)) if U is not None else ""
+        target += " V " + str(float(V)) if V is not None else ""
+        target += " W " + str(float(W)) if W is not None else ""
+        return "PLM" + target
+
+    def getHighPositionSoftLimit(self):
+        """
+        Get High Position Soft Limit
+        """
+        remove=1
+        return "PLM? X Y Z U V W"
+
+    def getPositionUnit(self):
+        """
+        (p. 217) Get Position Unit
+        Gets the current unit of the position. If all arguments are omitted, gets current unit of the position for all axes.
+        """
+        remove=1
+        return "PUN? X Y Z U V W"
+
+    def setTargetRelativeToCurrentPosition(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+        """
+        (p. 215) Set Target Relative To Current Position
+        Moves given axes relative to the last commanded target position.
+        """
+        target = ""
+        target += " X " + str(float(X)) if X is not None else ""
+        target += " Y " + str(float(Y)) if Y is not None else ""
+        target += " Z " + str(float(Z)) if Z is not None else ""
+        target += " U " + str(float(U)) if U is not None else ""
+        target += " V " + str(float(V)) if V is not None else ""
+        target += " W " + str(float(W)) if W is not None else ""
+        return "MVR"+target
+
+    def virtualMove(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+        """
+        (p. 253) VMO? (Virtual Move)
+
+        Checks whether the moving platform of the Hexapod can approach a specified position from the current position.
+
+        Used to validate if MVR command is possible.
+        """
+        target = ""
+        target += " X " + str(float(X)) if X is not None else ""
+        target += " Y " + str(float(Y)) if Y is not None else ""
+        target += " Z " + str(float(Z)) if Z is not None else ""
+        target += " U " + str(float(U)) if U is not None else ""
+        target += " V " + str(float(V)) if V is not None else ""
+        target += " W " + str(float(W)) if W is not None else ""
+        return "VMO?"+target
+
+    def setPivotPoint(self, X: float = None, Y: float = None, Z: float = None):
+        """
+        (p. 227)(Set Pivot Point)
+
+        Sets the pivot point coordinates in the volatile memory. Can only be set when the following holds true for the rotation coordinates of the moving platform: U = V = W = 0
+        """
+        target = ""
+        target += " X " + str(float(X)) if X is not None else ""
+        target += " Y " + str(float(Y)) if Y is not None else ""
+        target += " Z " + str(float(Z)) if Z is not None else ""
+        return "SPI"+target
+
+    def getPivotPoint(self):
+        """
+        (p. 229) (Get Pivot Point)
+
+        Gets the pivot point coordinates.
+        """
+        return "SSL?"
+
+    def getSoftLimitStatus(self):
+        """
+        SSL? (p. 230) Get Soft Limit Status
+        """
+        return "SSL?"
+
+    def setSoftLimit(self, X: bool = None, Y: bool = None, Z: bool = None, U: bool = None, V: bool = None, W: bool = None):
+        """
+        (p. 229) Set Soft Limit
+
+        Activates or deactivates the soft limits that are set with NLM (p. 212) and PLM (p. 214).
+
+        Soft limits can only be activated/deactivated when the axis is not moving (query with #5 (p. 140)).
+        """
+        target = ""
+        target += " X " + "1" if X is not None else "0"
+        target += " Y " + "1" if Y is not None else "0"
+        target += " Z " + "1" if Z is not None else "0"
+        target += " U " + "1" if U is not None else "0"
+        target += " V " + "1" if V is not None else "0"
+        target += " W " + "1" if W is not None else "0"
+        return "SSL"+target
+
+    def setClosedLoopVelocity(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+        """
+        (p. 243) (Set Closed-Loop Velocity)
+
+        The velocity can be changed with VEL while the axis is moving.
+        """
+        target = ""
+        target += " X " + str(float(X)) if X is not None else ""
+        target += " Y " + str(float(Y)) if Y is not None else ""
+        target += " Z " + str(float(Z)) if Z is not None else ""
+        target += " U " + str(float(U)) if U is not None else ""
+        target += " V " + str(float(V)) if V is not None else ""
+        target += " W " + str(float(W)) if W is not None else ""
+        return "VEL"+target
+
+    def getClosedLoopVelocity(self):
+        """
+        (p. 244) (Get Closed-Loop Velocity)
+
+        If all arguments are omitted, the value of all axes commanded with VEL is queried.
+        """
+        return "VEL?"
+
+    def setSystemVelocity(self, velocity):
+        """
+         (p. 251) (Set System Velocity)
+
+        Sets the velocity for the moving platform of the Hexapod
+
+        The velocity can only be set with VLS when the Hexapod is not moving (axes X, Y, Z, U, V, W; query with #5 (p. 140)). For axes A and B, the velocity can be set with VEL (p. 243).
+        """
+        velocity = float(velocity)
+        return "VLS "+str(velocity)
+
+    def getSystemVelocity(self):
+        """
+        (p. 252) Gets the velocity of the moving platform of the Hexapod that is set with VLS (p. 245).
+        """
+        return "VLS?"
+
+    def getErrorNumber(self):
+        """
+        (p. 163) Get Error Number
+
+        Get error code of the last occurred error and reset the error to 0.
+        """
+        return "ERR?"
 
 
 test = ATHexapodCommand()
-print(test.setTargetPosition(X=10.22, Y=110.2, W='andres'))
+#print(test.setTargetPosition(X=10.22, Y=110.2, W='d'))
+print(test.getTargetPosition('YM'))
