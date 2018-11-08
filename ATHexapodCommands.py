@@ -27,7 +27,7 @@ class ATHexapodCommand:
         #3 gives the position value 0 for
         all axes.
         """
-        return "#3"
+        return "\3"
 
 
     def requestMotionStatus(self):
@@ -53,7 +53,7 @@ class ATHexapodCommand:
         2=second axis is moving
         4=third axis is moving ...
         """
-        return "#5"
+        return "\5"
 
 
     def requestMotionStatus(self):
@@ -75,7 +75,7 @@ class ATHexapodCommand:
         4 = Position of the third axis has
         changed...
         """
-        return "#6"
+        return "\6"
 
     def requestControllerReadyStatus(self):
         """
@@ -92,7 +92,7 @@ class ATHexapodCommand:
         ready (e.g., performing a
         reference move)
         """
-        return "#7"
+        return "\7"
 
 
     def stopAllAxes(self):
@@ -103,7 +103,7 @@ class ATHexapodCommand:
 
         Return: No return
         """
-        return "#24"
+        return "\24"
 
 
     def setTargetPosition(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
@@ -153,7 +153,7 @@ class ATHexapodCommand:
         Get the position "soft limit" which determines the low end of
         the axis travel range in closed-loop operation.
         """
-        return "NML? X Y Z U V W"
+        return "NLM? X Y Z U V W"
 
     def getOnTargetState(self):
         """
@@ -244,7 +244,7 @@ class ATHexapodCommand:
 
         Gets the pivot point coordinates.
         """
-        return "SSL?"
+        return "SPI?"
 
     def getSoftLimitStatus(self):
         """
