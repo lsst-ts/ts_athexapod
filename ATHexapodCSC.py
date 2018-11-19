@@ -53,6 +53,20 @@ class configATHexapod:
         y = 0.0
         z = 0.0
 
+class commandedStateATHexapod:
+    xpos = 0.0
+    ypos = 0.0
+    zpos = 0.0
+    uvec = 0.0
+    vvec = 0.0
+    wvec = 0.0
+    xoff = 0.0
+    yoff = 0.0
+    zoff = 0.0
+    uoff = 0.0
+    voff = 0.0
+    woff = 0.0
+
 class simATHexapod:
     hdwDelayApplyPositionLimits = 10  # seconds
     hdwDelayMoveToPosition = 5  # seconds
@@ -103,6 +117,7 @@ class ATHexapodCsc(base_csc.BaseCsc):
         self.conf = configATHexapod()
         self.logSettings = logSettingsATHexapod()
         self.simSettings = simATHexapod()
+        self.cmdState = commandedStateATHexapod()
 
         # -------------
         self.evt_settingsAppliedPositions_data = self.evt_settingsAppliedPositions.DataType() # don't understand this
@@ -116,6 +131,12 @@ class ATHexapodCsc(base_csc.BaseCsc):
         setattr(self.conf.posLimits, 'wMin', getattr(id_data.data, 'wMin'))
         setattr(self.conf.posLimits, 'wMax', getattr(id_data.data, 'wMax'))
 
+
+        # And here is where to put in some mock behavior for the hardware, or later,
+        # code that connects to the actual hardware
+
+        await asyncio.sleep(self.simSettings.hdwDelayApplyPositionLimits)
+        
         # copy from posLimits into self.evt_settingsAppliedPositions_data
         # (and what do we do with the other elements of that data structure?
         # just leave them with whatever value they have, I guess
@@ -128,20 +149,37 @@ class ATHexapodCsc(base_csc.BaseCsc):
         setattr(self.evt_settingsAppliedPositions_data, 'limitWMin', self.conf.posLimits.wMin)
         setattr(self.evt_settingsAppliedPositions_data, 'limitWMax', self.conf.posLimits.wMax)
 
-        # And here is where to put in some mock behavior for the hardware, or later,
-        # code that connects to the actual hardware
-
-        await asyncio.sleep(self.simSettings.hdwDelayApplyPositionLimits)
-        
         # send the event
         self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
         
         # should we send the timestamp telemetry?
 
     
-    def do_moveToPosition(self, id_data):
-        pass
-    
+    async def do_moveToPosition(self, id_data):
+
+        setattr(self.cmdState, 'xpos', getattr(id_data.data, 'x'))
+        setattr(self.cmdState, 'ypos', getattr(id_data.data, 'y'))
+        setattr(self.cmdState, 'zpos', getattr(id_data.data, 'z'))
+        setattr(self.cmdState, 'uvec', getattr(id_data.data, 'u'))
+        setattr(self.cmdState, 'vvec', getattr(id_data.data, 'v'))
+        setattr(self.cmdState, 'wvec', getattr(id_data.data, 'w'))
+
+        # And here is where to put in some mock behavior for the hardware, or later,
+        # code that connects to the actual hardware
+
+        await asyncio.sleep(self.simSettings.hdwDelayMoveToPosition)
+
+        setattr(self.evt_settingsAppliedPositions_data, 'positionX', self.cmdState.xpos)
+        setattr(self.evt_settingsAppliedPositions_data, 'positionY', self.cmdState.ypos)
+        setattr(self.evt_settingsAppliedPositions_data, 'positionZ', self.cmdState.zpos)
+        setattr(self.evt_settingsAppliedPositions_data, 'positionU', self.cmdState.uvec)
+        setattr(self.evt_settingsAppliedPositions_data, 'positionV', self.cmdState.vvec)
+        setattr(self.evt_settingsAppliedPositions_data, 'positionW', self.cmdState.wvec)
+
+        # send the event
+        self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
+
+
     def do_setMaxSpeeds(self, id_data):
         pass
     
