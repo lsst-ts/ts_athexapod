@@ -56,24 +56,15 @@ class ATHexapodCommand:
         return "\5"
 
 
-    def requestMotionStatus(self):
+    def queryForPositionChange(self):
         """
-        (p. 140) Request Motion Status.
-        #6 (Query for Position Change)
-        Queries whether the axis
-        positions have changed since
-        the last position query was sent.
-
-        The response <uint> is bitmapped
-        and returned as the
-        hexadecimal sum of the
-        following codes:
-        1 = Position of the first axis has
-        changed
-        2 = Position of the second axis
-        has changed
-        4 = Position of the third axis has
-        changed...
+        Queries wheter the axis positions have changed since the last position query was sent.
+        Response:
+        The response <uint> is bit-mappet and returned as the hexadecimal sum of the following codes:
+        1 = Position of the first axis has changed
+        2 = Position of the second axis has changed
+        4 = Posiiton of the third axis has changed
+        ...
         """
         return "\6"
 
@@ -124,6 +115,21 @@ class ATHexapodCommand:
         target += " V " + str(float(V)) if V is not None else ""
         target += " W " + str(float(W)) if W is not None else ""
         return "MOV" + target
+
+    def performsReference(self, X: bool = True, Y: bool = False, Z: bool = False, U: bool = False, V: bool = False, W: bool = False):
+        """
+        Performs a reference .
+        Moves the given axis to the reference point switch and sets the current position to a defined value. See below for details.
+        If Multiple axes are given in the command, they are moved synchronously.
+        """
+        target = ""
+        target += " X " if X else ""
+        target += " Y " if Y else ""
+        target += " Z " if Z else ""
+        target += " U " if U else ""
+        target += " V " if V else ""
+        target += " W " if W else ""
+        return "FRF" + target
 
     def getTargetPosition(self):
         """
@@ -184,7 +190,6 @@ class ATHexapodCommand:
         """
         Get High Position Soft Limit
         """
-        remove=1
         return "PLM? X Y Z U V W"
 
     def getPositionUnit(self):
@@ -192,7 +197,6 @@ class ATHexapodCommand:
         (p. 217) Get Position Unit
         Gets the current unit of the position. If all arguments are omitted, gets current unit of the position for all axes.
         """
-        remove=1
         return "PUN? X Y Z U V W"
 
     def setTargetRelativeToCurrentPosition(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
