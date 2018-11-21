@@ -94,7 +94,7 @@ class ATHexapodCommand:
 
         Return: No return
         """
-        return "\24"
+        return chr(24)
 
 
     def setTargetPosition(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
@@ -265,12 +265,12 @@ class ATHexapodCommand:
         Soft limits can only be activated/deactivated when the axis is not moving (query with #5 (p. 140)).
         """
         target = ""
-        target += " X " + "1" if X is not None else "0"
-        target += " Y " + "1" if Y is not None else "0"
-        target += " Z " + "1" if Z is not None else "0"
-        target += " U " + "1" if U is not None else "0"
-        target += " V " + "1" if V is not None else "0"
-        target += " W " + "1" if W is not None else "0"
+        target += " X " + ("1" if X else "0")
+        target += " Y " + ("1" if Y else "0")
+        target += " Z " + ("1" if Z else "0")
+        target += " U " + ("1" if U else "0")
+        target += " V " + ("1" if V else "0")
+        target += " W " + ("1" if W else "0")
         return "SSL"+target
 
     def setClosedLoopVelocity(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
