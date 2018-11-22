@@ -120,15 +120,19 @@ class ATHexapodCsc(base_csc.BaseCsc):
         self.logSettings = logSettingsATHexapod()
         self.simSettings = simATHexapod()
         self.cmdState = commandedStateATHexapod()
+        # -------------
+        self.evt_settingsAppliedPositions_data = self.evt_settingsAppliedPositions.DataType()
+
+        # set up telemetry
+
+        self.tel_actuatorPositions_data = self.tel_actuatorPositions.DataType()
+
         #
         # start the telemetry loop as a task. It won't actually send telemetry
         # unless the CSC is in the ENABLED state
 
         print('starting telemetryLoop')
         self.telemetryTask = asyncio.ensure_future(self.telemetryLoop())
-
-        # -------------
-        self.evt_settingsAppliedPositions_data = self.evt_settingsAppliedPositions.DataType()
 
     # Code copied from python asyncio documentation
     # It will not work for fast telemetry loops?  Depends on how short a time sleep()
@@ -143,6 +147,9 @@ class ATHexapodCsc(base_csc.BaseCsc):
 
     def sendTelemetry(self):
         print('sendTelemetry')
+        # stuff some fake data into self.tel_actuatorPositions_data before doing the put
+        
+        self.self.tel_actuatorPositions.put(self.tel_actuatorPositions_data)
         
     async def do_applyPositionLimits(self, id_data):
 
