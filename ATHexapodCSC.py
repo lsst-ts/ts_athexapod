@@ -36,6 +36,8 @@ except ImportError:
     warnings.warn("Could not import SALPY_ATHexapod; ATHexapodCsc will not work")
 
 class configATHexapod:
+    telemetryInterval = 3.0
+    
     class posLimits:
         xyMax = 0.0
         zMin = 0.0
@@ -122,7 +124,7 @@ class ATHexapodCsc(base_csc.BaseCsc):
         # start the telemetry loop as a task. It won't actually send telemetry
         # unless the CSC is in the ENABLED state
 
-        self.telemetryTask = asyncio.create_task(self.telemetryLoop())
+        self.telemetryTask = asyncio.ensure_future(self.telemetryLoop())
 
         # -------------
         self.evt_settingsAppliedPositions_data = self.evt_settingsAppliedPositions.DataType()
