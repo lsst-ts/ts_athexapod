@@ -124,6 +124,7 @@ class ATHexapodCsc(base_csc.BaseCsc):
         # start the telemetry loop as a task. It won't actually send telemetry
         # unless the CSC is in the ENABLED state
 
+        print('starting telemetryLoop')
         self.telemetryTask = asyncio.ensure_future(self.telemetryLoop())
 
         # -------------
@@ -134,17 +135,14 @@ class ATHexapodCsc(base_csc.BaseCsc):
     # can wait for
     
     async def telemetryLoop(self):
-        loop = asyncio.get_running_loop()
-        end_time = loop.time() + self.conf.telemetryInterval
         while True:
-            if self.summary_state == base_csc.State.ENABLED:
-                self.sendTelemetry()
-            if (loop.time() + 1.0) >= end_time:
-                break
-            await asyncio.sleep(1)
+#            if self.summary_state == base_csc.State.ENABLED:
+#                self.sendTelemetry()
+            self.sendTelemetry()
+            await asyncio.sleep(self.conf.telemetryInterval)
 
     def sendTelemetry(self):
-        pass
+        print('sendTelemetry')
         
     async def do_applyPositionLimits(self, id_data):
 
