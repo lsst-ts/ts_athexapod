@@ -149,7 +149,7 @@ class ATHexapodCsc(base_csc.BaseCsc):
         print('sendTelemetry')
         # stuff some fake data into self.tel_actuatorPositions_data before doing the put
         
-        self.self.tel_actuatorPositions.put(self.tel_actuatorPositions_data)
+        self.tel_actuatorPositions.put(self.tel_actuatorPositions_data)
         
     async def do_applyPositionLimits(self, id_data):
 
