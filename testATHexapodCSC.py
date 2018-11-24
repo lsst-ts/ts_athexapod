@@ -1,5 +1,6 @@
 import asyncio
 import time
+import contextlib
 import unittest
 
 import numpy as np
@@ -8,20 +9,53 @@ try:
     import SALPY_ATHexapod
 except ImportError:
     SALPY_ATHexapod = None
-import salobj
+
+from lsst.ts import salobj
+from lsst.ts.salobj.base import AckError
+
 import ATHexapodCSC
 
 np.random.seed(47)
 
+@contextlib.contextmanager
+def assertRaisesAckError(ack=None, error=None):
+    """Assert that code raises a salobj.AckError
+    Parameters
+    ----------
+    ack : `int` (optional)
+        Ack code, typically a SAL__CMD_<x> constant.
+        If None then the ack code is not checked.
+    error : `int`
+        Error code. If None then the error value is not checked.
+    """
+    try:
+        yield
+        raise AssertionError("AckError not raised")
+    except AckError as e:
+        if ack is not None and e.ack.ack != ack:
+            raise AssertionError(f"ack.ack={e.ack.ack} instead of {ack}")
+        if error is not None and e.ack.error != error:
+            raise AssertionError(f"ack.error={e.ack.error} instead of {error}")
+
+def fillWithRandom(data, lowValue, highValue):
+    reservedFields = ['action', 'device', 'itemValue', 'property']
+    
+    for field in dir(data):
+        if not field.startswith('__') and not field in reservedFields:
+            print('fill :', field)
+            setattr(data, field, np.random.uniform(lowValue, highValue))
+
 class Harness:
     def __init__(self, initial_state):
-        index = None
+        index = 1
         self.csc = ATHexapodCSC.ATHexapodCsc(index, initial_state=initial_state)
         self.remote = salobj.Remote(SALPY_ATHexapod, index)
 
 
 @unittest.skipIf(SALPY_ATHexapod is None, "Could not import SALPY_ATHexapod")
+
 class CommunicateTestCase(unittest.TestCase):
+    @unittest.skip('reason')
     def test_heartbeat(self):
         async def doit():
             harness = Harness(initial_state=salobj.State.ENABLED)
@@ -33,11 +67,10 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip('reason')
     def test_main(self):
         async def doit():
-            index = None
-            process = await asyncio.create_subprocess_exec("/home/saluser/test/runATHexapodCSC.py", str(index))
+            index = 1
+            process = await asyncio.create_subprocess_exec("/home/saluser/test/ts_salobjATHexapod/runATHexapodCSC.py", str(index))
             try:
                 remote = salobj.Remote(SALPY_ATHexapod, index)
                 summaryState_data = await remote.evt_summaryState.next(flush=False, timeout=10)
@@ -59,12 +92,10 @@ class CommunicateTestCase(unittest.TestCase):
     def make_random_cmd_applyPositionLimits(self, csc):
         data = csc.cmd_applyPositionLimits.DataType()
         setattr(data, "xyMax", np.random.uniform(-10.0, 10.0))
-        setattr(data, "zMin", np.random.uniform(-10.0, 10.0))
-        setattr(data, "zMax", np.random.uniform(-10.0, 10.0))
-        setattr(data, "uvMax", np.random.uniform(-10.0, 10.0))
-        setattr(data, "wMin", np.random.uniform(-10.0, 10.0))
-        setattr(data, "wMax", np.random.uniform(-10.0, 10.0))
+        fillWithRandom(data, -10.0, 10.0)
         return data
+    
+
     def test_applyPositionLimits_command(self):
         async def doit():
             harness = Harness(initial_state=salobj.State.ENABLED)
@@ -93,7 +124,6 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip('reason')
     def test_standard_state_transitions(self):
         """Test standard CSC state transitions.
 
@@ -119,7 +149,7 @@ class CommunicateTestCase(unittest.TestCase):
                     continue  # valid command in STANDBY state
                 with self.subTest(bad_command=bad_command):
                     cmd_attr = getattr(harness.remote, f"cmd_{bad_command}")
-                    with salobj.test_utils.assertRaisesAckError(
+                    with assertRaisesAckError(
                             ack=harness.remote.salinfo.lib.SAL__CMD_FAILED):
                         await cmd_attr.start(cmd_attr.DataType())
 
@@ -138,7 +168,7 @@ class CommunicateTestCase(unittest.TestCase):
                     continue  # valid command in DISABLED state
                 with self.subTest(bad_command=bad_command):
                     cmd_attr = getattr(harness.remote, f"cmd_{bad_command}")
-                    with salobj.test_utils.assertRaisesAckError(
+                    with assertRaisesAckError(
                             ack=harness.remote.salinfo.lib.SAL__CMD_FAILED):
                         await cmd_attr.start(cmd_attr.DataType())
 
@@ -158,7 +188,7 @@ class CommunicateTestCase(unittest.TestCase):
                     continue  # valid command in DISABLED state
                 with self.subTest(bad_command=bad_command):
                     cmd_attr = getattr(harness.remote, f"cmd_{bad_command}")
-                    with salobj.test_utils.assertRaisesAckError(
+                    with assertRaisesAckError(
                             ack=harness.remote.salinfo.lib.SAL__CMD_FAILED):
                         await cmd_attr.start(cmd_attr.DataType())
 

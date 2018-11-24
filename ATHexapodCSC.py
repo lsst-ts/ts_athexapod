@@ -36,7 +36,7 @@ except ImportError:
     warnings.warn("Could not import SALPY_ATHexapod; ATHexapodCsc will not work")
 
 class configATHexapod:
-    telemetryInterval = 3.0
+    telemetryInterval = 0.5
     
     class posLimits:
         xyMax = 0.0
@@ -120,13 +120,17 @@ class ATHexapodCsc(base_csc.BaseCsc):
         self.logSettings = logSettingsATHexapod()
         self.simSettings = simATHexapod()
         self.cmdState = commandedStateATHexapod()
-        # -------------
+        #
+        # set up event data structures
+        #
         self.evt_settingsAppliedPositions_data = self.evt_settingsAppliedPositions.DataType()
 
-        # set up telemetry
+        # set up telemetry data structures
 
         self.tel_actuatorPositions_data = self.tel_actuatorPositions.DataType()
 
+        #
+        print('summary state: ', initial_state, self.summary_state)
         #
         # start the telemetry loop as a task. It won't actually send telemetry
         # unless the CSC is in the ENABLED state
@@ -134,9 +138,6 @@ class ATHexapodCsc(base_csc.BaseCsc):
         print('starting telemetryLoop')
         self.telemetryTask = asyncio.ensure_future(self.telemetryLoop())
 
-    # Code copied from python asyncio documentation
-    # It will not work for fast telemetry loops?  Depends on how short a time sleep()
-    # can wait for
     
     async def telemetryLoop(self):
         while True:
@@ -146,13 +147,15 @@ class ATHexapodCsc(base_csc.BaseCsc):
             await asyncio.sleep(self.conf.telemetryInterval)
 
     def sendTelemetry(self):
-        print('sendTelemetry')
+        print('sendTelemetry: ', '{:.4f}'.format(time.time()))
         # stuff some fake data into self.tel_actuatorPositions_data before doing the put
         
         self.tel_actuatorPositions.put(self.tel_actuatorPositions_data)
         
     async def do_applyPositionLimits(self, id_data):
 
+
+        self.assert_enabled("applyPositionLimits")
         setattr(self.conf.posLimits, 'xyMax', getattr(id_data.data, 'xyMax'))
         setattr(self.conf.posLimits, 'zMin', getattr(id_data.data, 'zMin'))
         setattr(self.conf.posLimits, 'zMax', getattr(id_data.data, 'zMax'))
@@ -181,11 +184,10 @@ class ATHexapodCsc(base_csc.BaseCsc):
         # send the event
         self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
         
-        # should we send the timestamp telemetry?
-
     
     async def do_moveToPosition(self, id_data):
 
+        self.assert_enabled("moveToPosition")
         setattr(self.cmdState, 'xpos', getattr(id_data.data, 'x'))
         setattr(self.cmdState, 'ypos', getattr(id_data.data, 'y'))
         setattr(self.cmdState, 'zpos', getattr(id_data.data, 'z'))
@@ -210,14 +212,18 @@ class ATHexapodCsc(base_csc.BaseCsc):
 
 
     def do_setMaxSpeeds(self, id_data):
+        self.assert_enabled("setMaxSpeeds")
         pass
     
     def do_applyPositionOffset(self, id_data):
+        self.assert_enabled("applyPositionOffset")
         pass
     
     def do_stopAllAxes(self, id_data):
+        self.assert_enabled("stopAllAxes")
         pass
     
     def do_pivot(self, id_data):
+        self.assert_enabled("pivot")
         pass
     
