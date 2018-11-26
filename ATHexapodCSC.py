@@ -35,6 +35,8 @@ try:
 except ImportError:
     warnings.warn("Could not import SALPY_ATHexapod; ATHexapodCsc will not work")
 
+import ATHexapodSim
+
 class configATHexapod:
     telemetryInterval = 0.5
     
@@ -50,12 +52,9 @@ class configATHexapod:
         rxryMax = 0.0
         zMax = 0.0
         rzMax = 0.0
-    class pivot:
-        x = 0.0
-        y = 0.0
-        z = 0.0
 
-class commandedStateATHexapod:
+class stateATHexapod:
+    time = 0.0
     xpos = 0.0
     ypos = 0.0
     zpos = 0.0
@@ -68,33 +67,35 @@ class commandedStateATHexapod:
     uoff = 0.0
     voff = 0.0
     woff = 0.0
+    xpivot = 0.0
+    ypivot = 0.0
+    zpivot = 0.0
+
+class cmdATHexapod:
+    time = 0.0
+    xpos = 0.0
+    ypos = 0.0
+    zpos = 0.0
+    uvec = 0.0
+    vvec = 0.0
+    wvec = 0.0
+    xoff = 0.0
+    yoff = 0.0
+    zoff = 0.0
+    uoff = 0.0
+    voff = 0.0
+    woff = 0.0
+    xpivot = 0.0
+    ypivot = 0.0
+    zpivot = 0.0
 
 class simATHexapod:
     hdwDelayApplyPositionLimits = 10  # seconds
     hdwDelayMoveToPosition = 5  # seconds
     hdwDelayApplySpeedLimits = 1
     hdwProbFailure = 0.1
-
-class logSettingsATHexapod:
-    limitXYMax = 0.0
-    limitZMin = 0.0
-    limitZMax = 0.0
-    limitUVMax = 0.0
-    limitWMin = 0.0
-    limitWMax = 0.0
-    velocityXYMax = 0.0
-    velocityRxRyMax = 0.0
-    velocityZMax = 0.0
-    velocityRzMax = 0.0
-    positionX = 0.0
-    positionY = 0.0
-    positionZ = 0.0
-    positionU = 0.0
-    positionV = 0.0
-    positionW = 0.0
-    pivotX = 0.0
-    pivotY = 0.0
-    pivotZ = 0.0
+    moveEpsilon = 0.01  # how close to get to target
+    positionLoopDeltaT = 0.1
 
 class ATHexapodCsc(base_csc.BaseCsc):
     """A skeleton implementation of ATHexapod
@@ -118,9 +119,10 @@ class ATHexapodCsc(base_csc.BaseCsc):
         super().__init__(SALPY_ATHexapod, index)
         self.summary_state = initial_state
         self.conf = configATHexapod()
-        self.logSettings = logSettingsATHexapod()
         self.simSettings = simATHexapod()
-        self.cmdState = commandedStateATHexapod()
+        self.simState = stateATHexapod()
+        self.cmdState = cmdAtHexapod()
+        self.sim = ATHexapodSim.simATHexapod(self.simSettings, self.conf, self.simState)
 
         self.telTask = None
         #
@@ -157,7 +159,8 @@ class ATHexapodCsc(base_csc.BaseCsc):
     def sendTelemetry(self):
         print('sendTelemetry: ', '{:.4f}'.format(time.time()))
         # stuff some fake data into self.tel_actuatorPositions_data before doing the put
-        
+        # these will come from stateATHexapod
+        setattr(self.tel_actuatorPositions_data, 'raw', self.simState.xpos)
         self.tel_actuatorPositions.put(self.tel_actuatorPositions_data)
         
     async def do_applyPositionLimits(self, id_data):
@@ -206,7 +209,7 @@ class ATHexapodCsc(base_csc.BaseCsc):
         # And here is where to put in some mock behavior for the hardware, or later,
         # code that connects to the actual hardware
 
-        await asyncio.sleep(self.simSettings.hdwDelayMoveToPosition)
+        await sim.simMoveToPosition(self.cmdState)
 
         asyncio.ensure_future(self.positionLoop())
 
