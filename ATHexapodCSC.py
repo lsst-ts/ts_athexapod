@@ -72,6 +72,7 @@ class commandedStateATHexapod:
 class simATHexapod:
     hdwDelayApplyPositionLimits = 10  # seconds
     hdwDelayMoveToPosition = 5  # seconds
+    hdwDelayApplySpeedLimits = 1
     hdwProbFailure = 0.1
 
 class logSettingsATHexapod:
@@ -120,6 +121,8 @@ class ATHexapodCsc(base_csc.BaseCsc):
         self.logSettings = logSettingsATHexapod()
         self.simSettings = simATHexapod()
         self.cmdState = commandedStateATHexapod()
+
+        self.telTask = None
         #
         # set up event data structures
         #
@@ -130,21 +133,26 @@ class ATHexapodCsc(base_csc.BaseCsc):
         self.tel_actuatorPositions_data = self.tel_actuatorPositions.DataType()
 
         #
-        print('summary state: ', initial_state, self.summary_state)
+        print('summary state: ', self.summary_state)
         #
         # start the telemetry loop as a task. It won't actually send telemetry
-        # unless the CSC is in the ENABLED state
+        # unless the CSC is in the STANDBY or ENABLED states
 
         print('starting telemetryLoop')
-        self.telemetryTask = asyncio.ensure_future(self.telemetryLoop())
+        asyncio.ensure_future(self.telemetryLoop())
 
+    def end_standby(self):
+        if self.telTask and not self.telTask.done():
+            self.telTask.cancel()
+        super().end_standby()
     
     async def telemetryLoop(self):
-        while True:
-#            if self.summary_state == base_csc.State.ENABLED:
-#                self.sendTelemetry()
+        if self.telTask and not self.telTask.done():
+            self.telTask.cancel()
+        
+        while self.summary_state in (base_csc.State.STANDBY, base_csc.State.ENABLED):
+            self.telTask = await asyncio.sleep(self.conf.telemetryInterval)
             self.sendTelemetry()
-            await asyncio.sleep(self.conf.telemetryInterval)
 
     def sendTelemetry(self):
         print('sendTelemetry: ', '{:.4f}'.format(time.time()))
@@ -200,6 +208,8 @@ class ATHexapodCsc(base_csc.BaseCsc):
 
         await asyncio.sleep(self.simSettings.hdwDelayMoveToPosition)
 
+        asyncio.ensure_future(self.positionLoop())
+
         setattr(self.evt_settingsAppliedPositions_data, 'positionX', self.cmdState.xpos)
         setattr(self.evt_settingsAppliedPositions_data, 'positionY', self.cmdState.ypos)
         setattr(self.evt_settingsAppliedPositions_data, 'positionZ', self.cmdState.zpos)
@@ -213,7 +223,22 @@ class ATHexapodCsc(base_csc.BaseCsc):
 
     def do_setMaxSpeeds(self, id_data):
         self.assert_enabled("setMaxSpeeds")
-        pass
+
+        setattr(self.conf.speedLimits, 'xyMax', getattr(id_data.data, 'xyMax'))
+        setattr(self.conf.speedLimits, 'rxryMax', getattr(id_data.data, 'rxryMax'))
+        setattr(self.conf.speedLimits, 'zMax', getattr(id_data.data, 'zMax'))
+        setattr(self.conf.speedLimits, 'rzMax', getattr(id_data.data, 'rzMax'))
+
+#        await asyncio.sleep(self.simSettings.hdwDelayApplySpeedLimits)
+
+        setattr(self.evt_settingsAppliedPositions_data, 'velocityXYMax', self.conf.speedLimits.xyMax)
+        setattr(self.evt_settingsAppliedPositions_data, 'velocityRxRyMax', self.conf.speedLimits.rxryMax)
+        setattr(self.evt_settingsAppliedPositions_data, 'velocityZMax', self.conf.speedLimits.zMax)
+        setattr(self.evt_settingsAppliedPositions_data, 'velocityRzMax', self.conf.speedLimits.rzMax)
+
+        # send the event
+        self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
+
     
     def do_applyPositionOffset(self, id_data):
         self.assert_enabled("applyPositionOffset")
