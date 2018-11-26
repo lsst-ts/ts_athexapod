@@ -48,7 +48,7 @@ class configATHexapod:
         wMin = 0.0
         wMax = 0.0
     class speedLimits:
-        xyMax = 0.0
+        xyMax = 1.0
         rxryMax = 0.0
         zMax = 0.0
         rzMax = 0.0
@@ -121,7 +121,7 @@ class ATHexapodCsc(base_csc.BaseCsc):
         self.conf = configATHexapod()
         self.simSettings = simATHexapod()
         self.simState = stateATHexapod()
-        self.cmdState = cmdAtHexapod()
+        self.cmdState = cmdATHexapod()
         self.sim = ATHexapodSim.simATHexapod(self.simSettings, self.conf, self.simState)
 
         self.telTask = None
@@ -160,7 +160,8 @@ class ATHexapodCsc(base_csc.BaseCsc):
         print('sendTelemetry: ', '{:.4f}'.format(time.time()))
         # stuff some fake data into self.tel_actuatorPositions_data before doing the put
         # these will come from stateATHexapod
-        setattr(self.tel_actuatorPositions_data, 'raw', self.simState.xpos)
+        self.tel_actuatorPositions_data.raw[0] = self.simState.xpos
+        print('telemetry xpos:', self.simState.xpos)
         self.tel_actuatorPositions.put(self.tel_actuatorPositions_data)
         
     async def do_applyPositionLimits(self, id_data):
