@@ -67,6 +67,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
+    @unittest.skip('reason')
     def test_main(self):
         async def doit():
             index = 1
@@ -91,11 +92,17 @@ class CommunicateTestCase(unittest.TestCase):
 
     def make_random_cmd_applyPositionLimits(self, csc):
         data = csc.cmd_applyPositionLimits.DataType()
-        setattr(data, "xyMax", np.random.uniform(-10.0, 10.0))
         fillWithRandom(data, -10.0, 10.0)
         return data
     
+    def make_random_cmd_moveToPosition(self, csc):
+        data = csc.cmd_moveToPosition.DataType()
+        setattr(data, "x", np.random.uniform(-1.0, 1.0))
+#        fillWithRandom(data, -10.0, 10.0)
+        return data
+    
 
+    @unittest.skip('reason')
     def test_applyPositionLimits_command(self):
         async def doit():
             harness = Harness(initial_state=salobj.State.ENABLED)
@@ -124,6 +131,35 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
+    def test_moveToPosition_command(self):
+        async def doit():
+            harness = Harness(initial_state=salobj.State.ENABLED)
+            # until the controller gets its first setArrays
+            # it will not send any arrays events or telemetry
+            self.assertIsNone(harness.remote.evt_settingsAppliedPositions.get())
+            self.assertIsNone(harness.remote.tel_timestamp.get()) # not sure this should be here
+
+            # send the moveToPosition command with random data
+            cmd_data_sent = self.make_random_cmd_moveToPosition(harness.csc)
+            # set a long timeout here to allow for simulated hardware delay inside the CSC
+            await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=300)
+
+            # see if new data was broadcast correctly
+            evt_data = await harness.remote.evt_settingsAppliedPositions.next(flush=False, timeout=30)
+
+            print('cmd_data_sent:')
+            for prop in dir(cmd_data_sent):
+                if not prop.startswith('__'):
+                    print(prop, getattr(cmd_data_sent, prop))
+
+            print('evt_data:')
+            for prop in dir(evt_data):
+                if not prop.startswith('__'):
+                    print(prop, getattr(evt_data, prop))
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    @unittest.skip('reason')
     def test_standard_state_transitions(self):
         """Test standard CSC state transitions.
 
