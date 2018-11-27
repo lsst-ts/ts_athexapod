@@ -43,7 +43,7 @@ class simATHexapod:
     def simSpeedLimits(self, xyMax, rxryMax, zMax, rzMax):
         self.simLimits.speedLimits.xyMax = xyMax
      
-    def simMoveToPosition(self, cmd):
+    async def simMoveToPosition(self, cmd):
         self.xnew = cmd.xpos
         
         # prep parameters for move
@@ -52,14 +52,17 @@ class simATHexapod:
         # calculate velocities
         #
         deltaX = self.xnew - self.simState.xpos        
-        self.xvel = self.simLimits.velocityXYMax * np.sign(deltaX)
+        self.xvel = self.simLimits.speedLimits.xyMax * np.sign(deltaX)
         #
-        asyncio.ensure_future(self.positionLoop())
+        await self.positionLoop()
 
     async def positionLoop(self):
 
-        while np.abs(self.simState.xpos - self.xnew) > self.simParams.moveEpsilon and np.sign(self.simState.xpos - self.xnew) == np.sign(self.xvel):
+        print('positionLoop: ', self.simState.xpos, self.xnew, self.xvel)
+        while np.abs(self.simState.xpos - self.xnew) > self.simParams.moveEpsilon and np.sign(self.xnew - self.simState.xpos) == np.sign(self.xvel):
             self.simState.xpos += self.xvel * self.simParams.positionLoopDeltaT
             self.simState.time = time.time()
-            await asyncio.sleep(self.positionLoopDeltaT)
+            print('positionLoop: ', self.simState.time, self.simState.xpos)
+            await asyncio.sleep(self.simParams.positionLoopDeltaT)
+
             
