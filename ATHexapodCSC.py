@@ -48,7 +48,7 @@ class configATHexapod:
         wMin = 0.0
         wMax = 0.0
     class speedLimits:
-        xyMax = 1.0
+        xyMax = 0.1
         rxryMax = 0.0
         zMax = 0.0
         rzMax = 0.0
@@ -210,9 +210,7 @@ class ATHexapodCsc(base_csc.BaseCsc):
         # And here is where to put in some mock behavior for the hardware, or later,
         # code that connects to the actual hardware
 
-        await sim.simMoveToPosition(self.cmdState)
-
-        asyncio.ensure_future(self.positionLoop())
+        await self.sim.simMoveToPosition(self.cmdState)
 
         setattr(self.evt_settingsAppliedPositions_data, 'positionX', self.cmdState.xpos)
         setattr(self.evt_settingsAppliedPositions_data, 'positionY', self.cmdState.ypos)
