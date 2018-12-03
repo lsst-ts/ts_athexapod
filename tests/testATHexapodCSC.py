@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import asyncio
 import time
 import contextlib
@@ -13,7 +15,7 @@ except ImportError:
 from lsst.ts import salobj
 from lsst.ts.salobj.base import AckError
 
-import ATHexapodCSC
+from lsst.ts.ATHexapod import ATHexapodCSC
 
 np.random.seed(47)
 
@@ -47,7 +49,7 @@ def fillWithRandom(data, lowValue, highValue):
 
 class Harness:
     def __init__(self, initial_state):
-        index = 1
+        index = 0
         self.csc = ATHexapodCSC.ATHexapodCsc(index, initial_state=initial_state)
         self.remote = salobj.Remote(SALPY_ATHexapod, index)
 
