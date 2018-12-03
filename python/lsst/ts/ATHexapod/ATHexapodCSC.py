@@ -35,7 +35,7 @@ try:
 except ImportError:
     warnings.warn("Could not import SALPY_ATHexapod; ATHexapodCsc will not work")
 
-import ATHexapodSim
+from . import ATHexapodSim
 
 class configATHexapod:
     telemetryInterval = 0.5
