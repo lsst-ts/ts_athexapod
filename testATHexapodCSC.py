@@ -67,10 +67,9 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip('reason')
     def test_main(self):
         async def doit():
-            index = 1
+            index = 0
             process = await asyncio.create_subprocess_exec("/home/saluser/test/ts_salobjATHexapod/runATHexapodCSC.py", str(index))
             try:
                 remote = salobj.Remote(SALPY_ATHexapod, index)
