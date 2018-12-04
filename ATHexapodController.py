@@ -1,5 +1,5 @@
-from atHexapodController.ATHexapodCommands import ATHexapodCommand
-from pythonCommunicator.TcpCommunicator import TcpClient, TCPEndStr
+from ATHexapodCommands import ATHexapodCommand
+from lsst.ts.pythonCommunicator.TcpCommunicator import TcpClient, TCPEndStr
 
 class ATHexapodController:
 
