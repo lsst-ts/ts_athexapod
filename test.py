@@ -7,7 +7,7 @@ class TestAtHexapod(unittest.TestCase):
 
     def setUp(self):
         self.hexController = ATHexapodController()
-        self.hexController.configureCommunicator(address='139.229.136.151', port=50000, connectTimeout=2, readTimeout=2, sendTimeout=2, endStr='\n', maxLength = 1024)
+        self.hexController.configureCommunicator(address='140.252.32.193', port=50000, connectTimeout=2, readTimeout=2, sendTimeout=2, endStr='\n', maxLength = 1024)
         self.hexController.connect()
         self.hexController.initializePosition()
         self.maxPosition = 4
@@ -15,7 +15,7 @@ class TestAtHexapod(unittest.TestCase):
     def tearDown(self):
         self.hexController.disconnect()
 
-    @unittest.skip("Takes to long to execute...")
+    #@unittest.skip("Takes to long to execute...")
     def testTarget(self):
         #Send target to the hexapod and test if it's the same as the hardware target
         Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd = 0, 0, 0, 0, 0, 0
@@ -54,7 +54,7 @@ class TestAtHexapod(unittest.TestCase):
         self.assertEqual(Vcmd, Vtgt)
         self.assertEqual(Wcmd, Wtgt)
 
-    @unittest.skip("Takes to long to execute...")
+    #@unittest.skip("Takes to long to execute...")
     def testMoveToTarget(self):
         #Send target to the hexapod and test if it's the same as the hardware target
 
@@ -166,7 +166,7 @@ class TestAtHexapod(unittest.TestCase):
         self.assertAlmostEqual(Vtgt1, Vtgt2, places=3)
         self.assertAlmostEqual(Wtgt1, Wtgt2, places=3)
 
-    @unittest.skip("Takes to long to execute...")
+    #@unittest.skip("Takes to long to execute...")
     def testOffsetMove(self):
         #Send move offset and compare positions to where it should be
         offsetX, offsetY, offsetZ, offsetU, offsetV, offsetW = 1.5, 1.5, 1.5, 1.5, 1.5, 1.5
@@ -242,9 +242,6 @@ class TestAtHexapod(unittest.TestCase):
         valid = self.hexController.validPosition(X=5, Y=1, Z=1, U=35)
         self.assertEqual(valid, False)
 
-if __name__ == '__main__':
-    atHexTests = unittest.main()
-
 def similarTo(number1, number2, threshold=0.001):
     return (abs(number1-number2)<threshold)
 
@@ -252,3 +249,7 @@ def inPosition(hexController, Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd):
     Xtgt, Ytgt, Ztgt, Utgt, Vtgt, Wtgt = hexController.getRealPositions()
     inPosition = (similarTo(Xcmd, Xtgt) and similarTo(Ycmd, Ytgt) and similarTo(Zcmd, Ztgt) and similarTo(Ucmd,Utgt) and similarTo(Vcmd, Vtgt) and similarTo(Wcmd, Wtgt))
     return inPosition
+
+if __name__ == '__main__':
+    atHexTests = unittest.main()
+

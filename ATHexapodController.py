@@ -1,5 +1,5 @@
 from atHexapodController.ATHexapodCommands import ATHexapodCommand
-from pythonCommunicator.TcpCommunicator import TcpClientEndChar
+from pythonCommunicator.TcpCommunicator import TcpClient, TCPEndStr
 
 class ATHexapodController:
 
@@ -12,7 +12,8 @@ class ATHexapodController:
         """
         Configure communication protocol
         """
-        self.communicator = TcpClientEndChar(address, port, connectTimeout, readTimeout, sendTimeout, endStr, maxLength)
+        messageHandler = TCPEndStr(endStr, maxLength)
+        self.communicator = TcpClient(address, port, connectTimeout, readTimeout, sendTimeout, messageHandler=messageHandler)
 
     def connect(self):
         """
