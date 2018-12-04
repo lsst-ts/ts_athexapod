@@ -7,7 +7,7 @@ class TestAtHexapod(unittest.TestCase):
 
     def setUp(self):
         self.hexController = ATHexapodController()
-        self.hexController.configureCommunicator(address='127.0.0.1', port=50000, connectTimeout=2, readTimeout=2, sendTimeout=2, endStr='\n', maxLength = 1024)
+        self.hexController.configureCommunicator(address='192.168.122.1', port=50000, connectTimeout=2, readTimeout=2, sendTimeout=2, endStr='\n', maxLength = 1024)
         self.hexController.connect()
         self.hexController.initializePosition()
         self.maxPosition = 4
