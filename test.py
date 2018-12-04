@@ -1,4 +1,4 @@
-from atHexapodController.ATHexapodController import ATHexapodController
+from ATHexapodController import ATHexapodController
 import time
 import unittest
 from random import randint
