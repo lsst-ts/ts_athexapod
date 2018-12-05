@@ -62,18 +62,18 @@ class CommunicateTestCase(unittest.TestCase):
         async def doit():
             harness = Harness(initial_state=salobj.State.ENABLED)
             start_time = time.time()
-            await harness.remote.evt_heartbeat.next(timeout=2)
-            await harness.remote.evt_heartbeat.next(timeout=2)
+            await harness.remote.evt_heartbeat.next(flush=True, timeout=2)
+            await harness.remote.evt_heartbeat.next(flush=True, timeout=2)
             duration = time.time() - start_time
             self.assertLess(abs(duration - 2), 1.5) # not clear what this limit should be
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip('reason')
+#    @unittest.skip('reason')
     def test_main(self):
         async def doit():
-            index = 1
-            process = await asyncio.create_subprocess_exec("/home/saluser/test/ts_salobjATHexapod/runATHexapodCSC.py", str(index))
+            index = 0
+            process = await asyncio.create_subprocess_exec("/home/saluser/test/ts_salobjATHexapod/bin.src/runATHexapodCSC.py", str(index))
             try:
                 remote = salobj.Remote(SALPY_ATHexapod, index)
                 summaryState_data = await remote.evt_summaryState.next(flush=False, timeout=10)
@@ -133,6 +133,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
+    @unittest.skip('reason')
     def test_moveToPosition_command(self):
         async def doit():
             harness = Harness(initial_state=salobj.State.ENABLED)
@@ -193,7 +194,7 @@ class CommunicateTestCase(unittest.TestCase):
 
             # send start; new state is DISABLED
             cmd_attr = getattr(harness.remote, f"cmd_start")
-            state_coro = harness.remote.evt_summaryState.next()
+            state_coro = harness.remote.evt_summaryState.next(flush=True)
             id_ack = await cmd_attr.start(cmd_attr.DataType())
             state = await state_coro
             self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
@@ -212,7 +213,7 @@ class CommunicateTestCase(unittest.TestCase):
 
             # send enable; new state is ENABLED
             cmd_attr = getattr(harness.remote, f"cmd_enable")
-            state_coro = harness.remote.evt_summaryState.next()
+            state_coro = harness.remote.evt_summaryState.next(flush=True)
             id_ack = await cmd_attr.start(cmd_attr.DataType())
             state = await state_coro
             self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
