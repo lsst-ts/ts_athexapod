@@ -3,6 +3,7 @@ config.log
 .sconf_temp
 *.cfgc
 *.pyc
+ospl-info.log
 
 # Built by sconsUtils
 bin/
