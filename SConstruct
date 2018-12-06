@@ -1,3 +1,3 @@
 # -*- python -*-
 from lsst.sconsUtils import scripts
-scripts.BasicSConstruct("example")
+scripts.BasicSConstruct("ts_salobjATHexpod")
