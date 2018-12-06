@@ -139,10 +139,10 @@ class ATHexapodCsc(salobj.BaseCsc):
         print('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
 
-    def end_standby(self):
+    def end_standby(self, id_data):
         if self.telTask and not self.telTask.done():
             self.telTask.cancel()
-        super().end_standby()
+        super().end_standby(id_data)
 
     async def telemetryLoop(self):
         if self.telTask and not self.telTask.done():
