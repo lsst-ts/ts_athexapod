@@ -1,3 +1,6 @@
+__all__ = ["ATHexapodCommand"]
+
+
 class ATHexapodCommand:
 
     hexapodAxis = ['X', 'Y', 'Z', 'U', 'V', 'W']

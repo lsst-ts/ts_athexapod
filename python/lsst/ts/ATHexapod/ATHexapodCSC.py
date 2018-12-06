@@ -17,16 +17,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__all__ = ["ATHexapodCsc"]
 
 from lsst.ts import salobj
 import asyncio
 import time
-import warnings
 
-try:
-    import SALPY_ATHexapod
-except ImportError:
-    warnings.warn("Could not import SALPY_ATHexapod; ATHexapodCsc will not work")
+import SALPY_ATHexapod
 
 from . import ATHexapodSim
 

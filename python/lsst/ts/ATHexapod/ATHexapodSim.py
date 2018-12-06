@@ -21,6 +21,7 @@
 """
 Simple hardware simulator to be used with ATHexapodCSC
 """
+__all__ = ["SimATHexapod"]
 
 import asyncio
 import time

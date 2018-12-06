@@ -1,4 +1,4 @@
-from ATHexapodController import ATHexapodController
+from lsst.ts import ATHexapod
 import time
 import unittest
 from random import randint
@@ -7,7 +7,7 @@ from random import randint
 class TestAtHexapod(unittest.TestCase):
 
     def setUp(self):
-        self.hexController = ATHexapodController()
+        self.hexController = ATHexapod.ATHexapodController()
         self.hexController.configureCommunicator(address='192.168.122.1', port=50000, connectTimeout=2,
                                                  readTimeout=2, sendTimeout=2, endStr='\n', maxLength=1024)
         self.hexController.connect()

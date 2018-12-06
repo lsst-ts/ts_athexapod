@@ -1,4 +1,6 @@
-from ATHexapodCommands import ATHexapodCommand
+__all__ = ["ATHexapodController"]
+
+from .ATHexapodCommands import ATHexapodCommand
 from lsst.ts.pythonCommunicator.TcpCommunicator import TcpClient, TCPEndStr
 
 
