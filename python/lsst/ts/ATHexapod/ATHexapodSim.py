@@ -43,7 +43,7 @@ class SimATHexapod:
         self.simLimits.posLimits.xyMax = xyMax
 
     def simSpeedLimits(self, xyMax, rxryMax, zMax, rzMax):
-        self.simLimits.speedLimits.xyMax = xyMax
+        self.simLimits.SpeedLimits.xyMax = xyMax
 
     async def simMoveToPosition(self, cmd):
         self.xnew = cmd.xpos
@@ -54,7 +54,7 @@ class SimATHexapod:
         # calculate velocities
         #
         deltaX = self.xnew - self.simState.xpos
-        self.xvel = self.simLimits.speedLimits.xyMax * np.sign(deltaX)
+        self.xvel = self.simLimits.SpeedLimits.xyMax * np.sign(deltaX)
         #
         await self.positionLoop()
 
