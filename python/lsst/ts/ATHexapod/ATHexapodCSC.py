@@ -188,7 +188,9 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         # send the event
         self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
-
+        
+        # there is no event associated with completing this command
+    
     async def do_moveToPosition(self, id_data):
 
         self.assert_enabled("moveToPosition")
@@ -202,17 +204,21 @@ class ATHexapodCsc(salobj.BaseCsc):
         # And here is where to put in some mock behavior for the hardware, or later,
         # code that connects to the actual hardware
 
-        await self.sim.simMoveToPosition(self.cmdState)
-
-        setattr(self.evt_settingsAppliedPositions_data, 'positionX', self.cmdState.xpos)
-        setattr(self.evt_settingsAppliedPositions_data, 'positionY', self.cmdState.ypos)
-        setattr(self.evt_settingsAppliedPositions_data, 'positionZ', self.cmdState.zpos)
-        setattr(self.evt_settingsAppliedPositions_data, 'positionU', self.cmdState.uvec)
-        setattr(self.evt_settingsAppliedPositions_data, 'positionV', self.cmdState.vvec)
-        setattr(self.evt_settingsAppliedPositions_data, 'positionW', self.cmdState.wvec)
+        # set "inPosition" event to say False
+        setattr(self.evt_inPosition_data, 'inPosition', False)
 
         # send the event
-        self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
+        # self.evt_inPosition.put(self.evt_inPosition_data)
+
+        # simulate the move
+
+        await self.sim.simMoveToPosition(self.cmdState)
+
+        # set "inPosition" event to say True
+        setattr(self.evt_inPosition_data, 'inPosition', True)
+
+        # send the event
+        # self.evt_inPosition.put(self.evt_inPosition_data)
 
     def do_setMaxSpeeds(self, id_data):
         self.assert_enabled("setMaxSpeeds")
@@ -231,6 +237,8 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         # send the event
         self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
+
+        # there is no event associated with completing this command
 
     def do_applyPositionOffset(self, id_data):
         self.assert_enabled("applyPositionOffset")
