@@ -220,7 +220,7 @@ class ATHexapodCommand:
         target += " U " + str(float(U)) if U is not None else ""
         target += " V " + str(float(V)) if V is not None else ""
         target += " W " + str(float(W)) if W is not None else ""
-        return "MVR"+target
+        return "MVR" + target
 
     def virtualMove(self, X: float = None, Y: float = None, Z: float = None,
                     U: float = None, V: float = None, W: float = None):
@@ -239,7 +239,7 @@ class ATHexapodCommand:
         target += " U " + str(float(U)) if U is not None else ""
         target += " V " + str(float(V)) if V is not None else ""
         target += " W " + str(float(W)) if W is not None else ""
-        return "VMO?"+target
+        return "VMO?" + target
 
     def setPivotPoint(self, X: float = None, Y: float = None, Z: float = None):
         """
@@ -253,7 +253,7 @@ class ATHexapodCommand:
         target += " X " + str(float(X)) if X is not None else ""
         target += " Y " + str(float(Y)) if Y is not None else ""
         target += " Z " + str(float(Z)) if Z is not None else ""
-        return "SPI"+target
+        return "SPI" + target
 
     def getPivotPoint(self):
         """
@@ -285,7 +285,7 @@ class ATHexapodCommand:
         target += " U " + ("1" if U else "0")
         target += " V " + ("1" if V else "0")
         target += " W " + ("1" if W else "0")
-        return "SSL"+target
+        return "SSL" + target
 
     def setClosedLoopVelocity(self, X: float = None, Y: float = None, Z: float = None,
                               U: float = None, V: float = None, W: float = None):
@@ -301,7 +301,7 @@ class ATHexapodCommand:
         target += " U " + str(float(U)) if U is not None else ""
         target += " V " + str(float(V)) if V is not None else ""
         target += " W " + str(float(W)) if W is not None else ""
-        return "VEL"+target
+        return "VEL" + target
 
     def getClosedLoopVelocity(self):
         """
@@ -322,7 +322,7 @@ class ATHexapodCommand:
         For axes A and B, the velocity can be set with VEL (p. 243).
         """
         velocity = float(velocity)
-        return "VLS "+str(velocity)
+        return "VLS " + str(velocity)
 
     def getSystemVelocity(self):
         """

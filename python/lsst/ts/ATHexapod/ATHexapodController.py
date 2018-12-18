@@ -1,7 +1,8 @@
 __all__ = ["ATHexapodController"]
 
-from .ATHexapodCommands import ATHexapodCommand
-from lsst.ts.pythonCommunicator.TcpCommunicator import TcpClient, TCPEndStr
+from lsst.ts.ATHexapod.ATHexapodCommands import ATHexapodCommand
+from lsst.ts.pythonCommunicator.TcpCommunicator import TcpClientAsync, TCPEndStrAsync
+import asyncio
 
 
 class ATHexapodController:
@@ -15,67 +16,68 @@ class ATHexapodController:
         """
         Configure communication protocol
         """
-        messageHandler = TCPEndStr(endStr, maxLength)
-        self.communicator = TcpClient(address, port, connectTimeout, readTimeout, sendTimeout,
-                                      messageHandler=messageHandler)
+        messageHandler = TCPEndStrAsync(endStr, maxLength)
+        self.communicator = TcpClientAsync(address, port, connectTimeout, readTimeout, sendTimeout,
+                                           messageHandler=messageHandler)
 
-    def connect(self):
+    async def connect(self):
         """
         connect to the hexapod
         """
-        self.communicator.connect()
+        await self.communicator.connect()
 
-    def disconnect(self):
+    async def disconnect(self):
         """
         disconnect from the hexapod
         """
-        self.communicator.disconnect()
+        await self.communicator.disconnect()
 
-    def moveToPosition(self, X: float = None, Y: float = None, Z: float = None,
-                       U: float = None, V: float = None, W: float = None):
+    async def moveToPosition(self, X: float=None, Y: float=None, Z: float=None,
+                             U: float=None, V: float=None, W: float=None):
         """
         move to position
         use setTargetPosition
         """
-        self.communicator.sendMessage(self.hexc.setTargetPosition(X, Y, Z, U, V, W))
+        await self.communicator.sendMessage(self.hexc.setTargetPosition(X, Y, Z, U, V, W))
 
-    def setSystemVelocity(self, systemVelocity: float = None):
+    async def setSystemVelocity(self, systemVelocity: float=None):
         """
         set system velocity
         use setSystemVelocity
         """
-        self.communicator.sendMessage(self.hexc.setSystemVelocity(systemVelocity))
+        await self.communicator.sendMessage(self.hexc.setSystemVelocity(systemVelocity))
 
-    def setPositionLimits(self, minPositionX=None, minPositionY=None, minPositionZ=None,
-                          minPositionU=None, minPositionV=None, minPositionW=None,
-                          maxPositionX=None, maxPositionY=None, maxPositionZ=None,
-                          maxPositionU=None, maxPositionV=None, maxPositionW=None):
+    async def setPositionLimits(self, minPositionX=None, minPositionY=None, minPositionZ=None,
+                                minPositionU=None, minPositionV=None, minPositionW=None,
+                                maxPositionX=None, maxPositionY=None, maxPositionZ=None,
+                                maxPositionU=None, maxPositionV=None, maxPositionW=None):
         """
         set position limits
         use setSystemVelocity
         """
-        self.communicator.sendMessage(self.hexc.setLowPositionSoftLimit(
+        await self.communicator.sendMessage(self.hexc.setLowPositionSoftLimit(
             minPositionX, minPositionY, minPositionZ, minPositionU, minPositionV, minPositionW))
-        self.communicator.sendMessage(self.hexc.setHighPositionSoftLimit(
+        await self.communicator.sendMessage(self.hexc.setHighPositionSoftLimit(
             maxPositionX, maxPositionY, maxPositionZ, maxPositionU, maxPositionV, maxPositionW))
 
-    def initializePosition(self, X: bool = True, Y: bool = False, Z: bool = False,
-                           U: bool = False, V: bool = False, W: bool = False):
+    async def initializePosition(self, X: bool=True, Y: bool=False, Z: bool=False,
+                                 U: bool=False, V: bool=False, W: bool=False):
         """
         set reference position to the device
         use performsReference
         """
-        self.communicator.sendMessage(self.hexc.performsReference(X, Y, Z, U, V, W))
+        await self.communicator.sendMessage(self.hexc.performsReference(X, Y, Z, U, V, W))
 
-    def moveOffset(self, dX: float = None, dY: float = None, dZ: float = None,
-                   dU: float = None, dV: float = None, dW: float = None):
+    async def moveOffset(self, dX: float=None, dY: float=None, dZ: float=None,
+                         dU: float=None, dV: float=None, dW: float=None):
         """
         move position by a relative position (related to current)
         use setTargetPosition
         """
-        self.communicator.sendMessage(self.hexc.setTargetRelativeToCurrentPosition(dX, dY, dZ, dU, dV, dW))
+        await self.communicator.sendMessage(self.hexc.setTargetRelativeToCurrentPosition(dX, dY, dZ, dU, dV,
+                                            dW))
 
-    def getErrors(self):
+    async def getErrors(self):
         """
         get error codes from the hardware as a list
         It looks for errors until there's no error in the device
@@ -84,196 +86,196 @@ class ATHexapodController:
         """
         errors = []
         for i in range(10):
-            self.communicator.sendMessage(self.hexc.getErrorNumber())
-            errorNumber = int(self.communicator.getMessage())
+            await self.communicator.sendMessage(self.hexc.getErrorNumber())
+            errorNumber = int(await self.communicator.getMessage())
             if errorNumber == 0:
                 break
             errors.append(errorNumber)
         return errors
 
-    def setPivot(self, X: float = None, Y: float = None, Z: float = None):
+    async def setPivot(self, X: float=None, Y: float=None, Z: float=None):
         """
         set pivot on the device
         use setPivotPoint
         """
-        self.communicator.sendMessage(self.hexc.setPivotPoint(X, Y, Z))
+        await self.communicator.sendMessage(self.hexc.setPivotPoint(X, Y, Z))
 
-    def getPivot(self):
+    async def getPivot(self):
         """
         get pivot on the device
         use getPivotPoint
         """
-        self.communicator.sendMessage(self.hexc.getPivotPoint())
-        axis1, pivotX = self.communicator.getMessage().split("=")
-        axis2, pivotY = self.communicator.getMessage().split("=")
-        axis3, pivotZ = self.communicator.getMessage().split("=")
+        await self.communicator.sendMessage(self.hexc.getPivotPoint())
+        axis1, pivotX = str(await self.communicator.getMessage()).split("=")
+        axis2, pivotY = str(await self.communicator.getMessage()).split("=")
+        axis3, pivotZ = str(await self.communicator.getMessage()).split("=")
         return [float(pivotX), float(pivotY), float(pivotZ)]
 
-    def setSoftLimit(self, X: bool = None, Y: bool = None, Z: bool = None,
-                     U: bool = None, V: bool = None, W: bool = None):
+    async def setSoftLimit(self, X: bool=None, Y: bool=None, Z: bool=None,
+                           U: bool=None, V: bool=None, W: bool=None):
         """
         Activate software limits
         """
-        self.communicator.sendMessage(self.hexc.setSoftLimit(X, Y, Z, U, V, W))
+        await self.communicator.sendMessage(self.hexc.setSoftLimit(X, Y, Z, U, V, W))
 
-    def setSoftLimitStatus(self, X: bool = None, Y: bool = None, Z: bool = None,
-                           U: bool = None, V: bool = None, W: bool = None):
+    async def setSoftLimitStatus(self, X: bool=None, Y: bool=None, Z: bool=None,
+                                 U: bool=None, V: bool=None, W: bool=None):
         """
         Get software limits status
         """
-        self.communicator.sendMessage(self.hexc.setSoftLimit(X, Y, Z, U, V, W))
+        await self.communicator.sendMessage(self.hexc.setSoftLimit(X, Y, Z, U, V, W))
 
-    def getSoftLimitStatus(self):
+    async def getSoftLimitStatus(self):
         """
         Get software limits status
         """
-        self.communicator.sendMessage(self.hexc.getSoftLimitStatus())
-        axis1, x = self.communicator.getMessage().split("=")
-        axis2, y = self.communicator.getMessage().split("=")
-        axis3, z = self.communicator.getMessage().split("=")
-        axis4, u = self.communicator.getMessage().split("=")
-        axis5, v = self.communicator.getMessage().split("=")
-        axis6, w = self.communicator.getMessage().split("=")
+        await self.communicator.sendMessage(self.hexc.getSoftLimitStatus())
+        axis1, x = str(await self.communicator.getMessage()).split("=")
+        axis2, y = str(await self.communicator.getMessage()).split("=")
+        axis3, z = str(await self.communicator.getMessage()).split("=")
+        axis4, u = str(await self.communicator.getMessage()).split("=")
+        axis5, v = str(await self.communicator.getMessage()).split("=")
+        axis6, w = str(await self.communicator.getMessage()).split("=")
         return bool(int(x)), bool(int(y)), bool(int(z)), bool(int(u)), bool(int(v)), bool(int(w))
 
-    def stopMotion(self):
+    async def stopMotion(self):
         """
         stop all motion
         use stopAllAxes
         """
-        self.communicator.sendMessage(self.hexc.stopAllAxes())
+        await self.communicator.sendMessage(self.hexc.stopAllAxes())
 
-    def validPosition(self, X: float = None, Y: float = None, Z: float = None,
-                      U: float = None, V: float = None, W: float = None):
+    async def validPosition(self, X: float=None, Y: float=None, Z: float=None,
+                            U: float=None, V: float=None, W: float=None):
         """
         Check if position commanded can be reached.
         Return True if possible and False if not
         use virtualMove
         """
-        self.communicator.sendMessage(self.hexc.virtualMove(X, Y, Z, U, V, W))
-        return bool(int(self.communicator.getMessage()))
+        await self.communicator.sendMessage(self.hexc.virtualMove(X, Y, Z, U, V, W))
+        return bool(int(await self.communicator.getMessage()))
 
-    def getTargetPositions(self):
+    async def getTargetPositions(self):
         """
         Function in charge to query positions
         """
-        self.communicator.sendMessage(self.hexc.getTargetPosition())
-        axis1, x = self.communicator.getMessage().split("=")
-        axis2, y = self.communicator.getMessage().split("=")
-        axis3, z = self.communicator.getMessage().split("=")
-        axis4, u = self.communicator.getMessage().split("=")
-        axis5, v = self.communicator.getMessage().split("=")
-        axis6, w = self.communicator.getMessage().split("=")
+        await self.communicator.sendMessage(self.hexc.getTargetPosition())
+        axis1, x = str(await self.communicator.getMessage()).split("=")
+        axis2, y = str(await self.communicator.getMessage()).split("=")
+        axis3, z = str(await self.communicator.getMessage()).split("=")
+        axis4, u = str(await self.communicator.getMessage()).split("=")
+        axis5, v = str(await self.communicator.getMessage()).split("=")
+        axis6, w = str(await self.communicator.getMessage()).split("=")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
-    def getUnits(self):
+    async def getUnits(self):
         """
         Get positions unit
         :return:
         """
-        self.communicator.sendMessage(self.hexc.getPositionUnit())
-        axis1, xunit = self.communicator.getMessage().split("=")
-        axis2, yunit = self.communicator.getMessage().split("=")
-        axis3, zunit = self.communicator.getMessage().split("=")
-        axis4, uunit = self.communicator.getMessage().split("=")
-        axis5, vunit = self.communicator.getMessage().split("=")
-        axis6, wunit = self.communicator.getMessage().split("=")
+        await self.communicator.sendMessage(self.hexc.getPositionUnit())
+        axis1, xunit = str(await self.communicator.getMessage()).split("=")
+        axis2, yunit = str(await self.communicator.getMessage()).split("=")
+        axis3, zunit = str(await self.communicator.getMessage()).split("=")
+        axis4, uunit = str(await self.communicator.getMessage()).split("=")
+        axis5, vunit = str(await self.communicator.getMessage()).split("=")
+        axis6, wunit = str(await self.communicator.getMessage()).split("=")
         return [xunit, yunit, zunit, uunit, vunit, wunit]
 
-    def getRealPositions(self):
+    async def getRealPositions(self):
         """
         Function in charge to query the actual positions of the hexapod
         """
-        self.communicator.sendMessage(self.hexc.getRealPosition())
-        axis1, x = self.communicator.getMessage().split("=")
-        axis2, y = self.communicator.getMessage().split("=")
-        axis3, z = self.communicator.getMessage().split("=")
-        axis4, u = self.communicator.getMessage().split("=")
-        axis5, v = self.communicator.getMessage().split("=")
-        axis6, w = self.communicator.getMessage().split("=")
+        await self.communicator.sendMessage(self.hexc.getRealPosition())
+        axis1, x = str(await self.communicator.getMessage()).split("=")
+        axis2, y = str(await self.communicator.getMessage()).split("=")
+        axis3, z = str(await self.communicator.getMessage()).split("=")
+        axis4, u = str(await self.communicator.getMessage()).split("=")
+        axis5, v = str(await self.communicator.getMessage()).split("=")
+        axis6, w = str(await self.communicator.getMessage()).split("=")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
-    def getLowLimits(self):
+    async def getLowLimits(self):
         """
         get current low positions limits
         """
-        self.communicator.sendMessage(self.hexc.getLowPositionSoftLimit())
-        axis1, x = self.communicator.getMessage().split("=")
-        axis2, y = self.communicator.getMessage().split("=")
-        axis3, z = self.communicator.getMessage().split("=")
-        axis4, u = self.communicator.getMessage().split("=")
-        axis5, v = self.communicator.getMessage().split("=")
-        axis6, w = self.communicator.getMessage().split("=")
+        await self.communicator.sendMessage(self.hexc.getLowPositionSoftLimit())
+        axis1, x = str(await self.communicator.getMessage()).split("=")
+        axis2, y = str(await self.communicator.getMessage()).split("=")
+        axis3, z = str(await self.communicator.getMessage()).split("=")
+        axis4, u = str(await self.communicator.getMessage()).split("=")
+        axis5, v = str(await self.communicator.getMessage()).split("=")
+        axis6, w = str(await self.communicator.getMessage()).split("=")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
-    def getHighLimits(self):
+    async def getHighLimits(self):
         """
         Update current high positions limits
         """
-        self.communicator.sendMessage(self.hexc.getHighPositionSoftLimit())
-        axis1, x = str(self.communicator.getMessage()).split("=")
-        axis2, y = str(self.communicator.getMessage()).split("=")
-        axis3, z = str(self.communicator.getMessage()).split("=")
-        axis4, u = str(self.communicator.getMessage()).split("=")
-        axis5, v = str(self.communicator.getMessage()).split("=")
-        axis6, w = str(self.communicator.getMessage()).split("=")
+        await self.communicator.sendMessage(self.hexc.getHighPositionSoftLimit())
+        axis1, x = str(await self.communicator.getMessage()).split("=")
+        axis2, y = str(await self.communicator.getMessage()).split("=")
+        axis3, z = str(await self.communicator.getMessage()).split("=")
+        axis4, u = str(await self.communicator.getMessage()).split("=")
+        axis5, v = str(await self.communicator.getMessage()).split("=")
+        axis6, w = str(await self.communicator.getMessage()).split("=")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
-    def getSystemVelocity(self):
+    async def getSystemVelocity(self):
         """
         get current system velocity
         """
-        self.communicator.sendMessage(self.hexc.getSystemVelocity())
-        systemVelocity = float(self.communicator.getMessage())
+        await self.communicator.sendMessage(self.hexc.getSystemVelocity())
+        systemVelocity = float(await self.communicator.getMessage())
         return systemVelocity
 
-    def getOnTargetState(self):
+    async def getOnTargetState(self):
         """
         Returns true if it is on Target
         """
-        self.communicator.sendMessage(self.hexc.getOnTargetState())
-        Axis1, onTargetX = str(self.communicator.getMessage()).split("=")
-        Axis2, onTargetY = str(self.communicator.getMessage()).split("=")
-        Axis3, onTargetZ = str(self.communicator.getMessage()).split("=")
-        Axis4, onTargetU = str(self.communicator.getMessage()).split("=")
-        Axis5, onTargetV = str(self.communicator.getMessage()).split("=")
-        Axis6, onTargetW = str(self.communicator.getMessage()).split("=")
+        await self.communicator.sendMessage(self.hexc.getOnTargetState())
+        Axis1, onTargetX = str(await self.communicator.getMessage()).split("=")
+        Axis2, onTargetY = str(await self.communicator.getMessage()).split("=")
+        Axis3, onTargetZ = str(await self.communicator.getMessage()).split("=")
+        Axis4, onTargetU = str(await self.communicator.getMessage()).split("=")
+        Axis5, onTargetV = str(await self.communicator.getMessage()).split("=")
+        Axis6, onTargetW = str(await self.communicator.getMessage()).split("=")
         return (bool(int(onTargetX)), bool(int(onTargetY)), bool(int(onTargetZ)),
                 bool(int(onTargetU)), bool(int(onTargetV)), bool(int(onTargetW)))
 
-    def getMotionStatus(self):
+    async def getMotionStatus(self):
         """
         Returns motion status in order X, Y, Z, U, V, W, A, B
         where True means it's moving and False for not moving
         """
-        self.communicator.sendMessage(self.hexc.requestMotionStatus())
-        result = int(self.communicator.getMessage())
+        await self.communicator.sendMessage(self.hexc.requestMotionStatus())
+        result = int(await self.communicator.getMessage())
         status = '{0:08b}'.format(result)
         return (bool(status[7]), bool(status[6]), bool(status[5]), bool(status[4]),
                 bool(status[3]), bool(status[2]), bool(status[1]), bool(status[0]))
 
-    def getPositionChangeStatus(self):
+    async def getPositionChangeStatus(self):
         """
         Returns position change status for X, Y, Z, U, V, W, A, B
         where True means it's position has changed since last query
         """
-        self.communicator.sendMessage(self.hexc.queryForPositionChange())
-        result = int(self.communicator.getMessage())
+        await self.communicator.sendMessage(self.hexc.queryForPositionChange())
+        result = int(await self.communicator.getMessage())
         status = '{0:08b}'.format(result)
         return (bool(status[7]), bool(status[6]), bool(status[5]), bool(status[4]),
                 bool(status[3]), bool(status[2]), bool(status[1]), bool(status[0]))
 
-    def getReadyStatus(self):
+    async def getReadyStatus(self):
         """
         Check if the hardware is ready to get commands, and update
         current class variable  'self.controllerReady' accordingly
         """
-        self.communicator.sendMessage(self.hexc.requestControllerReadyStatus())
-        ready = self.communicator.getMessage() == "±"
+        await self.communicator.sendMessage(self.hexc.requestControllerReadyStatus())
+        ready = (await self.communicator.getMessage()) == "±"
         if ready == 1:
             return True
         else:
