@@ -109,6 +109,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         - State.ENABLED if you want the CSC immediately usable.
         - State.STANDBY if you want full emulation of a CSC.
     """
+
     def __init__(self, index, initial_state=salobj.State.STANDBY):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
@@ -138,6 +139,9 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         print('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
+
+    def do_start(self, id_data):
+        super().do_start(id_data)
 
     def end_standby(self, id_data):
         if self.telTask and not self.telTask.done():
@@ -188,9 +192,9 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         # send the event
         self.evt_settingsAppliedPositions.put(self.evt_settingsAppliedPositions_data)
-        
+
         # there is no event associated with completing this command
-    
+
     async def do_moveToPosition(self, id_data):
 
         self.assert_enabled("moveToPosition")
