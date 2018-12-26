@@ -46,44 +46,6 @@ class ConfigATHexapod:
         rzMax = 0.0
 
 
-class StateATHexapod:
-    time = 0.0
-    xpos = 0.0
-    ypos = 0.0
-    zpos = 0.0
-    uvec = 0.0
-    vvec = 0.0
-    wvec = 0.0
-    xoff = 0.0
-    yoff = 0.0
-    zoff = 0.0
-    uoff = 0.0
-    voff = 0.0
-    woff = 0.0
-    xpivot = 0.0
-    ypivot = 0.0
-    zpivot = 0.0
-
-
-class CmdATHexapod:
-    time = 0.0
-    xpos = 0.0
-    ypos = 0.0
-    zpos = 0.0
-    uvec = 0.0
-    vvec = 0.0
-    wvec = 0.0
-    xoff = 0.0
-    yoff = 0.0
-    zoff = 0.0
-    uoff = 0.0
-    voff = 0.0
-    woff = 0.0
-    xpivot = 0.0
-    ypivot = 0.0
-    zpivot = 0.0
-
-
 class SimATHexapod:
     hdwDelayApplyPositionLimits = 10  # seconds
     hdwDelayMoveToPosition = 5  # seconds

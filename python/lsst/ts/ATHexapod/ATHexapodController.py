@@ -109,7 +109,7 @@ class ATHexapodController:
         axis1, pivotX = str(await self.communicator.getMessage()).split("=")
         axis2, pivotY = str(await self.communicator.getMessage()).split("=")
         axis3, pivotZ = str(await self.communicator.getMessage()).split("=")
-        return [float(pivotX), float(pivotY), float(pivotZ)]
+        return float(pivotX), float(pivotY), float(pivotZ)
 
     async def setSoftLimit(self, X: bool=None, Y: bool=None, Z: bool=None,
                            U: bool=None, V: bool=None, W: bool=None):
@@ -181,7 +181,7 @@ class ATHexapodController:
         axis4, uunit = str(await self.communicator.getMessage()).split("=")
         axis5, vunit = str(await self.communicator.getMessage()).split("=")
         axis6, wunit = str(await self.communicator.getMessage()).split("=")
-        return [xunit, yunit, zunit, uunit, vunit, wunit]
+        return xunit, yunit, zunit, uunit, vunit, wunit
 
     async def getRealPositions(self):
         """
@@ -343,10 +343,10 @@ class ATHexapodPosition:
             self.minPositionW = float(minPositionW)
 
     def getLimits(self):
-        return [self.maxPositionX, self.maxPositionY, self.maxPositionZ,
-                self.maxPositionU, self.maxPositionV, self.maxPositionW,
-                self.minPositionX, self.minPositionY, self.minPositionZ,
-                self.minPositionU, self.minPositionV, self.minPositionW]
+        return self.maxPositionX, self.maxPositionY, self.maxPositionZ, \
+            self.maxPositionU, self.maxPositionV, self.maxPositionW, \
+            self.minPositionX, self.minPositionY, self.minPositionZ, \
+            self.minPositionU, self.minPositionV, self.minPositionW
 
     def updatePosition(self, positionX=None, positionY=None, positionZ=None,
                        positionU=None, positionV=None, positionW=None):
@@ -381,11 +381,11 @@ class ATHexapodPosition:
         """
         :return: Current position
         """
-        return [self.positionX, self.positionY, self.positionZ,
-                self.positionU, self.positionV, self.positionW]
+        return self.positionX, self.positionY, self.positionZ, \
+            self.positionU, self.positionV, self.positionW
 
     def getPivot(self):
-        return [self.pivotX, self.pivotY, self.pivotZ]
+        return self.pivotX, self.pivotY, self.pivotZ
 
     def getSystemVelocity(self):
         return self.systemVelocity
