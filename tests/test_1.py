@@ -10,7 +10,7 @@ class TestAtHexapod(unittest.TestCase):
     def setUp(self):
         async def doit():
             self.hexController = ATHexapodController()
-            self.hexController.configureCommunicator(address='192.168.0.15', port=50000, connectTimeout=5,
+            self.hexController.configureCommunicator(address='140.252.33.129', port=50000, connectTimeout=5,
                                                      readTimeout=4, sendTimeout=4, endStr="\n",
                                                      maxLength=1024)
             await self.hexController.connect()
