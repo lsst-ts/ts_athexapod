@@ -6,6 +6,7 @@ import inspect
 from lsst.ts.ATHexapod.ATHexapodConfiguration import ConfigurationKeeper
 from lsst.ts.ATHexapod.ATHexapodController import ATHexapodController
 import asyncio
+import time
 
 
 class StateATHexapodPosition:
@@ -47,9 +48,19 @@ class Model:
         self.hexController = ATHexapodController()
 
     def updateSettings(self, settingsToApply):
+        """Update settings according to settingsToApply
+
+        Arguments:
+            settingsToApply {String} -- SettingsToApply from start command that defines
+            what set of settings to use.
+        """
+
         self.configuration.updateConfiguration(settingsToApply)
 
     async def initialize(self):
+        """Initialize and connect to TCP PI Hexapod controller socket
+        """
+
         tcpConfiguration = self.configuration.getTcpConfiguration()
 
         endStr = '\n' if tcpConfiguration.endStr is "endl" else '\n'
@@ -126,6 +137,15 @@ class Model:
                                                    maxPositionW=salCommand.wMax)
 
     async def setMaxSpeeds(self, salCommand):
+        """Set maximum speeds, won't be implemented for first version
+
+        Arguments:
+            salCommand {cmd_setMaxSpeeds_data} -- Maximum speeds to define in the controller
+
+        Raises:
+            ValueError -- Error occurs
+        """
+
         self.assertInMotion(inspect.currentframe().f_code.co_name)
         raise ValueError("Command not implemented...")
 
@@ -139,29 +159,74 @@ class Model:
         await self.updateState()
         self.assertInMotion(inspect.currentframe().f_code.co_name)
         positionToCheck = StateATHexapodPosition()
-        positionToCheck.x = getattr(self.realPosition, 'xpos') + salCommand.x
-        positionToCheck.y = getattr(self.realPosition, 'ypos') + salCommand.y
-        positionToCheck.z = getattr(self.realPosition, 'zvec') + salCommand.z
-        positionToCheck.u = getattr(self.realPosition, 'uvec') + salCommand.u
-        positionToCheck.v = getattr(self.realPosition, 'vvec') + salCommand.v
-        positionToCheck.w = getattr(self.realPosition, 'wvec') + salCommand.w
+        positionToCheck.x = getattr(self.targetPosition, 'xpos') + salCommand.x
+        positionToCheck.y = getattr(self.targetPosition, 'ypos') + salCommand.y
+        positionToCheck.z = getattr(self.targetPosition, 'zvec') + salCommand.z
+        positionToCheck.u = getattr(self.targetPosition, 'uvec') + salCommand.u
+        positionToCheck.v = getattr(self.targetPosition, 'vvec') + salCommand.v
+        positionToCheck.w = getattr(self.targetPosition, 'wvec') + salCommand.w
         await self.assertValidPosition.validPosition(X=positionToCheck.x, Y=positionToCheck.y,
                                                      Z=positionToCheck.z, U=positionToCheck.u,
                                                      V=positionToCheck.v, W=positionToCheck.w)
         await self.hexController.moveOffset(dX=salCommand.x, dY=salCommand.y, dZ=salCommand.z,
                                             dU=salCommand.u, dV=salCommand.v, dW=salCommand.w)
+        self.updateCommandedPosition(X=positionToCheck.x, Y=positionToCheck.y, Z=positionToCheck.z,
+                                     U=positionToCheck.u, V=positionToCheck.v, W=positionToCheck.w)
         await self.updateState()
 
     async def stopAllAxes(self, salCommand):
+        """Sends stop all motion to the PI hexapod controller
+
+        Arguments:
+            salCommand {cmd_stopAllAxes_data} -- Stop command payload
+        """
+
         await self.updateState()
         self.assertInMotion(inspect.currentframe().f_code.co_name)
         self.hexController.stopMotion()
 
-    def pivot(self, salCommand):
+    async def pivot(self, salCommand):
+        """Set pivot into the PI Hexapod controller. U, V and W need to be 0 if not it will report an error.
+
+        Arguments:
+            salCommand {cmd_pivot_data} -- Pivot command payload. It has x, y and z
+
+        Raises:
+            ValueError -- Command payload not all 0 for u, v, w
+            ValueError -- Pivot in the PI Hexapod controller don't match with command
+        """
+
+        await self.updateState()
         self.assertInMotion(inspect.currentframe().f_code.co_name)
-        pass
+        threshold = 0.001
+        pivotingPossible = (abs(self.realPosition.u) > threshold) \
+            or (abs(self.realPosition.v) > threshold) \
+            or (abs(self.realPosition.w) > threshold)
+        if pivotingPossible:
+            raise ValueError(
+                f"To do a pivot all u, v, w need to be 0, currently u={self.realPosition.u}, \
+                v={self.realPosition.v}, w={self.realPosition.w}...")
+        self.hexController.setPivot(X=salCommand.x, Y=salCommand.y, Z=salCommand.z)
+        self.updateCommandedPosition(Xp=salCommand.x, Yp=salCommand.y, Zp=salCommand.z)
+        xp, yp, zp = self.hexController.getPivot()
+        self.updatePosition(Xp=xp, Yp=yp, Zp=zp)
+        pivotingNotProperlySet = (abs(xp - salCommand.x) > threshold) or \
+            (abs(yp - salCommand.y) > threshold) or \
+            (abs(zp - salCommand.z) > threshold)
+        if pivotingNotProperlySet:
+            raise ValueError(
+                f"Pivot not properly set, device pivot x={xp}, y={yp}, z={zp}...")
 
     def assertInMotion(self, commandName):
+        """Check if it is in NOTINMOTIONSATE and raise an error when it is in motion
+
+        Arguments:
+            commandName {String} -- Command name to add as information in the error
+
+        Raises:
+            ValueError -- Error log to announce that the command is not valid in current state
+        """
+
         if(self.detailedState != HexapodDetailedStates.NOTINMOTIONSTATE):
             raise ValueError(f"{commandName} not allowed in state {self.detailedState.name!r}")
 
@@ -186,6 +251,20 @@ class Model:
     def updatePosition(self, X: float = None, Y: float = None, Z: float = None, U: float = None,
                        V: float = None, W: float = None, Xp: float = None,
                        Yp: float = None, Zp: float = None):
+        """Update position in the class
+
+        Keyword Arguments:
+            X {float} -- [X position in mm] (default: {None})
+            Y {float} -- [Y position in mm] (default: {None})
+            Z {float} -- [Z position in mm] (default: {None})
+            U {float} -- [U position in degrees] (default: {None})
+            V {float} -- [V position in degrees] (default: {None})
+            W {float} -- [W position in degrees] (default: {None})
+            Xp {float} -- [Y position in mm] (default: {None})
+            Yp {float} -- [Y position in mm] (default: {None})
+            Zp {float} -- [Y position in mm] (default: {None})
+        """
+
         if X:
             setattr(self.realPosition, 'xpos', X)
         if Y:
@@ -204,6 +283,111 @@ class Model:
             setattr(self.realPosition, 'ypivot', Yp)
         if Zp:
             setattr(self.realPosition, 'zpivot', Zp)
+
+    def updateCommandedPosition(self, X: float = None, Y: float = None,
+                                Z: float = None, U: float = None,
+                                V: float = None, W: float = None, Xp: float = None,
+                                Yp: float = None, Zp: float = None):
+        """Update commanded position in the class
+
+        Keyword Arguments:
+            X {float} -- [X position in mm] (default: {None})
+            Y {float} -- [Y position in mm] (default: {None})
+            Z {float} -- [Z position in mm] (default: {None})
+            U {float} -- [U position in degrees] (default: {None})
+            V {float} -- [V position in degrees] (default: {None})
+            W {float} -- [W position in degrees] (default: {None})
+            Xp {float} -- [Y position in mm] (default: {None})
+            Yp {float} -- [Y position in mm] (default: {None})
+            Zp {float} -- [Y position in mm] (default: {None})
+        """
+
+        if X:
+            setattr(self.targetPosition, 'xpos', X)
+        if Y:
+            setattr(self.targetPosition, 'ypos', Y)
+        if Z:
+            setattr(self.targetPosition, 'zpos', Z)
+        if U:
+            setattr(self.targetPosition, 'uvec', U)
+        if V:
+            setattr(self.targetPosition, 'vvec', V)
+        if W:
+            setattr(self.targetPosition, 'wvec', W)
+        if Xp:
+            setattr(self.targetPivot, 'xpivot', Xp)
+        if Yp:
+            setattr(self.targetPivot, 'ypivot', Yp)
+        if Zp:
+            setattr(self.targetPivot, 'zpivot', Zp)
+
+    def getTcpConfiguration(self):
+        """Return current TCP configuration
+
+        Returns:
+            [TcpConfiguration] -- TCP Configuration from the last settingsToApply used
+        """
+
+        tcpConfiguration = self.configuration.getTcpConfiguration()
+        return tcpConfiguration
+
+    def getInitialHexapodSetup(self):
+        """Returns the initialHexapodSetup from the file
+
+        Returns:
+            [InitialHexapodSetup] -- initialHexapodSetup from the last settingsToApply used
+        """
+
+        initialHexapodSetup = self.configuration.getInitialHexapodSetup()
+        return initialHexapodSetup
+
+    async def getRealPosition(self):
+        """Return last positition read
+
+        Returns:
+            [StateATHexapodPosition] -- Last position read from PI Hexapod controller
+        """
+        await self.updateState()
+        return self.realPosition
+
+    def getTargetPosition(self):
+        """Return last target positition
+
+        Returns:
+            [CmdATHexapodPosition] -- Last position commanded from moveToPosition or offset commands
+        """
+
+        return self.targetPosition
+
+    def getTargetPivot(self):
+        """Return last target pivot positition
+
+        Returns:
+            [CmdATHexapodPivot] -- Last pivot commanded from pivot command
+        """
+
+        return self.targetPivot
+
+    def getSettingVersions(self):
+        """Return string with comma separated values as recommended Settings
+
+        Returns:
+            [string] -- list of recommended settings
+        """
+
+        return self.configuration.getSettingVersions()
+
+    async def waitUntilPosition(self):
+        initial_time = time.time()
+        timeout = 600
+        loopDelay = 0.3
+        while (time.time() - initial_time < timeout):
+            await self.updateState()
+            await asyncio.Sleep(loopDelay)
+            if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
+                break
+        if (time.time() - initial_time >= timeout):
+            raise ValueError("Position never reached...")
 
 
 class HexapodDetailedStates(Enum):

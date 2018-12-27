@@ -60,6 +60,15 @@ class ConfigurationKeeper:
         tcpConfiguration.maxLength = self.localConfiguration.readValue('maxLength')
         return tcpConfiguration
 
+    def getSettingVersions(self):
+        """Return string with comma separated values as recommended Settings
+
+        Returns:
+            [String] -- list of recommended settings
+        """
+
+        return self.mainConfiguration.getRecommendedSettings()
+
 
 class InitialHexapodSetup:
     def __init__(self):

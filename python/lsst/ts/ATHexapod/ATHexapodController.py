@@ -2,7 +2,7 @@ __all__ = ["ATHexapodController"]
 
 from lsst.ts.ATHexapod.ATHexapodCommands import ATHexapodCommand
 from lsst.ts.pythonCommunicator.TcpCommunicator import TcpClientAsync, TCPEndStrAsync
-import asyncio
+# import asyncio
 
 
 class ATHexapodController:
