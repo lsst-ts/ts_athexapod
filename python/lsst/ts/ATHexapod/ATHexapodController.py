@@ -253,10 +253,13 @@ class ATHexapodController:
         where True means it's moving and False for not moving
         """
         await self.communicator.sendMessage(self.hexc.requestMotionStatus())
-        result = int(await self.communicator.getMessage())
+        message = await self.communicator.getMessage()
+        print("Message " + message)
+        result = int(message, 16)
         status = '{0:08b}'.format(result)
-        return (bool(status[7]), bool(status[6]), bool(status[5]), bool(status[4]),
-                bool(status[3]), bool(status[2]), bool(status[1]), bool(status[0]))
+
+        return (bool(int(status[7])), bool(int(status[6])), bool(int(status[5])), bool(int(status[4])),
+                bool(int(status[3])), bool(int(status[2])), bool(int(status[1])), bool(int(status[0])))
 
     async def getPositionChangeStatus(self):
         """
