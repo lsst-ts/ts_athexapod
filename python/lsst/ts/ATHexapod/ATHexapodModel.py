@@ -96,7 +96,7 @@ class Model:
         """Safely shutdown the ATHexapod
         """
 
-        self.hexController.disconnect()
+        await self.hexController.disconnect()
 
     def isInMotion(self):
         """Check if ATHexapod is in motion and return True if it is in motion
