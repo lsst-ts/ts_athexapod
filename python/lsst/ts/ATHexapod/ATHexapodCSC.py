@@ -20,7 +20,7 @@
 __all__ = ["ATHexapodCsc"]
 
 from lsst.ts import salobj
-from lsst.ts.ATHexapod.ATHexapodModel import Model
+from lsst.ts.ATHexapod.ATHexapodModel import Model, HexapodErrorCodes
 import asyncio
 import time
 
@@ -52,6 +52,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.model = Model()
         self.appliedSettingsMatchStart = False
         self.telemetryInterval = 1
+        self.recoverTimeout = 5  # Times that the CSC try to recover communication before going to Fault state
 
         self.telTask = None
         #
@@ -66,6 +67,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.evt_detailedState_data = self.evt_detailedState.DataType()
         self.evt_settingVersions_data = self.evt_settingVersions.DataType()
         self.evt_inPosition_data = self.evt_inPosition.DataType()
+        self.evt_errorCode_data = self.evt_errorCode.DataType()
 
         # set up telemetry data structures
 
@@ -92,7 +94,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         super().do_start(id_data)
 
     async def do_standby(self, id_data):
-        await self.model.diconnect()
+        await self.model.disconnect()
         super().do_standby(id_data)
 
     def end_standby(self, id_data):
@@ -101,10 +103,23 @@ class ATHexapodCsc(salobj.BaseCsc):
     async def telemetryLoop(self):
         if self.telTask and not self.telTask.done():
             self.telTask.cancel()
-
+        i = 0
         while True:
             if self.summary_state in (salobj.State.DISABLED, salobj.State.ENABLED):
-                await self.sendTelemetry()
+                try:
+                    await self.sendTelemetry()
+                    i = 0
+                except Exception as err:
+                    i = i + 1
+                    # if there are more than self.recoverTimeout attempt and is not recovering,
+                    # go to Fault state
+                    if i >= self.recoverTimeout:
+                        self.evt_errorCode_data.errorCode = HexapodErrorCodes.DEVICENOTFOUND.value
+                        self.evt_errorCode_data.errorReport = "Device not found in the network"
+                        self.evt_errorCode_data.traceback = str(err)
+                        self.evt_errorCode.put(self.evt_errorCode_data)
+                        await self.model.disconnect()
+                        self.fault()
             self.telTask = await asyncio.sleep(self.telemetryInterval)
 
     async def sendTelemetry(self):

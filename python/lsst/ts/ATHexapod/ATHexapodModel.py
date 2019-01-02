@@ -92,7 +92,7 @@ class Model:
         command.z = self.initialSetup.pivotZ
         await self.pivot(command)
 
-    async def diconnect(self):
+    async def disconnect(self):
         """Safely shutdown the ATHexapod
         """
 
@@ -544,3 +544,7 @@ class Model:
 class HexapodDetailedStates(Enum):
     INMOTIONSTATE = SALPY_ATHexapod.ATHexapod_shared_DetailedState_InMotionState
     NOTINMOTIONSTATE = SALPY_ATHexapod.ATHexapod_shared_DetailedState_NotInMotionState
+
+
+class HexapodErrorCodes(Enum):
+    DEVICENOTFOUND = 8261

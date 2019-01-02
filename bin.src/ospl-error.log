@@ -1,0 +1,32 @@
+========================================================================================
+Report      : ERROR
+Date        : Mon Dec 31 08:57:31 EST 2018
+Description : Splice-daemon failed to renew its lease within the configured lease expiry-time (10.000000000). The lease renewal took 233007.238490381 s.
+Node        : localhost.localdomain
+Process     : python3.6 <12219>
+Thread      : OSPL Lease Renew Thread 7f7768570700
+Internals   : V6.4.140320OSS/24b1387/24b1387/OpenSplice domain service/spliced.c/153/0/1546264651.899638713
+========================================================================================
+Report      : ERROR
+Date        : Mon Dec 31 08:57:32 EST 2018
+Description : Durability failed to renew its lease within the configured lease expiry-time (10.000000000). The lease renewal took 233007.239911034 s.
+Node        : localhost.localdomain
+Process     : python3.6 <12219>
+Thread      : leaseThread 7f7768322700
+Internals   : V6.4.140320OSS/24b1387/24b1387/Durability Service/d_durability.c/182/0/1546264652.492971936
+========================================================================================
+Report      : ERROR
+Date        : Wed Jan 02 07:31:50 EST 2019
+Description : Durability failed to renew its lease within the configured lease expiry-time (10.000000000). The lease renewal took 141901.978290923 s.
+Node        : localhost.localdomain
+Process     : python3.6 <15891>
+Thread      : leaseThread 7fcdf5647700
+Internals   : V6.4.140320OSS/24b1387/24b1387/Durability Service/d_durability.c/182/0/1546432310.551718109
+========================================================================================
+Report      : ERROR
+Date        : Wed Jan 02 07:31:51 EST 2019
+Description : Splice-daemon failed to renew its lease within the configured lease expiry-time (10.000000000). The lease renewal took 141901.978390102 s.
+Node        : localhost.localdomain
+Process     : python3.6 <15891>
+Thread      : OSPL Lease Renew Thread 7fcdf5895700
+Internals   : V6.4.140320OSS/24b1387/24b1387/OpenSplice domain service/spliced.c/153/0/1546432311.762323397
