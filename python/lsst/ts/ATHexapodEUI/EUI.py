@@ -9,11 +9,12 @@ from lsst.ts.ATHexapodEUI.ATHexapodRemote import ATHexapodRemote
 from lsst.ts.ATHexapodEUI.ApplicationControlWidget import ApplicationControlWidget
 from lsst.ts.ATHexapodEUI.ApplicationStatusWidget import ApplicationStatusWidget
 from lsst.ts.ATHexapodEUI.ApplicationPaginationWidget import ApplicationPaginationWidget
-
+from lsst.ts.ATHexapodEUI.HexapodControlsPageWidget import HexapodControlsPageWidget
 from lsst.ts.ATHexapodEUI.OverviewPageWidget import OverviewPageWidget
 
 from pyqtgraph.Qt import QtGui
 from PyQt5.QtCore import QTimer
+
 
 class EUI(QtGui.QDialog):
     def __init__(self, ATHexapod, parent=None):
@@ -28,6 +29,7 @@ class EUI(QtGui.QDialog):
         self.middleLayerLayout = QtGui.QHBoxLayout()
         self.applicationPagination = ApplicationPaginationWidget(ATHexapod)
         self.applicationPagination.addPage("Overview", OverviewPageWidget(ATHexapod))
+        self.applicationPagination.addPage("Controls", HexapodControlsPageWidget(ATHexapod))
         self.middleLayerLayout.addWidget(self.applicationPagination)
         self.bottomLayerLayout = QtGui.QHBoxLayout()
         self.layout.addLayout(self.topLayerLayout)

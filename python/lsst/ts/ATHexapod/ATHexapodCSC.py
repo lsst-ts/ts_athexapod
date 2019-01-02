@@ -50,6 +50,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         super().__init__(SALPY_ATHexapod, index)
         self.summary_state = initial_state
         self.model = Model()
+        self.detailedState = 0  # Last deatiled state published. Initialized at 0, which doesn't exist in SAL
         self.appliedSettingsMatchStart = False
         self.telemetryInterval = 1
         self.recoverTimeout = 5  # Times that the CSC try to recover communication before going to Fault state
@@ -151,6 +152,8 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         self.tel_positionStatus.put(self.tel_positionStatus_data)
 
+        self.publishDetailedState(self.model.detailedState.value)
+
     async def do_applyPositionLimits(self, id_data):
         self.assert_enabled("applyPositionLimits")
         await self.model.applyPositionLimits(id_data.data)
@@ -174,6 +177,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.assert_enabled("moveToPosition")
 
         await self.model.moveToPosition(id_data.data)
+        self.publishPositionUpdate()
         await self.waitUntilStop()
 
     async def do_setMaxSpeeds(self, id_data):
@@ -197,6 +201,7 @@ class ATHexapodCsc(salobj.BaseCsc):
     async def do_applyPositionOffset(self, id_data):
         self.assert_enabled("applyPositionOffset")
         await self.model.applyPositionOffset(id_data.data)
+        self.publishPositionUpdate()
         await self.waitUntilStop()
 
     async def do_stopAllAxes(self, id_data):
@@ -234,6 +239,16 @@ class ATHexapodCsc(salobj.BaseCsc):
             self.evt_appliedSettingsMatchStart.put(self.evt_appliedSettingsMatchStart_data)
             self.appliedSettingsMatchStart = value
 
+    def publishPositionUpdate(self):
+        self.evt_positionUpdate_data.positionX = self.model.targetPosition.xpos
+        self.evt_positionUpdate_data.positionY = self.model.targetPosition.ypos
+        self.evt_positionUpdate_data.positionZ = self.model.targetPosition.xpos
+        self.evt_positionUpdate_data.positionU = self.model.targetPosition.uvec
+        self.evt_positionUpdate_data.positionV = self.model.targetPosition.vvec
+        self.evt_positionUpdate_data.positionW = self.model.targetPosition.wvec
+
+        self.evt_positionUpdate.put(self.evt_positionUpdate_data)
+
     def publishSettingsAppliedTcp(self):
         tcpSettings = self.model.getTcpConfiguration()
 
@@ -244,11 +259,24 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.evt_settingsAppliedTcp_data.connectionTimeout = float(tcpSettings.sendTimeout)
         self.evt_settingsAppliedTcp.put(self.evt_settingsAppliedTcp_data)
 
+    def publishDetailedState(self, detailedState):
+        """Publish detailedState when value cahnge
+
+        Arguments:
+            value {HexapodDetailedStates} -- Value to update detailedState
+        """
+        if(detailedState == self.detailedState):
+            pass
+        else:
+            self.evt_detailedState_data.detailedState = detailedState
+            self.evt_detailedState.put(self.evt_detailedState_data)
+            self.detailedState = detailedState
+
     def getCurrentTime(self):
         """Get curret time from SAL
 
         Returns:
-            [double] -- Timestamo from SAL
+            [double] -- Timestamp from SAL
         """
 
         return self.salinfo.manager.getCurrentTime()

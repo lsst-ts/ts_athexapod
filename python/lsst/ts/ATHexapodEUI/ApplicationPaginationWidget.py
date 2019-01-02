@@ -1,18 +1,18 @@
+from pyqtgraph.Qt import QtGui
 
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QStackedLayout, QListWidget
 
-class ApplicationPaginationWidget(QWidget):
+class ApplicationPaginationWidget(QtGui.QWidget):
     def __init__(self, ATHexapod):
-        QWidget.__init__(self)
+        QtGui.QWidget.__init__(self)
         self.ATHexapod = ATHexapod
-        self.layout = QHBoxLayout()
-        self.listLayout = QVBoxLayout()
-        self.pageLayout = QStackedLayout()
+        self.layout = QtGui.QHBoxLayout()
+        self.listLayout = QtGui.QVBoxLayout()
+        self.pageLayout = QtGui.QStackedLayout()
         self.layout.addLayout(self.listLayout)
         self.layout.addLayout(self.pageLayout)
         self.setLayout(self.layout)
 
-        self.pageList = QListWidget()
+        self.pageList = QtGui.QListWidget()
         self.pageList.itemSelectionChanged.connect(self.changePage)
         self.listLayout.addWidget(self.pageList)
         self.pages = []
