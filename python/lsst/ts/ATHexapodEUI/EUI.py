@@ -11,6 +11,7 @@ from lsst.ts.ATHexapodEUI.ApplicationStatusWidget import ApplicationStatusWidget
 from lsst.ts.ATHexapodEUI.ApplicationPaginationWidget import ApplicationPaginationWidget
 from lsst.ts.ATHexapodEUI.HexapodControlsPageWidget import HexapodControlsPageWidget
 from lsst.ts.ATHexapodEUI.OverviewPageWidget import OverviewPageWidget
+from lsst.ts.ATHexapodEUI.PositionPageWidget import PositionPageWidget
 
 from pyqtgraph.Qt import QtGui
 from PyQt5.QtCore import QTimer
@@ -30,6 +31,7 @@ class EUI(QtGui.QDialog):
         self.applicationPagination = ApplicationPaginationWidget(ATHexapod)
         self.applicationPagination.addPage("Overview", OverviewPageWidget(ATHexapod))
         self.applicationPagination.addPage("Controls", HexapodControlsPageWidget(ATHexapod))
+        self.applicationPagination.addPage("Telemetry", PositionPageWidget(ATHexapod))
         self.middleLayerLayout.addWidget(self.applicationPagination)
         self.bottomLayerLayout = QtGui.QHBoxLayout()
         self.layout.addLayout(self.topLayerLayout)
