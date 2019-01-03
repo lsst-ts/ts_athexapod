@@ -13,3 +13,4 @@
 *try to move while it is moving (move to position and offset)
 *try invalid pivot
 *try position limits
+-define python depencencies properly

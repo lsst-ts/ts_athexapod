@@ -1,0 +1,11 @@
+recommendedSettings: 
+    - "Default1"
+    - "Default2"
+aliases:
+    Default1:
+        settingSet: "Test"
+        settingVersion: 1
+    Default2:
+        settingSet: "Test"
+        settingVersion: 2
+simulated: 0

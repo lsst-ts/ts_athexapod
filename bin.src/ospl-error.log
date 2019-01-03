@@ -30,3 +30,19 @@ Node        : localhost.localdomain
 Process     : python3.6 <15891>
 Thread      : OSPL Lease Renew Thread 7fcdf5895700
 Internals   : V6.4.140320OSS/24b1387/24b1387/OpenSplice domain service/spliced.c/153/0/1546432311.762323397
+========================================================================================
+Report      : ERROR
+Date        : Thu Jan 03 07:42:24 EST 2019
+Description : Splice-daemon failed to renew its lease within the configured lease expiry-time (10.000000000). The lease renewal took 56457.277762228 s.
+Node        : localhost.localdomain
+Process     : python3.6 <14568>
+Thread      : OSPL Lease Renew Thread 7fe9fa0c0700
+Internals   : V6.4.140320OSS/24b1387/24b1387/OpenSplice domain service/spliced.c/153/0/1546519344.640839835
+========================================================================================
+Report      : ERROR
+Date        : Thu Jan 03 07:42:25 EST 2019
+Description : Durability failed to renew its lease within the configured lease expiry-time (10.000000000). The lease renewal took 56457.276185266 s.
+Node        : localhost.localdomain
+Process     : python3.6 <14568>
+Thread      : leaseThread 7fe9f9e3f700
+Internals   : V6.4.140320OSS/24b1387/24b1387/Durability Service/d_durability.c/182/0/1546519345.254968484

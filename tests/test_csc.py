@@ -49,7 +49,7 @@ class CommunicateTestCase(unittest.TestCase):
     def test_main(self):
         async def doit():
             index = 0
-            process = await asyncio.create_subprocess_exec("runATHexapodCSC.py", str(index))
+            process = await asyncio.create_subprocess_exec("../bin.src/runATHexapodCSC.py", str(index))
             try:
                 remote = salobj.Remote(SALPY_ATHexapod, index)
                 summaryState_data = await remote.evt_summaryState.next(flush=False, timeout=10)
@@ -83,7 +83,7 @@ class CommunicateTestCase(unittest.TestCase):
             harness = Harness(initial_state=salobj.State.ENABLED)
             # until the controller gets its first setArrays
             # it will not send any arrays events or telemetry
-            self.assertIsNone(harness.remote.evt_settingsAppliedPositions.get())
+            self.assertIsNone(harness.remote.evt_positionUpdate.get())
             self.assertIsNone(harness.remote.tel_timestamp.get())  # not sure this should be here
 
             # send the applyPositionLimits command with random data
@@ -92,7 +92,7 @@ class CommunicateTestCase(unittest.TestCase):
             await harness.remote.cmd_applyPositionLimits.start(cmd_data_sent, timeout=30)
 
             # see if new data was broadcast correctly
-            evt_data = await harness.remote.evt_settingsAppliedPositions.next(flush=False, timeout=30)
+            evt_data = await harness.remote.evt_positionUpdate.next(flush=False, timeout=30)
 
             print('cmd_data_sent:')
             for prop in dir(cmd_data_sent):
@@ -109,7 +109,7 @@ class CommunicateTestCase(unittest.TestCase):
     def test_moveToPosition_command(self):
         async def doit():
             harness = Harness(initial_state=salobj.State.ENABLED)
-            self.assertIsNone(harness.remote.evt_settingsAppliedPositions.get())
+            self.assertIsNone(harness.remote.evt_positionUpdate.get())
             self.assertIsNone(harness.remote.tel_timestamp.get())  # not sure this should be here
 
             # send the moveToPosition command with random data
@@ -118,7 +118,7 @@ class CommunicateTestCase(unittest.TestCase):
             await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=300)
 
             # see if new data was broadcast correctly
-            evt_data = await harness.remote.evt_settingsAppliedPositions.next(flush=False, timeout=30)
+            evt_data = await harness.remote.evt_positionUpdate.next(flush=False, timeout=30)
 
             print('cmd_data_sent:')
             for prop in dir(cmd_data_sent):
@@ -166,7 +166,9 @@ class CommunicateTestCase(unittest.TestCase):
 
             # send start; new state is DISABLED
             cmd_attr = getattr(harness.remote, f"cmd_start")
-            id_ack = await cmd_attr.start(cmd_attr.DataType())
+            cmd_attr_dataType = cmd_attr.DataType()
+            setattr(cmd_attr_dataType, "settingsToApply", "Default1")
+            id_ack = await cmd_attr.start(cmd_attr_dataType)
             self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
             self.assertEqual(id_ack.ack.error, 0)
 
