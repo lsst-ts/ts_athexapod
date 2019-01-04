@@ -56,7 +56,7 @@ class CommunicateTestCase(unittest.TestCase):
                 remote = salobj.Remote(SALPY_ATHexapod, index)
                 summaryState_data = await remote.evt_summaryState.next(flush=False, timeout=10)
                 self.assertEqual(summaryState_data.summaryState, salobj.State.STANDBY)
-
+                remote.evt_summaryState.flush()
                 id_ack = await remote.cmd_exitControl.start(remote.cmd_exitControl.DataType(), timeout=2)
                 self.assertEqual(id_ack.ack.ack, remote.salinfo.lib.SAL__CMD_COMPLETE)
                 summaryState_data = await remote.evt_summaryState.next(flush=False, timeout=10)
