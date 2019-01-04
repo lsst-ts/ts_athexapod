@@ -160,6 +160,12 @@ class ATHexapodCsc(salobj.BaseCsc):
         await self.publish_positionLimits()
         self.publish_appliedSettingsMatchStart(False)
 
+    def do_setLogLevel(self):
+        pass
+
+    def do_setSimulationMode(self):
+        pass
+
     async def publish_positionLimits(self):
         data = await self.model.getRealPositionLimits()
         # should I use getattr here instead of the more direct .xyMax?
