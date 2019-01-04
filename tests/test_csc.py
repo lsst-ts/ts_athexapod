@@ -35,7 +35,7 @@ class Harness:
 
 
 class CommunicateTestCase(unittest.TestCase):
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_heartbeat(self):
         async def doit():
             harness = Harness(initial_state=salobj.State.STANDBY)
@@ -47,7 +47,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_main(self):
         async def doit():
             index = 0
@@ -71,7 +71,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Skip to run tests 1 by 1 during development...")
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_applyPositionLimits_command(self):
         """Update the position limits through cmd_applyPositionLimits and then listen to 
         evt_settingsAppliedPositionLimits to check if the limits were applied.
@@ -115,7 +115,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Skip to run tests 1 by 1 during development...")
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_moveToPosition_command(self):
         """Move to a random position and then compare the commanded position to the position read on the device
         """
@@ -177,7 +177,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Skip to run tests 1 by 1 during development...")
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_moveOffset_command(self):
         """Move offset twice and everytime checks if the hexapod move a difference in position commanded.
         """
@@ -195,7 +195,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Skip to run tests 1 by 1 during development...")
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_limits_command(self):
         """Send commands out of range and check if the command is rejected
         """
@@ -327,7 +327,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Skip to run tests 1 by 1 during development...")
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_pivot_command(self):
         """Send pivot commands and check that events appliedSettingsMatchStart is set false and settingsAppliedPivot
         have the same values as the commanded
@@ -373,7 +373,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_standard_state_transitions(self):
         """Test standard CSC state transitions.
 
