@@ -167,7 +167,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         setattr(self.evt_settingsAppliedPositionLimits_data, 'limitZMin', data.zMin)
         setattr(self.evt_settingsAppliedPositionLimits_data, 'limitZMax', data.zMax)
         setattr(self.evt_settingsAppliedPositionLimits_data, 'limitUVMax', data.uvMax)
-        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitWMin', data.uvMax)
+        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitWMin', data.wMin)
         setattr(self.evt_settingsAppliedPositionLimits_data, 'limitWMax', data.wMax)
 
         # send the event
@@ -242,11 +242,15 @@ class ATHexapodCsc(salobj.BaseCsc):
     def publishPositionUpdate(self):
         self.evt_positionUpdate_data.positionX = self.model.targetPosition.xpos
         self.evt_positionUpdate_data.positionY = self.model.targetPosition.ypos
-        self.evt_positionUpdate_data.positionZ = self.model.targetPosition.xpos
+        self.evt_positionUpdate_data.positionZ = self.model.targetPosition.zpos
         self.evt_positionUpdate_data.positionU = self.model.targetPosition.uvec
         self.evt_positionUpdate_data.positionV = self.model.targetPosition.vvec
         self.evt_positionUpdate_data.positionW = self.model.targetPosition.wvec
 
+        print('evt_positionUpdate_data:')
+        for prop in dir(self.evt_positionUpdate_data):
+            if not prop.startswith('__'):
+                print(prop, getattr(self.evt_positionUpdate_data, prop))
         self.evt_positionUpdate.put(self.evt_positionUpdate_data)
 
     def publishSettingsAppliedTcp(self):
