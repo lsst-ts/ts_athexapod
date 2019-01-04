@@ -51,8 +51,7 @@ class CommunicateTestCase(unittest.TestCase):
     def test_main(self):
         async def doit():
             index = 0
-            process = await asyncio.create_subprocess_exec("export PYTHONPATH=$PYTHONPATH:/home/andres/ts_salobj/python:\
-            /home/andres/ts_salobjATHexapod/python: ; ../bin.src/runATHexapodCSC.py", str(index))
+            process = await asyncio.create_subprocess_exec("../bin.src/runATHexapodCSC.py", str(index))
             try:
                 remote = salobj.Remote(SALPY_ATHexapod, index)
                 summaryState_data = await remote.evt_summaryState.next(flush=False, timeout=10)
