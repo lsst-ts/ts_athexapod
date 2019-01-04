@@ -408,7 +408,7 @@ class CommunicateTestCase(unittest.TestCase):
             # send start; new state is DISABLED
             cmd_attr = getattr(harness.remote, f"cmd_start")
             cmd_attr_dataType = cmd_attr.DataType()
-            setattr(cmd_attr_dataType, "settingsToApply", "Default1")
+            setattr(cmd_attr_dataType, "settingsToApply", "Default2")
             id_ack = await cmd_attr.start(cmd_attr_dataType)
             self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
             self.assertEqual(id_ack.ack.error, 0)
