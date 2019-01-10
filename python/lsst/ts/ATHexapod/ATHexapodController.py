@@ -2,7 +2,10 @@ __all__ = ["ATHexapodController"]
 
 from lsst.ts.ATHexapod.ATHexapodCommands import ATHexapodCommand
 from lsst.ts.pythonCommunicator.TcpCommunicator import TcpClientAsync, TCPEndStrAsync
-# import asyncio
+from lsst.ts.pipython import gcserror
+from functools import wraps
+import time
+import asyncio
 
 
 class ATHexapodController:
@@ -10,6 +13,26 @@ class ATHexapodController:
         self.hexc = ATHexapodCommand()
         self.controllerReady = False
         self.communicator = None
+        self.lock = asyncio.Lock()
+
+    def checkForRun(f):
+        """Check if another task is running and wait until it finishes
+
+        Arguments:
+            f {function} -- Input function
+
+        Returns:
+            [function] -- Return the function to execute
+        """
+        @wraps(f)
+        async def wrapper(self, *args, **kwargs):
+            await self.lock.acquire()
+            try:
+                ret = await f(self, *args, **kwargs)
+            finally:
+                self.lock.release()
+            return ret
+        return wrapper
 
     def configureCommunicator(self, address, port, connectTimeout=2, readTimeout=2, sendTimeout=2,
                               endStr='\n', maxLength=1024):
@@ -20,18 +43,23 @@ class ATHexapodController:
         self.communicator = TcpClientAsync(address, port, connectTimeout, readTimeout, sendTimeout,
                                            messageHandler=messageHandler)
 
+    @checkForRun
     async def connect(self):
         """
         connect to the hexapod
         """
+        if(self.communicator.connected):
+            await self.communicator.disconnect()
         await self.communicator.connect()
 
+    @checkForRun
     async def disconnect(self):
         """
         disconnect from the hexapod
         """
         await self.communicator.disconnect()
 
+    @checkForRun
     async def moveToPosition(self, X: float=None, Y: float=None, Z: float=None,
                              U: float=None, V: float=None, W: float=None):
         """
@@ -39,14 +67,18 @@ class ATHexapodController:
         use setTargetPosition
         """
         await self.communicator.sendMessage(self.hexc.setTargetPosition(X, Y, Z, U, V, W))
+        await self.checkErrors()
 
+    @checkForRun
     async def setSystemVelocity(self, systemVelocity: float=None):
         """
         set system velocity
         use setSystemVelocity
         """
         await self.communicator.sendMessage(self.hexc.setSystemVelocity(systemVelocity))
+        await self.checkErrors()
 
+    @checkForRun
     async def setPositionLimits(self, minPositionX=None, minPositionY=None, minPositionZ=None,
                                 minPositionU=None, minPositionV=None, minPositionW=None,
                                 maxPositionX=None, maxPositionY=None, maxPositionZ=None,
@@ -55,11 +87,19 @@ class ATHexapodController:
         set position limits
         use setSystemVelocity
         """
-        await self.communicator.sendMessage(self.hexc.setLowPositionSoftLimit(
-            minPositionX, minPositionY, minPositionZ, minPositionU, minPositionV, minPositionW))
-        await self.communicator.sendMessage(self.hexc.setHighPositionSoftLimit(
-            maxPositionX, maxPositionY, maxPositionZ, maxPositionU, maxPositionV, maxPositionW))
+        if (minPositionU is not None) or (minPositionY is not None) or (minPositionZ is not None) \
+                or (minPositionU is not None) or (minPositionV is not None) or (minPositionW is not None):
+            await self.communicator.sendMessage(self.hexc.setLowPositionSoftLimit(
+                minPositionX, minPositionY, minPositionZ, minPositionU, minPositionV, minPositionW))
+            await self.checkErrors()
 
+        if (maxPositionX is not None) or (maxPositionY is not None) or (maxPositionZ is not None) \
+                or (maxPositionU is not None) or (maxPositionV is not None) or (maxPositionW is not None):
+            await self.communicator.sendMessage(self.hexc.setHighPositionSoftLimit(
+                maxPositionX, maxPositionY, maxPositionZ, maxPositionU, maxPositionV, maxPositionW))
+            await self.checkErrors()
+
+    @checkForRun
     async def initializePosition(self, X: bool=True, Y: bool=False, Z: bool=False,
                                  U: bool=False, V: bool=False, W: bool=False):
         """
@@ -67,7 +107,9 @@ class ATHexapodController:
         use performsReference
         """
         await self.communicator.sendMessage(self.hexc.performsReference(X, Y, Z, U, V, W))
+        await self.checkErrors()
 
+    @checkForRun
     async def moveOffset(self, dX: float=None, dY: float=None, dZ: float=None,
                          dU: float=None, dV: float=None, dW: float=None):
         """
@@ -76,8 +118,9 @@ class ATHexapodController:
         """
         await self.communicator.sendMessage(self.hexc.setTargetRelativeToCurrentPosition(dX, dY, dZ, dU, dV,
                                             dW))
+        await self.checkErrors()
 
-    async def getErrors(self):
+    async def checkErrors(self):
         """
         get error codes from the hardware as a list
         It looks for errors until there's no error in the device
@@ -85,21 +128,24 @@ class ATHexapodController:
         use getErrorNumber
         """
         errors = []
-        for i in range(10):
-            await self.communicator.sendMessage(self.hexc.getErrorNumber())
-            errorNumber = int(await self.communicator.getMessage())
-            if errorNumber == 0:
-                break
-            errors.append(errorNumber)
-        return errors
+        await self.communicator.sendMessage(self.hexc.getErrorNumber())
+        result = await self.communicator.getMessage()
+        errorNumber = int(result)
+        noError = [0, 10]
+        if errorNumber in noError:
+            return errorNumber
+        raise(Exception(gcserror.translate_error(value=errorNumber)))
 
+    @checkForRun
     async def setPivot(self, X: float=None, Y: float=None, Z: float=None):
         """
         set pivot on the device
         use setPivotPoint
         """
         await self.communicator.sendMessage(self.hexc.setPivotPoint(X, Y, Z))
+        await self.checkErrors()
 
+    @checkForRun
     async def getPivot(self):
         """
         get pivot on the device
@@ -111,20 +157,25 @@ class ATHexapodController:
         axis3, pivotZ = str(await self.communicator.getMessage()).split("=")
         return float(pivotX), float(pivotY), float(pivotZ)
 
+    @checkForRun
     async def setSoftLimit(self, X: bool=None, Y: bool=None, Z: bool=None,
                            U: bool=None, V: bool=None, W: bool=None):
         """
         Activate software limits
         """
         await self.communicator.sendMessage(self.hexc.setSoftLimit(X, Y, Z, U, V, W))
+        await self.checkErrors()
 
+    @checkForRun
     async def setSoftLimitStatus(self, X: bool=None, Y: bool=None, Z: bool=None,
                                  U: bool=None, V: bool=None, W: bool=None):
         """
         Get software limits status
         """
         await self.communicator.sendMessage(self.hexc.setSoftLimit(X, Y, Z, U, V, W))
+        await self.checkErrors()
 
+    @checkForRun
     async def getSoftLimitStatus(self):
         """
         Get software limits status
@@ -138,13 +189,16 @@ class ATHexapodController:
         axis6, w = str(await self.communicator.getMessage()).split("=")
         return bool(int(x)), bool(int(y)), bool(int(z)), bool(int(u)), bool(int(v)), bool(int(w))
 
+    @checkForRun
     async def stopMotion(self):
         """
         stop all motion
         use stopAllAxes
         """
         await self.communicator.sendMessage(self.hexc.stopAllAxes())
+        await self.checkErrors()
 
+    @checkForRun
     async def validPosition(self, X: float=None, Y: float=None, Z: float=None,
                             U: float=None, V: float=None, W: float=None):
         """
@@ -155,6 +209,7 @@ class ATHexapodController:
         await self.communicator.sendMessage(self.hexc.virtualMove(X, Y, Z, U, V, W))
         return bool(int(await self.communicator.getMessage()))
 
+    @checkForRun
     async def getTargetPositions(self):
         """
         Function in charge to query positions
@@ -169,6 +224,7 @@ class ATHexapodController:
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
+    @checkForRun
     async def getUnits(self):
         """
         Get positions unit
@@ -183,6 +239,7 @@ class ATHexapodController:
         axis6, wunit = str(await self.communicator.getMessage()).split("=")
         return xunit, yunit, zunit, uunit, vunit, wunit
 
+    @checkForRun
     async def getRealPositions(self):
         """
         Function in charge to query the actual positions of the hexapod
@@ -197,6 +254,7 @@ class ATHexapodController:
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
+    @checkForRun
     async def getLowLimits(self):
         """
         get current low positions limits
@@ -211,6 +269,7 @@ class ATHexapodController:
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
+    @checkForRun
     async def getHighLimits(self):
         """
         Update current high positions limits
@@ -225,6 +284,7 @@ class ATHexapodController:
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
+    @checkForRun
     async def getSystemVelocity(self):
         """
         get current system velocity
@@ -233,6 +293,7 @@ class ATHexapodController:
         systemVelocity = float(await self.communicator.getMessage())
         return systemVelocity
 
+    @checkForRun
     async def getOnTargetState(self):
         """
         Returns true if it is on Target
@@ -247,6 +308,7 @@ class ATHexapodController:
         return (bool(int(onTargetX)), bool(int(onTargetY)), bool(int(onTargetZ)),
                 bool(int(onTargetU)), bool(int(onTargetV)), bool(int(onTargetW)))
 
+    @checkForRun
     async def getMotionStatus(self):
         """
         Returns motion status in order X, Y, Z, U, V, W, A, B
@@ -261,6 +323,7 @@ class ATHexapodController:
         return (bool(int(status[7])), bool(int(status[6])), bool(int(status[5])), bool(int(status[4])),
                 bool(int(status[3])), bool(int(status[2])), bool(int(status[1])), bool(int(status[0])))
 
+    @checkForRun
     async def getPositionChangeStatus(self):
         """
         Returns position change status for X, Y, Z, U, V, W, A, B
@@ -272,6 +335,7 @@ class ATHexapodController:
         return (bool(status[7]), bool(status[6]), bool(status[5]), bool(status[4]),
                 bool(status[3]), bool(status[2]), bool(status[1]), bool(status[0]))
 
+    @checkForRun
     async def getReadyStatus(self):
         """
         Check if the hardware is ready to get commands, and update

@@ -942,7 +942,8 @@ __ERRMSG = {
     -27: "IEEE488: SRQ remains asserted",
     -28: "IEEE488: Return buffer full",
     -29: "IEEE488: Address or board locked",
-    -30: "RS-232: 5 data bits with 2 stop bits is an invalid combination, as is 6, 7, or 8 data bits with 1.5 stop bits",
+    -30: "RS-232: 5 data bits with 2 stop bits is an invalid combination, as is 6, 7, or 8 data bits with \
+    1.5 stop bits",
     -31: "RS-232: Error configuring the COM port",
     -32: "Error dealing with internal system resources (events, threads, ...)",
     -33: "A DLL or one of the required functions could not be loaded",
@@ -1028,7 +1029,8 @@ __ERRMSG = {
     -1050: "A uuencoded file transfered did not start with 'begin' followed by the proper filename",
     -1051: "Could not create/read file on host PC",
     -1052: "Checksum error when transfering a file to/from the controller",
-    -1053: "The PiStages.dat database could not be found. This file is required to connect a stage with the CST command",
+    -1053: "The PiStages.dat database could not be found. This file is required to connect \
+    a stage with the CST command",
     -1054: "No wave being output to specified axis",
     -1055: "Invalid password",
     -1056: "Error during communication with OPM (Optical Power Meter), maybe no OPM connected",
@@ -1049,10 +1051,13 @@ __ERRMSG = {
     -1071: "User Profile Mode: Out of memory",
     -1072: "User Profile Mode: Cluster is not assigned to this axis",
     -1073: "Unknown cluster identifier",
-    -1074: "The installed device driver doesn't match the required version. Please see the documentation to determine the required device driver version.",
-    -1075: "The library used doesn't match the required version. Please see the documentation to determine the required library version.",
+    -1074: "The installed device driver doesn't match the required version. Please see the documentation to \
+    determine the required device driver version.",
+    -1075: "The library used doesn't match the required version. Please see the documentation to determine \
+    the required library version.",
     -1076: "The interface is currently locked by another function. Please try again later.",
-    -1077: "Version of parameter DAT file does not match the required version. Current files are available at www.pi.ws.",
+    -1077: "Version of parameter DAT file does not match the required version. Current files are available \
+     at www.pi.ws.",
     -1078: "Cannot write to parameter DAT file to store user defined stage type.",
     -1079: "Cannot create parameter DAT file to store user defined stage type.",
     -1080: "Parameter DAT file does not have correct revision.",
@@ -1069,7 +1074,8 @@ __ERRMSG = {
     -1091: "Wrong number of input arguments.",
     -1092: "Change of command level has failed.",
     -1093: "Switching off the servo mode has failed.",
-    -1094: "A parameter could not be set while performing CST: CST was not performed (parameters remain unchanged).",
+    -1094: "A parameter could not be set while performing CST: CST was not performed \
+    (parameters remain unchanged).",
     -1095: "Connection could not be reestablished after reboot.",
     -1096: "Sending HPA? or receiving the response has failed.",
     -1097: "HPA? response does not comply with GCS2 syntax.",
@@ -1088,7 +1094,8 @@ __ERRMSG = {
     -1110: "File has no signature",
     -1111: "File has invalid signature",
     -10000: "PI stage database: String containing stage type and description has invalid format.",
-    -10001: "PI stage database: Database does not contain the selected stage type for the connected controller.",
+    -10001: "PI stage database: Database does not contain the selected stage type for the connected \
+    controller.",
     -10002: "PI stage database: Establishing the connection has failed.",
     -10003: "PI stage database: Communication was interrupted (e.g. because database was deleted).",
     -10004: "PI stage database: Querying data failed.",
@@ -1097,12 +1104,17 @@ __ERRMSG = {
     -10007: "PI stage database: Inconsistency between database and response to HPA?.",
     -10008: "PI stage database: Stage has not been added.",
     -10009: "PI stage database: Stage has not been removed.",
-    -10010: "Controller does not support all stage parameters stored in PI stage database. No parameters were set.",
-    -10011: "The version of PISTAGES3.DB stage database is out of date. Please update via PIUpdateFinder. No parameters were set.",
-    -10012: "Mismatch between number of parameters present in stage database and available in controller interface. No parameters were set.",
-    -10013: "Mismatch between number of parameters present in stage database and available in controller interface. Some parameters were ignored.",
+    -10010: "Controller does not support all stage parameters stored in PI stage database. No parameters \
+    were set.",
+    -10011: "The version of PISTAGES3.DB stage database is out of date. Please update via PIUpdateFinder. \
+    No parameters were set.",
+    -10012: "Mismatch between number of parameters present in stage database and available in controller \
+    interface. No parameters were set.",
+    -10013: "Mismatch between number of parameters present in stage database and available in controller \
+    interface. Some parameters were ignored.",
     -10014: "One or more parameters could not be set correctly on the controller.",
-    -10015: "One or more parameter definitions are not present in stage database. Please update PISTAGES3.DB via PIUpdateFinder. Missing parameters were ignored.",
+    -10015: "One or more parameter definitions are not present in stage database. Please update PISTAGES3.DB \
+    via PIUpdateFinder. Missing parameters were ignored.",
     0: "No error",
     1: "Parameter syntax error",
     2: "Unknown command",
@@ -1176,7 +1188,8 @@ __ERRMSG = {
     70: "The requested arrays have different lengths; query them separately",
     71: "Attempt to restart the generator while it is running in single step mode",
     72: "Motion commands and wave generator activation are not allowed when analog target is active",
-    73: "Motion commands are not allowed when wave generator output is active; use WGO to disable generator output",
+    73: "Motion commands are not allowed when wave generator output is active; use WGO to \
+    disable generator output",
     74: "No sensor channel or no piezo channel connected to selected axis (sensor and piezo matrix)",
     75: "Generator started (WGO) without having selected a wave table (WSL).",
     76: "Interface buffer did overrun and command couldn't be received correctly",
@@ -1193,7 +1206,8 @@ __ERRMSG = {
     87: "Joystick unknown",
     88: "Move without referenced stage",
     89: "Command not allowed in current motion mode",
-    90: "No tracing possible while digital IOs are used on this HW revision. Reconnect to switch operation mode.",
+    90: "No tracing possible while digital IOs are used on this HW revision. Reconnect to \
+    switch operation mode.",
     91: "Move not possible, would cause collision",
     92: "Stage is not capable of following the master. Check the gear ratio(SRA).",
     93: "This command is not allowed while the affected axis or its master is in motion.",

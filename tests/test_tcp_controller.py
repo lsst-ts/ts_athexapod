@@ -10,7 +10,7 @@ class TestAtHexapod(unittest.TestCase):
     def setUp(self):
         async def doit():
             self.hexController = ATHexapodController()
-            self.hexController.configureCommunicator(address='139.229.136.151', port=50000, connectTimeout=5,
+            self.hexController.configureCommunicator(address='192.168.0.15', port=50000, connectTimeout=5,
                                                      readTimeout=4, sendTimeout=4, endStr="\n",
                                                      maxLength=1024)
             await self.hexController.connect()
@@ -257,7 +257,7 @@ class TestAtHexapod(unittest.TestCase):
     def testGetErrors(self):
         """Get error list."""
         async def doit():
-            errors = await self.hexController.getErrors()
+            errors = await self.hexController.checkErrors()
             print(errors)
         asyncio.get_event_loop().run_until_complete(doit())
 

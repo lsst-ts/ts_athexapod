@@ -37,6 +37,7 @@ class Harness:
 class CommunicateTestCase(unittest.TestCase):
     # @unittest.skip("demonstrating skipping")
     def test_heartbeat(self):
+        print("Heartbeat test...")
         async def doit():
             harness = Harness(initial_state=salobj.State.STANDBY)
             start_time = time.time()
@@ -49,6 +50,7 @@ class CommunicateTestCase(unittest.TestCase):
 
     # @unittest.skip("demonstrating skipping")
     def test_main(self):
+        print("Excecutable tests...")
         async def doit():
             index = 0
             process = await asyncio.create_subprocess_exec("../bin.src/runATHexapodCSC.py", str(index))
@@ -75,6 +77,7 @@ class CommunicateTestCase(unittest.TestCase):
         """Update the position limits through cmd_applyPositionLimits and then listen to 
         evt_settingsAppliedPositionLimits to check if the limits were applied.
         """
+        print("position limits  test...")
         async def doit():
             harness = await self.beginningFunc()
 
@@ -118,7 +121,7 @@ class CommunicateTestCase(unittest.TestCase):
     def test_moveToPosition_command(self):
         """Move to a random position and then compare the commanded position to the position read on the device
         """
-
+        print("Move to a random position  test...")
         async def doit():
             harness = await self.beginningFunc()
 
@@ -180,6 +183,7 @@ class CommunicateTestCase(unittest.TestCase):
     def test_moveOffset_command(self):
         """Move offset twice and everytime checks if the hexapod move a difference in position commanded.
         """
+        print("Move offset twice test...")
         async def doit():
             harness = await self.beginningFunc()
 
@@ -198,6 +202,7 @@ class CommunicateTestCase(unittest.TestCase):
     def test_limits_command(self):
         """Send commands out of range and check if the command is rejected
         """
+        print("test_limits_command test...")
         async def doit():
             harness = await self.beginningFunc()
             ack = None
@@ -331,6 +336,7 @@ class CommunicateTestCase(unittest.TestCase):
         """Send pivot commands and check that events appliedSettingsMatchStart is set false and settingsAppliedPivot
         have the same values as the commanded
         """
+        print("test_pivot_command test...")
         async def doit():
             harness = await self.beginningFunc()
 
@@ -386,6 +392,7 @@ class CommunicateTestCase(unittest.TestCase):
         * standby: DISABLED to STANDBY
         * exitControl: STANDBY, FAULT to OFFLINE (quit)
         """
+        print("test_standard_state_transitions test...")
         async def doit():
             harness = Harness(initial_state=salobj.State.STANDBY)
             commands = ("start", "enable", "disable", "exitControl", "standby",
@@ -414,6 +421,7 @@ class CommunicateTestCase(unittest.TestCase):
             self.assertEqual(id_ack.ack.error, 0)
 
             self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
+            state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
             state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
             self.assertEqual(state.summaryState, salobj.State.DISABLED)
 
@@ -556,12 +564,12 @@ class CommunicateTestCase(unittest.TestCase):
 
     async def beginningFunc(self):
             harness = Harness(initial_state=salobj.State.STANDBY)
+            state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+            state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
             self.assertIsNone(harness.remote.evt_positionUpdate.get())
             self.assertIsNone(harness.remote.tel_positionStatus.get())
-
             # Check summaryState
             self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
-            state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
             self.assertEqual(state.summaryState, salobj.State.STANDBY)
             # Go to enable
             await self.goto_Disable_from_Standby(harness)
@@ -604,43 +612,42 @@ class CommunicateTestCase(unittest.TestCase):
         # send start; new state is DISABLED
         cmd_attr = getattr(harness.remote, f"cmd_start")
         cmd_attr_dataType = cmd_attr.DataType()
-        setattr(cmd_attr_dataType, "settingsToApply", "Default1")
+        setattr(cmd_attr_dataType, "settingsToApply", "Default2")
         id_ack = await cmd_attr.start(cmd_attr_dataType)
+        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
         self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
-
         self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
         self.assertEqual(state.summaryState, salobj.State.DISABLED)
 
     async def goto_Enable_from_Disable(self, harness):
         # send enable; new state is ENABLED
         cmd_attr = getattr(harness.remote, f"cmd_enable")
         id_ack = await cmd_attr.start(cmd_attr.DataType())
+        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
         self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
         self.assertEqual(harness.csc.summary_state, salobj.State.ENABLED)
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
         self.assertEqual(state.summaryState, salobj.State.ENABLED)
 
     async def goto_Disable_from_Enable(self, harness):
         # send disable; new state is DISABLED
         cmd_attr = getattr(harness.remote, f"cmd_disable")
         id_ack = await cmd_attr.start(cmd_attr.DataType())
+        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
         self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
         self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
         self.assertEqual(state.summaryState, salobj.State.DISABLED)
 
     async def goto_Standby_from_Disable(self, harness):
         # send standby; new state is STANDBY
         cmd_attr = getattr(harness.remote, f"cmd_standby")
         id_ack = await cmd_attr.start(cmd_attr.DataType())
+        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
         self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
         self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
         self.assertEqual(state.summaryState, salobj.State.STANDBY)
 
 

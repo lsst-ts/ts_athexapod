@@ -88,10 +88,14 @@ class ATHexapodCsc(salobj.BaseCsc):
             raise ValueError(f"Start not valid in state: {self.summary_state.name}")
         self.publish_appliedSettingsMatchStart(True)
         self.model.updateSettings(id_data.data.settingsToApply)
-        await self.model.initialize()
-        await self.publish_currentPivot()
-        await self.publish_positionLimits()
-        self.publishSettingsAppliedTcp()
+        try:
+            await self.model.initialize()
+            await self.publish_currentPivot()
+            await self.publish_positionLimits()
+            self.publishSettingsAppliedTcp()
+        except Exception as e:
+            await self.model.disconnect()
+            raise(e)
         super().do_start(id_data)
 
     async def do_standby(self, id_data):
@@ -184,7 +188,7 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         await self.model.moveToPosition(id_data.data)
         self.publishPositionUpdate()
-        await self.waitUntilStop()
+        await self.waitUntilPosition()
 
     async def do_setMaxSpeeds(self, id_data):
         self.assert_enabled("setMaxSpeeds")
@@ -208,11 +212,12 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.assert_enabled("applyPositionOffset")
         await self.model.applyPositionOffset(id_data.data)
         self.publishPositionUpdate()
-        await self.waitUntilStop()
+        await self.waitUntilPosition()
 
     async def do_stopAllAxes(self, id_data):
         self.assert_enabled("stopAllAxes")
         await self.model.stopAllAxes(id_data.data)
+        await self.model.waitUntilStop()
 
     async def do_pivot(self, id_data):
         self.assert_enabled("pivot")
@@ -291,7 +296,7 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         return self.salinfo.manager.getCurrentTime()
 
-    async def waitUntilStop(self):
+    async def waitUntilPosition(self):
         """After move is executed, wait until position has been reached and publish inPosition
         """
 

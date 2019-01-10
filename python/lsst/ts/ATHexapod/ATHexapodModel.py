@@ -73,7 +73,11 @@ class Model:
                                                  readTimeout=tcpConfiguration.readTimeout,
                                                  sendTimeout=tcpConfiguration.sendTimeout,
                                                  endStr=endStr, maxLength=tcpConfiguration.maxLength)
+
         await self.hexController.connect()
+        self.realPosition = StateATHexapodPosition()
+        self.targetPosition = CmdATHexapodPosition()
+        self.detailedState = HexapodDetailedStates.NOTINMOTIONSTATE
         await self.hexController.initializePosition()
         self.initialSetup = self.configuration.getInitialHexapodSetup()
         # Apply position limits to hardware from configuration files
@@ -84,13 +88,13 @@ class Model:
         command.uvMax = self.initialSetup.limitUVMax
         command.wMin = self.initialSetup.limitWMin
         command.wMax = self.initialSetup.limitWMax
-        await self.applyPositionLimits(command)
+        await self.applyPositionLimits(command, skipState=True)
         # Apply pivots to hardware from configuration files
         command = salCommandGeneric()
         command.x = self.initialSetup.pivotX
         command.y = self.initialSetup.pivotY
         command.z = self.initialSetup.pivotZ
-        await self.pivot(command)
+        await self.pivot(command, skipState=True)
 
     async def disconnect(self):
         """Safely shutdown the ATHexapod
@@ -147,13 +151,14 @@ class Model:
         # Update target
         self.updateCommandedPosition(X=X, Y=Y, Z=Z, U=U, V=V, W=W)
 
-    async def applyPositionLimits(self, salCommand):
+    async def applyPositionLimits(self, salCommand, skipState=False):
         """Send command to set position limits to the Hexapod controller.
 
         Arguments:
             salCommand {cmd_applyPositionLimits_data} -- Position limits set
         """
-        self.assertInMotion(inspect.currentframe().f_code.co_name)
+        if(not skipState):
+            self.assertInMotion(inspect.currentframe().f_code.co_name)
 
         # Implement limits in hardware and software
         await self.hexController.setPositionLimits(minPositionX=-salCommand.xyMax,
@@ -231,7 +236,7 @@ class Model:
         self.assertNotInMotion(inspect.currentframe().f_code.co_name)
         await self.hexController.stopMotion()
 
-    async def pivot(self, salCommand):
+    async def pivot(self, salCommand, skipState=False):
         """Set pivot into the PI Hexapod controller. U, V and W need to be 0 if not it will report an error.
 
         Arguments:
@@ -241,8 +246,8 @@ class Model:
             ValueError -- Command payload not all 0 for u, v, w
             ValueError -- Pivot in the PI Hexapod controller don't match with command
         """
-
-        self.assertInMotion(inspect.currentframe().f_code.co_name)
+        if(not skipState):
+            self.assertInMotion(inspect.currentframe().f_code.co_name)
         threshold = 0.001
         pivotingNotPossible = (abs(self.realPosition.uvec) > threshold) \
             or (abs(self.realPosition.vvec) > threshold) \
@@ -413,23 +418,23 @@ class Model:
             Zp {float} -- [Y position in mm] (default: {None})
         """
 
-        if X:
+        if X is not None:
             setattr(self.targetPosition, 'xpos', X)
-        if Y:
+        if Y is not None:
             setattr(self.targetPosition, 'ypos', Y)
-        if Z:
+        if Z is not None:
             setattr(self.targetPosition, 'zpos', Z)
-        if U:
+        if U is not None:
             setattr(self.targetPosition, 'uvec', U)
-        if V:
+        if V is not None:
             setattr(self.targetPosition, 'vvec', V)
-        if W:
+        if W is not None:
             setattr(self.targetPosition, 'wvec', W)
-        if Xp:
+        if Xp is not None:
             setattr(self.targetPivot, 'xpivot', Xp)
-        if Yp:
+        if Yp is not None:
             setattr(self.targetPivot, 'ypivot', Yp)
-        if Zp:
+        if Zp is not None:
             setattr(self.targetPivot, 'zpivot', Zp)
 
     def getTcpConfiguration(self):
@@ -513,11 +518,19 @@ class Model:
         initial_time = time.time()
         timeout = 600
         loopDelay = 0.3
+        err = 0.0001
         while (time.time() - initial_time < timeout):
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
                 break
-        if (time.time() - initial_time >= timeout):
+        inPosition = (abs(self.realPosition.xpos - self.targetPosition.xpos) < err) and \
+                     (abs(self.realPosition.ypos - self.targetPosition.ypos) < err) and \
+                     (abs(self.realPosition.zpos - self.targetPosition.zpos) < err) and \
+                     (abs(self.realPosition.uvec - self.targetPosition.uvec) < err) and \
+                     (abs(self.realPosition.vvec - self.targetPosition.vvec) < err) and \
+                     (abs(self.realPosition.wvec - self.targetPosition.wvec) < err)
+
+        if (not inPosition):
             raise ValueError("Position never reached...")
 
     async def waitUntilStop(self):
@@ -529,7 +542,7 @@ class Model:
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
                 break
         if (time.time() - initial_time >= timeout):
-            raise ValueError("Position never reached...")
+            raise ValueError("Motion never stopped...")
 
     def getTcpConfiguration(self):
         """Return TCP configuration
