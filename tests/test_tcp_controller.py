@@ -44,6 +44,43 @@ class TestAtHexapod(unittest.TestCase):
             self.assertEqual(pivotZ, 0)
         asyncio.get_event_loop().run_until_complete(doit())
 
+    # @unittest.skip("Don't run...")
+    def testErrorCheckInCommands(self):
+        """Test error checks in commands via sending invalid commands."""
+        async def doit():
+            await self.hexController.stopMotion()
+            await asyncio.sleep(1)
+
+            # Test unrealistic values to move for X
+            with self.assertRaises(Exception) as context:
+                Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd = 5, 0, 0, 0, 0, 0
+                await self.hexController.moveToPosition(Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd)
+            self.assertTrue('Position out of limits (7)' in str(context.exception))
+
+            # Test unrealistic values to move offset for X
+            with self.assertRaises(Exception) as context:
+                Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd = 100, 0, 0, 0, 0, 0
+                await self.hexController.moveOffset(Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd)
+            self.assertTrue('Position out of limits (7)' in str(context.exception))
+
+            # Test unrealistic values to set software limits
+            with self.assertRaises(Exception) as context:
+                Xlow, Ylow, Zlow, Ulow, Vlow, Wlow = 100, 0, 0, 0, 0, 0
+                await self.hexController.setPositionLimits(minPositionX=Xlow, minPositionY=Ylow,
+                                                           minPositionZ=Zlow, minPositionU=Ulow,
+                                                           minPositionV=Vlow, minPositionW=Wlow)
+
+            # Test unrealistic values to set software limits
+            with self.assertRaises(Exception) as context:
+                Xhigh, Yhigh, Zhigh, Uhigh, Vhigh, Whigh = 100, 0, 0, 0, 0, 0
+                await self.hexController.setPositionLimits(maxPositionX=Xhigh, maxPositionY=Yhigh,
+                                                           maxPositionZ=Zhigh, maxPositionU=Uhigh,
+                                                           maxPositionV=Vhigh, maxPositionW=Whigh)
+            print(str(context.exception))
+            self.assertTrue('Soft limit out of range (27)' in str(context.exception))
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
     # @unittest.skip("Takes to long to execute...")
     def testTarget(self):
         async def doit():
