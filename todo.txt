@@ -1,9 +1,4 @@
--Check error code in the hardware
-   -rejected commands (out of range, etc...)
 -Update method to check if device is in motion with real hardware, currently is comparing positions because the method that comes with the controller doesn't work (at least in the simulator)
 -implement update in velocities
 -publish when the system is (or not) ready to receive commands
--tests to perform:
-*try to move while it is moving (move to position and offset)
 -define python depencencies properly
--extend testing to more complex tests
