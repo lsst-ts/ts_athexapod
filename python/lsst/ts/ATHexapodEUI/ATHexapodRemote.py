@@ -37,7 +37,6 @@ class ATHexapodRemote:
         self.sal.salEvent("ATHexapod_logevent_settingsAppliedVelocities")
         self.sal.salEvent("ATHexapod_logevent_settingsAppliedPivot")
         self.sal.salEvent("ATHexapod_logevent_positionUpdate")
-        self.sal.salEvent("ATHexapod_logevent_deviceError")
         self.sal.salEvent("ATHexapod_logevent_settingsAppliedTcp")
         self.sal.salEvent("ATHexapod_logevent_readyForCommand")
 
@@ -57,7 +56,6 @@ class ATHexapodRemote:
         self.eventSubscribers_settingsAppliedVelocities = []
         self.eventSubscribers_settingsAppliedPivot = []
         self.eventSubscribers_positionUpdate = []
-        self.eventSubscribers_deviceError = []
         self.eventSubscribers_settingsAppliedTcp = []
         self.eventSubscribers_readyForCommand = []
 
@@ -657,20 +655,6 @@ class ATHexapodRemote:
         if "event_positionUpdate" not in self.topicsSubscribedToo:
             self.topicsSubscribedToo["event_positionUpdate"] = [
                 self.getNextEvent_positionUpdate, self.eventSubscribers_positionUpdate]
-
-    def getNextEvent_deviceError(self):
-        data = ATHexapod_logevent_deviceErrorC()
-        result = self.sal.getEvent_deviceError(data)
-        return result, data
-
-    def getEvent_deviceError(self):
-        return self.getEvent(self.getNextEvent_deviceError)
-
-    def subscribeEvent_deviceError(self, action):
-        self.eventSubscribers_deviceError.append(action)
-        if "event_deviceError" not in self.topicsSubscribedToo:
-            self.topicsSubscribedToo["event_deviceError"] = [
-                self.getNextEvent_deviceError, self.eventSubscribers_deviceError]
 
     def getNextEvent_settingsAppliedTcp(self):
         data = ATHexapod_logevent_settingsAppliedTcpC()
