@@ -22,7 +22,6 @@ class OverviewPageWidget(QtGui.QWidget):
 
         self.dataEventSummaryState = DataCache()
 
-        self.addDeviceErrorCode()
         self.addInPosition()
         self.addPivot()
         self.addPositionLimits()
@@ -36,7 +35,6 @@ class OverviewPageWidget(QtGui.QWidget):
         self.ATHexapod.subscribeEvent_settingsAppliedVelocities(self.processEventSettingsAppliedVelocities)
         self.ATHexapod.subscribeEvent_settingsAppliedPivot(self.processEventSettingsAppliedPivot)
         self.ATHexapod.subscribeEvent_positionUpdate(self.processEventPositionUpdate)
-        self.ATHexapod.subscribeEvent_deviceError(self.processEventDeviceError)
         self.ATHexapod.subscribeEvent_settingsAppliedTcp(self.processEventSettingsAppliedTcp)
         self.ATHexapod.subscribeEvent_readyForCommand(self.processEventReadyForCommand)
         self.ATHexapod.subscribeEvent_appliedSettingsMatchStart(self.processEventAppliedSettingsMatchStart)
@@ -170,19 +168,6 @@ class OverviewPageWidget(QtGui.QWidget):
         self.dataLayout.addWidget(self.positionW, self.row + 1, col)
         self.row += 2
 
-    def addDeviceErrorCode(self):
-        self.device = QtGui.QLineEdit()
-        self.device.setReadOnly(True)
-        self.severity = QtGui.QLineEdit()
-        self.severity.setReadOnly(True)
-        col = self.col
-        self.dataLayout.addWidget(QtGui.QLabel("device"), self.row, col)
-        self.dataLayout.addWidget(self.device, self.row + 1, col)
-        col += 1
-        self.dataLayout.addWidget(QtGui.QLabel("severity"), self.row, col)
-        self.dataLayout.addWidget(self.severity, self.row + 1, col)
-        self.row += 2
-
     def addTcpSettingsApplied(self):
         self.ip = QtGui.QLineEdit()
         self.ip.setReadOnly(True)
@@ -302,12 +287,6 @@ class OverviewPageWidget(QtGui.QWidget):
         self.positionU.setText(str(positionU))
         self.positionV.setText(str(positionV))
         self.positionW.setText(str(positionW))
-
-    def processEventDeviceError(self, data):
-        device = data[-1].device
-        severity = data[-1].severity
-        self.device.setText(str(device))
-        self.severity.setText(str(severity))
 
     def processEventSettingsAppliedTcp(self, data):
         ip = data[-1].ip
