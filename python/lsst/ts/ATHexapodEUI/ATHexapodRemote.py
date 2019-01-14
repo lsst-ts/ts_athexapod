@@ -24,7 +24,6 @@ class ATHexapodRemote:
         self.sal.salCommand("ATHexapod_command_pivot")
 
         self.sal.salEvent("ATHexapod_logevent_settingVersions")
-        self.sal.salEvent("ATHexapod_logevent_errorCode")
         self.sal.salEvent("ATHexapod_logevent_summaryState")
         self.sal.salEvent("ATHexapod_logevent_appliedSettingsMatchStart")
         self.sal.salEvent("ATHexapod_logevent_logLevel")
@@ -44,7 +43,6 @@ class ATHexapodRemote:
         self.sal.salTelemetrySub("ATHexapod_positionStatus")
 
         self.eventSubscribers_settingVersions = []
-        self.eventSubscribers_errorCode = []
         self.eventSubscribers_summaryState = []
         self.eventSubscribers_appliedSettingsMatchStart = []
         self.eventSubscribers_logLevel = []
@@ -474,20 +472,6 @@ class ATHexapodRemote:
         if "event_settingVersions" not in self.topicsSubscribedToo:
             self.topicsSubscribedToo["event_settingVersions"] = [
                 self.getNextEvent_settingVersions, self.eventSubscribers_settingVersions]
-
-    def getNextEvent_errorCode(self):
-        data = ATHexapod_logevent_errorCodeC()
-        result = self.sal.getEvent_errorCode(data)
-        return result, data
-
-    def getEvent_errorCode(self):
-        return self.getEvent(self.getNextEvent_errorCode)
-
-    def subscribeEvent_errorCode(self, action):
-        self.eventSubscribers_errorCode.append(action)
-        if "event_errorCode" not in self.topicsSubscribedToo:
-            self.topicsSubscribedToo["event_errorCode"] = [
-                self.getNextEvent_errorCode, self.eventSubscribers_errorCode]
 
     def getNextEvent_summaryState(self):
         data = ATHexapod_logevent_summaryStateC()
