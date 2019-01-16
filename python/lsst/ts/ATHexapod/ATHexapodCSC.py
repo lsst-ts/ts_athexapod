@@ -17,91 +17,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+__all__ = ["ATHexapodCsc"]
 
-from lsst.ts.salobj import *
+from lsst.ts import salobj
+from lsst.ts.ATHexapod.ATHexapodModel import Model, HexapodErrorCodes
 import asyncio
-import contextlib
-import os
-import random
-import socket
-import string
 import time
-import warnings
 
-import numpy as np
+import SALPY_ATHexapod
 
-try:
-    import SALPY_ATHexapod
-except ImportError:
-    warnings.warn("Could not import SALPY_ATHexapod; ATHexapodCsc will not work")
 
-from . import ATHexapodSim
-
-class configATHexapod:
-    telemetryInterval = 0.5
-    
-    class posLimits:
-        xyMax = 0.0
-        zMin = 0.0
-        zMax = 0.0
-        uvMax = 0.0
-        wMin = 0.0
-        wMax = 0.0
-    class speedLimits:
-        xyMax = 0.1
-        rxryMax = 0.0
-        zMax = 0.0
-        rzMax = 0.0
-
-class stateATHexapod:
-    time = 0.0
-    xpos = 0.0
-    ypos = 0.0
-    zpos = 0.0
-    uvec = 0.0
-    vvec = 0.0
-    wvec = 0.0
-    xoff = 0.0
-    yoff = 0.0
-    zoff = 0.0
-    uoff = 0.0
-    voff = 0.0
-    woff = 0.0
-    xpivot = 0.0
-    ypivot = 0.0
-    zpivot = 0.0
-
-class cmdATHexapod:
-    time = 0.0
-    xpos = 0.0
-    ypos = 0.0
-    zpos = 0.0
-    uvec = 0.0
-    vvec = 0.0
-    wvec = 0.0
-    xoff = 0.0
-    yoff = 0.0
-    zoff = 0.0
-    uoff = 0.0
-    voff = 0.0
-    woff = 0.0
-    xpivot = 0.0
-    ypivot = 0.0
-    zpivot = 0.0
-
-class simATHexapod:
-    hdwDelayApplyPositionLimits = 10  # seconds
-    hdwDelayMoveToPosition = 5  # seconds
-    hdwDelayApplySpeedLimits = 1
-    hdwProbFailure = 0.1
-    moveEpsilon = 0.01  # how close to get to target
-    positionLoopDeltaT = 0.1
-
-class ATHexapodCsc(base_csc.BaseCsc):
+class ATHexapodCsc(salobj.BaseCsc):
     """A skeleton implementation of ATHexapod
     Supported commands:
 
-    * (import from ATHexpodSummary.txt)
+    * (import from ATHexapodSummary.txt)
     * The standard state transition commands do the usual thing
       and output the ``summaryState`` event. The ``exitControl``
       command shuts the CSC down.
@@ -113,128 +43,272 @@ class ATHexapodCsc(base_csc.BaseCsc):
         - State.ENABLED if you want the CSC immediately usable.
         - State.STANDBY if you want full emulation of a CSC.
     """
-    def __init__(self, index, initial_state=base_csc.State.STANDBY):
-        if initial_state not in base_csc.State:
+
+    def __init__(self, index, initial_state=salobj.State.STANDBY):
+        if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
         super().__init__(SALPY_ATHexapod, index)
         self.summary_state = initial_state
-        self.conf = configATHexapod()
-        self.simSettings = simATHexapod()
-        self.simState = stateATHexapod()
-        self.cmdState = cmdATHexapod()
-        self.sim = ATHexapodSim.simATHexapod(self.simSettings, self.conf, self.simState)
+        self.model = Model()
+        self.detailedState = 0  # Last deatiled state published. Initialized at 0, which doesn't exist in SAL
+        self.appliedSettingsMatchStart = False
+        self.telemetryInterval = 1
+        self.recoverTimeout = 5  # Times that the CSC try to recover communication before going to Fault state
 
         self.telTask = None
         #
         # set up event data structures
         #
-        self.evt_settingsAppliedPositions_data = self.evt_settingsAppliedPositions.DataType()
+        self.evt_settingsAppliedPositionLimits_data = self.evt_settingsAppliedPositionLimits.DataType()
+        self.evt_settingsAppliedVelocities_data = self.evt_settingsAppliedVelocities.DataType()
+        self.evt_settingsAppliedPivot_data = self.evt_settingsAppliedPivot.DataType()
+        self.evt_settingsAppliedTcp_data = self.evt_settingsAppliedTcp.DataType()
+        self.evt_positionUpdate_data = self.evt_positionUpdate.DataType()
+        self.evt_appliedSettingsMatchStart_data = self.evt_appliedSettingsMatchStart.DataType()
+        self.evt_detailedState_data = self.evt_detailedState.DataType()
+        self.evt_settingVersions_data = self.evt_settingVersions.DataType()
+        self.evt_inPosition_data = self.evt_inPosition.DataType()
+        self.evt_errorCode_data = self.evt_errorCode.DataType()
 
         # set up telemetry data structures
 
-        self.tel_actuatorPositions_data = self.tel_actuatorPositions.DataType()
-
-        #
+        self.tel_positionStatus_data = self.tel_positionStatus.DataType()
         print('summary state: ', self.summary_state)
-        #
-        # start the telemetry loop as a task. It won't actually send telemetry
-        # unless the CSC is in the STANDBY or ENABLED states
+
+        # Publish list of recommended settings
+        settingVersions = self.model.getSettingVersions()
+        self.evt_settingVersions_data.recommendedSettingsLabels = settingVersions
+        self.evt_settingVersions.put(self.evt_settingVersions_data)
 
         print('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
 
-    def end_standby(self):
-        if self.telTask and not self.telTask.done():
-            self.telTask.cancel()
-        super().end_standby()
-    
+    async def do_start(self, id_data):
+        if self.summary_state is not salobj.State.STANDBY:
+            raise ValueError(f"Start not valid in state: {self.summary_state.name}")
+        self.publish_appliedSettingsMatchStart(True)
+        self.model.updateSettings(id_data.data.settingsToApply)
+        try:
+            await self.model.initialize()
+            await self.publish_currentPivot()
+            await self.publish_positionLimits()
+            self.publishSettingsAppliedTcp()
+        except Exception as e:
+            await self.model.disconnect()
+            raise(e)
+        super().do_start(id_data)
+
+    async def do_standby(self, id_data):
+        await self.model.disconnect()
+        super().do_standby(id_data)
+
+    def end_standby(self, id_data):
+        super().end_standby(id_data)
+
     async def telemetryLoop(self):
         if self.telTask and not self.telTask.done():
             self.telTask.cancel()
-        
-        while self.summary_state in (base_csc.State.STANDBY, base_csc.State.ENABLED):
-            self.telTask = await asyncio.sleep(self.conf.telemetryInterval)
-            self.sendTelemetry()
+        i = 0
+        while True:
+            if self.summary_state in (salobj.State.DISABLED, salobj.State.ENABLED):
+                try:
+                    await self.sendTelemetry()
+                    i = 0
+                except Exception as err:
+                    i = i + 1
+                    # if there are more than self.recoverTimeout attempt and is not recovering,
+                    # go to Fault state
+                    if i >= self.recoverTimeout:
+                        self.evt_errorCode_data.errorCode = HexapodErrorCodes.DEVICENOTFOUND.value
+                        self.evt_errorCode_data.errorReport = "Device not found in the network"
+                        self.evt_errorCode_data.traceback = str(err)
+                        self.evt_errorCode.put(self.evt_errorCode_data)
+                        await self.model.disconnect()
+                        self.fault()
+            self.telTask = await asyncio.sleep(self.telemetryInterval)
 
-    def sendTelemetry(self):
+    async def sendTelemetry(self):
         print('sendTelemetry: ', '{:.4f}'.format(time.time()))
-        # stuff some fake data into self.tel_actuatorPositions_data before doing the put
-        # these will come from stateATHexapod
-        self.tel_actuatorPositions_data.raw[0] = self.simState.xpos
-        print('telemetry xpos:', self.simState.xpos)
-        self.tel_actuatorPositions.put(self.tel_actuatorPositions_data)
-        
+        await self.model.updateState()
+
+        # Get current positions and publish
+        target = self.model.getTargetPosition()
+        position = await self.model.getRealPosition()
+
+        self.tel_positionStatus_data.setpointPosition[0] = target.xpos
+        self.tel_positionStatus_data.setpointPosition[1] = target.ypos
+        self.tel_positionStatus_data.setpointPosition[2] = target.zpos
+        self.tel_positionStatus_data.setpointPosition[3] = target.uvec
+        self.tel_positionStatus_data.setpointPosition[4] = target.vvec
+        self.tel_positionStatus_data.setpointPosition[5] = target.wvec
+
+        self.tel_positionStatus_data.reportedPosition[0] = position.xpos
+        self.tel_positionStatus_data.reportedPosition[1] = position.ypos
+        self.tel_positionStatus_data.reportedPosition[2] = position.zpos
+        self.tel_positionStatus_data.reportedPosition[3] = position.uvec
+        self.tel_positionStatus_data.reportedPosition[4] = position.vvec
+        self.tel_positionStatus_data.reportedPosition[5] = position.wvec
+
+        for i in range(6):
+            self.tel_positionStatus_data.positionFollowingError[i] = abs(
+                self.tel_positionStatus_data.setpointPosition[i] -
+                self.tel_positionStatus_data.reportedPosition[i])
+
+        self.tel_positionStatus.put(self.tel_positionStatus_data)
+
+        self.publishDetailedState(self.model.detailedState.value)
+
     async def do_applyPositionLimits(self, id_data):
-
-
         self.assert_enabled("applyPositionLimits")
-        setattr(self.conf.posLimits, 'xyMax', getattr(id_data.data, 'xyMax'))
-        setattr(self.conf.posLimits, 'zMin', getattr(id_data.data, 'zMin'))
-        setattr(self.conf.posLimits, 'zMax', getattr(id_data.data, 'zMax'))
-        setattr(self.conf.posLimits, 'uvMax', getattr(id_data.data, 'uvMax'))
-        setattr(self.conf.posLimits, 'wMin', getattr(id_data.data, 'wMin'))
-        setattr(self.conf.posLimits, 'wMax', getattr(id_data.data, 'wMax'))
+        await self.model.applyPositionLimits(id_data.data)
+        await self.publish_positionLimits()
+        self.publish_appliedSettingsMatchStart(False)
 
+    def do_setLogLevel(self):
+        pass
 
-        # And here is where to put in some mock behavior for the hardware, or later,
-        # code that connects to the actual hardware
+    def do_setSimulationMode(self):
+        pass
 
-        await asyncio.sleep(self.simSettings.hdwDelayApplyPositionLimits)
-        
-        # there is no event associated with completing this command
-    
+    async def publish_positionLimits(self):
+        data = await self.model.getRealPositionLimits()
+        # should I use getattr here instead of the more direct .xyMax?
+        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitXYMax', data.xyMax)
+        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitZMin', data.zMin)
+        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitZMax', data.zMax)
+        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitUVMax', data.uvMax)
+        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitWMin', data.wMin)
+        setattr(self.evt_settingsAppliedPositionLimits_data, 'limitWMax', data.wMax)
+
+        # send the event
+        self.evt_settingsAppliedPositionLimits.put(self.evt_settingsAppliedPositionLimits_data)
+
     async def do_moveToPosition(self, id_data):
-
         self.assert_enabled("moveToPosition")
-        setattr(self.cmdState, 'xpos', getattr(id_data.data, 'x'))
-        setattr(self.cmdState, 'ypos', getattr(id_data.data, 'y'))
-        setattr(self.cmdState, 'zpos', getattr(id_data.data, 'z'))
-        setattr(self.cmdState, 'uvec', getattr(id_data.data, 'u'))
-        setattr(self.cmdState, 'vvec', getattr(id_data.data, 'v'))
-        setattr(self.cmdState, 'wvec', getattr(id_data.data, 'w'))
 
-        # And here is where to put in some mock behavior for the hardware, or later,
-        # code that connects to the actual hardware
+        await self.model.moveToPosition(id_data.data)
+        self.publishPositionUpdate()
+        await self.waitUntilPosition()
+
+    async def do_setMaxSpeeds(self, id_data):
+        self.assert_enabled("setMaxSpeeds")
+
+        # Execute command in hardware
+        await self.model.setMaxSpeeds(id_data.data)
+
+        # Update event datatype
+        setattr(self.evt_settingsAppliedVelocities_data, 'velocityXYMax', id_data.data.xyMax)
+        setattr(self.evt_settingsAppliedVelocities_data, 'velocityRxRyMax', id_data.data.rxryMax)
+        setattr(self.evt_settingsAppliedVelocities_data, 'velocityZMax', id_data.data.zMax)
+        setattr(self.evt_settingsAppliedVelocities_data, 'velocityRzMax', id_data.data.rzMax)
+
+        # send the event
+        self.evt_settingsAppliedVelocities.put(self.evt_settingsAppliedVelocities_data)
+        self.publish_appliedSettingsMatchStart(False)
+
+        # there is no event associated with completing this command
+
+    async def do_applyPositionOffset(self, id_data):
+        self.assert_enabled("applyPositionOffset")
+        await self.model.applyPositionOffset(id_data.data)
+        self.publishPositionUpdate()
+        await self.waitUntilPosition()
+
+    async def do_stopAllAxes(self, id_data):
+        self.assert_enabled("stopAllAxes")
+        await self.model.stopAllAxes(id_data.data)
+        await self.model.waitUntilStop()
+
+    async def do_pivot(self, id_data):
+        self.assert_enabled("pivot")
+        await self.model.pivot(id_data.data)
+        self.publish_appliedSettingsMatchStart(False)
+        await self.publish_currentPivot()
+
+    async def publish_currentPivot(self):
+        """Publish pivot from hardware
+        """
+
+        pivot = await self.model.getRealPivot()
+        # Update event datatype
+        setattr(self.evt_settingsAppliedPivot_data, 'pivotX', pivot.x)
+        setattr(self.evt_settingsAppliedPivot_data, 'pivotY', pivot.y)
+        setattr(self.evt_settingsAppliedPivot_data, 'pivotZ', pivot.z)
+        # send the event
+        self.evt_settingsAppliedPivot.put(self.evt_settingsAppliedPivot_data)
+
+    def publish_appliedSettingsMatchStart(self, value):
+        """Publish appliedSettingsMatchStart if different than value
+
+        Arguments:
+            value {bool} -- Value to update appliedSettingsMatchStart
+        """
+        if(value == self.appliedSettingsMatchStart):
+            pass
+        else:
+            self.evt_appliedSettingsMatchStart_data.appliedSettingsMatchStartIsTrue = value
+            self.evt_appliedSettingsMatchStart.put(self.evt_appliedSettingsMatchStart_data)
+            self.appliedSettingsMatchStart = value
+
+    def publishPositionUpdate(self):
+        self.evt_positionUpdate_data.positionX = self.model.targetPosition.xpos
+        self.evt_positionUpdate_data.positionY = self.model.targetPosition.ypos
+        self.evt_positionUpdate_data.positionZ = self.model.targetPosition.zpos
+        self.evt_positionUpdate_data.positionU = self.model.targetPosition.uvec
+        self.evt_positionUpdate_data.positionV = self.model.targetPosition.vvec
+        self.evt_positionUpdate_data.positionW = self.model.targetPosition.wvec
+
+        print('evt_positionUpdate_data:')
+        for prop in dir(self.evt_positionUpdate_data):
+            if not prop.startswith('__'):
+                print(prop, getattr(self.evt_positionUpdate_data, prop))
+        self.evt_positionUpdate.put(self.evt_positionUpdate_data)
+
+    def publishSettingsAppliedTcp(self):
+        tcpSettings = self.model.getTcpConfiguration()
+
+        self.evt_settingsAppliedTcp_data.ip = tcpSettings.host
+        self.evt_settingsAppliedTcp_data.port = int(tcpSettings.port)
+        self.evt_settingsAppliedTcp_data.readTimeout = float(tcpSettings.connectionTimeout)
+        self.evt_settingsAppliedTcp_data.writeTimeout = float(tcpSettings.readTimeout)
+        self.evt_settingsAppliedTcp_data.connectionTimeout = float(tcpSettings.sendTimeout)
+        self.evt_settingsAppliedTcp.put(self.evt_settingsAppliedTcp_data)
+
+    def publishDetailedState(self, detailedState):
+        """Publish detailedState when value cahnge
+
+        Arguments:
+            value {HexapodDetailedStates} -- Value to update detailedState
+        """
+        if(detailedState == self.detailedState):
+            pass
+        else:
+            self.evt_detailedState_data.detailedState = detailedState
+            self.evt_detailedState.put(self.evt_detailedState_data)
+            self.detailedState = detailedState
+
+    def getCurrentTime(self):
+        """Get curret time from SAL
+
+        Returns:
+            [double] -- Timestamp from SAL
+        """
+
+        return self.salinfo.manager.getCurrentTime()
+
+    async def waitUntilPosition(self):
+        """After move is executed, wait until position has been reached and publish inPosition
+        """
 
         # set "inPosition" event to say False
         setattr(self.evt_inPosition_data, 'inPosition', False)
+        self.evt_inPosition.put(self.evt_inPosition_data)
 
-        # send the event
-#        self.evt_inPosition.put(self.evt_inPosition_data)
-
-        # simulate the move
-
-        await self.sim.simMoveToPosition(self.cmdState)
+        # wait until position is reached
+        await self.model.waitUntilPosition()
 
         # set "inPosition" event to say True
         setattr(self.evt_inPosition_data, 'inPosition', True)
 
         # send the event
-#        self.evt_inPosition.put(self.evt_inPosition_data)
-
-
-    def do_setMaxSpeeds(self, id_data):
-        self.assert_enabled("setMaxSpeeds")
-
-        setattr(self.conf.speedLimits, 'xyMax', getattr(id_data.data, 'xyMax'))
-        setattr(self.conf.speedLimits, 'rxryMax', getattr(id_data.data, 'rxryMax'))
-        setattr(self.conf.speedLimits, 'zMax', getattr(id_data.data, 'zMax'))
-        setattr(self.conf.speedLimits, 'rzMax', getattr(id_data.data, 'rzMax'))
-
-#        await asyncio.sleep(self.simSettings.hdwDelayApplySpeedLimits)
-
-        # there is no event associated with completing this command
-    
-    
-    def do_applyPositionOffset(self, id_data):
-        self.assert_enabled("applyPositionOffset")
-        pass
-    
-    def do_stopAllAxes(self, id_data):
-        self.assert_enabled("stopAllAxes")
-        pass
-    
-    def do_pivot(self, id_data):
-        self.assert_enabled("pivot")
-        pass
-    
+        self.evt_inPosition.put(self.evt_inPosition_data)

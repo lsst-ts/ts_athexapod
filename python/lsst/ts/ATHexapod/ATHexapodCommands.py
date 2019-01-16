@@ -1,4 +1,5 @@
-from enum import Enum
+__all__ = ["ATHexapodCommand"]
+
 
 class ATHexapodCommand:
 
@@ -29,7 +30,6 @@ class ATHexapodCommand:
         """
         return "\3"
 
-
     def requestMotionStatus(self):
         """
         (p. 140) Request Motion Status.
@@ -54,7 +54,6 @@ class ATHexapodCommand:
         4=third axis is moving ...
         """
         return "\5"
-
 
     def queryForPositionChange(self):
         """
@@ -85,7 +84,6 @@ class ATHexapodCommand:
         """
         return "\7"
 
-
     def stopAllAxes(self):
         """
         (p. 143) Stop All Axes
@@ -96,8 +94,8 @@ class ATHexapodCommand:
         """
         return chr(24)
 
-
-    def setTargetPosition(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+    def setTargetPosition(self, X: float = None, Y: float = None, Z: float = None,
+                          U: float = None, V: float = None, W: float = None):
         """
         (p. 206) Set Target Position
         Execute:
@@ -116,11 +114,17 @@ class ATHexapodCommand:
         target += " W " + str(float(W)) if W is not None else ""
         return "MOV" + target
 
-    def performsReference(self, X: bool = True, Y: bool = False, Z: bool = False, U: bool = False, V: bool = False, W: bool = False):
-        """
-        Performs a reference .
-        Moves the given axis to the reference point switch and sets the current position to a defined value. See below for details.
-        If Multiple axes are given in the command, they are moved synchronously.
+    def performsReference(self, X: bool = True, Y: bool = False, Z: bool = False,
+                          U: bool = False, V: bool = False, W: bool = False):
+        """Perform a reference.
+
+        Move the given axis to the reference point switch
+        and set the current position to a defined value.
+
+        See below for details.
+
+        If Multiple axes are given in the command, they are moved
+        synchronously.
         """
         target = ""
         target += " X " if X else ""
@@ -139,7 +143,8 @@ class ATHexapodCommand:
         """
         return "MOV? X Y Z U V W"
 
-    def setLowPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+    def setLowPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None,
+                                U: float = None, V: float = None, W: float = None):
         """
         (p. 212) Set Low Position Soft Limit
 
@@ -171,11 +176,13 @@ class ATHexapodCommand:
         """
         return "ONT?"
 
-    def setHighPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+    def setHighPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None,
+                                 U: float = None, V: float = None, W: float = None):
         """
         (p. 214) Set High Position Soft Limit
 
-        Limits the high end of the axis travel range in closed-loop operation ("soft limit").
+        Limits the high end of the axis travel range in closed-loop
+        operation ("soft limit").
         """
         target = ""
         target += " X " + str(float(X)) if X is not None else ""
@@ -195,11 +202,13 @@ class ATHexapodCommand:
     def getPositionUnit(self):
         """
         (p. 217) Get Position Unit
-        Gets the current unit of the position. If all arguments are omitted, gets current unit of the position for all axes.
+
+        Get the current unit of the position.
         """
         return "PUN? X Y Z U V W"
 
-    def setTargetRelativeToCurrentPosition(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+    def setTargetRelativeToCurrentPosition(self, X: float = None, Y: float = None, Z: float = None,
+                                           U: float = None, V: float = None, W: float = None):
         """
         (p. 215) Set Target Relative To Current Position
         Moves given axes relative to the last commanded target position.
@@ -211,13 +220,15 @@ class ATHexapodCommand:
         target += " U " + str(float(U)) if U is not None else ""
         target += " V " + str(float(V)) if V is not None else ""
         target += " W " + str(float(W)) if W is not None else ""
-        return "MVR"+target
+        return "MVR" + target
 
-    def virtualMove(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+    def virtualMove(self, X: float = None, Y: float = None, Z: float = None,
+                    U: float = None, V: float = None, W: float = None):
         """
         (p. 253) VMO? (Virtual Move)
 
-        Checks whether the moving platform of the Hexapod can approach a specified position from the current position.
+        Checks whether the moving platform of the Hexapod can approach
+        a specified position from the current position.
 
         Used to validate if MVR command is possible.
         """
@@ -228,19 +239,21 @@ class ATHexapodCommand:
         target += " U " + str(float(U)) if U is not None else ""
         target += " V " + str(float(V)) if V is not None else ""
         target += " W " + str(float(W)) if W is not None else ""
-        return "VMO?"+target
+        return "VMO?" + target
 
     def setPivotPoint(self, X: float = None, Y: float = None, Z: float = None):
         """
         (p. 227)(Set Pivot Point)
 
-        Sets the pivot point coordinates in the volatile memory. Can only be set when the following holds true for the rotation coordinates of the moving platform: U = V = W = 0
+        Sets the pivot point coordinates in the volatile memory.
+        Can only be set when the following holds true for the rotation
+        coordinates of the moving platform: U = V = W = 0
         """
         target = ""
         target += " X " + str(float(X)) if X is not None else ""
         target += " Y " + str(float(Y)) if Y is not None else ""
         target += " Z " + str(float(Z)) if Z is not None else ""
-        return "SPI"+target
+        return "SPI" + target
 
     def getPivotPoint(self):
         """
@@ -256,7 +269,8 @@ class ATHexapodCommand:
         """
         return "SSL?"
 
-    def setSoftLimit(self, X: bool = None, Y: bool = None, Z: bool = None, U: bool = None, V: bool = None, W: bool = None):
+    def setSoftLimit(self, X: bool = None, Y: bool = None, Z: bool = None,
+                     U: bool = None, V: bool = None, W: bool = None):
         """
         (p. 229) Set Soft Limit
 
@@ -271,9 +285,10 @@ class ATHexapodCommand:
         target += " U " + ("1" if U else "0")
         target += " V " + ("1" if V else "0")
         target += " W " + ("1" if W else "0")
-        return "SSL"+target
+        return "SSL" + target
 
-    def setClosedLoopVelocity(self, X: float = None, Y: float = None, Z: float = None, U: float = None, V: float = None, W: float = None):
+    def setClosedLoopVelocity(self, X: float = None, Y: float = None, Z: float = None,
+                              U: float = None, V: float = None, W: float = None):
         """
         (p. 243) (Set Closed-Loop Velocity)
 
@@ -286,7 +301,7 @@ class ATHexapodCommand:
         target += " U " + str(float(U)) if U is not None else ""
         target += " V " + str(float(V)) if V is not None else ""
         target += " W " + str(float(W)) if W is not None else ""
-        return "VEL"+target
+        return "VEL" + target
 
     def getClosedLoopVelocity(self):
         """
@@ -302,10 +317,12 @@ class ATHexapodCommand:
 
         Sets the velocity for the moving platform of the Hexapod
 
-        The velocity can only be set with VLS when the Hexapod is not moving (axes X, Y, Z, U, V, W; query with #5 (p. 140)). For axes A and B, the velocity can be set with VEL (p. 243).
+        The velocity can only be set with VLS when the Hexapod
+        is not moving (axes X, Y, Z, U, V, W; query with #5 (p. 140)).
+        For axes A and B, the velocity can be set with VEL (p. 243).
         """
         velocity = float(velocity)
-        return "VLS "+str(velocity)
+        return "VLS " + str(velocity)
 
     def getSystemVelocity(self):
         """

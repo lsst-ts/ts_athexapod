@@ -1,0 +1,4 @@
+-Update method to check if device is in motion with real hardware, currently is comparing positions because the method that comes with the controller doesn't work (at least in the simulator)
+-implement update in velocities
+-publish when the system is (or not) ready to receive commands
+-define python depencencies properly

@@ -21,16 +21,18 @@
 """
 Simple hardware simulator to be used with ATHexapodCSC
 """
+__all__ = ["SimATHexapod"]
 
 import asyncio
 import time
 import numpy as np
 
-class simATHexapod:
 
-#   hdwDelayApplyPositionLimits = 10  # seconds
-#   hdwDelayMoveToPosition = 5  # seconds
-#   hdwProbFailure = 0.1
+class SimATHexapod:
+
+    # hdwDelayApplyPositionLimits = 10  # seconds
+    # hdwDelayMoveToPosition = 5  # seconds
+    # hdwProbFailure = 0.1
 
     def __init__(self, simParams, simLimits, simState):
         self.simParams = simParams
@@ -39,30 +41,29 @@ class simATHexapod:
 
     def simPositionLimits(self, xyMax, zMin, zMax, uvMax, wMin, wMax):
         self.simLimits.posLimits.xyMax = xyMax
-    
+
     def simSpeedLimits(self, xyMax, rxryMax, zMax, rzMax):
-        self.simLimits.speedLimits.xyMax = xyMax
-     
+        self.simLimits.SpeedLimits.xyMax = xyMax
+
     async def simMoveToPosition(self, cmd):
         self.xnew = cmd.xpos
-        
+
         # prep parameters for move
         #
         self.simState.time = time.time()
         # calculate velocities
         #
-        deltaX = self.xnew - self.simState.xpos        
-        self.xvel = self.simLimits.speedLimits.xyMax * np.sign(deltaX)
+        deltaX = self.xnew - self.simState.xpos
+        self.xvel = self.simLimits.SpeedLimits.xyMax * np.sign(deltaX)
         #
         await self.positionLoop()
 
     async def positionLoop(self):
 
         print('positionLoop: ', self.simState.xpos, self.xnew, self.xvel)
-        while np.abs(self.simState.xpos - self.xnew) > self.simParams.moveEpsilon and np.sign(self.xnew - self.simState.xpos) == np.sign(self.xvel):
+        while np.abs(self.simState.xpos - self.xnew) > self.simParams.moveEpsilon \
+                and np.sign(self.xnew - self.simState.xpos) == np.sign(self.xvel):
             self.simState.xpos += self.xvel * self.simParams.positionLoopDeltaT
             self.simState.time = time.time()
             print('positionLoop: ', self.simState.time, self.simState.xpos)
             await asyncio.sleep(self.simParams.positionLoopDeltaT)
-
-            

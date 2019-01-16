@@ -1,0 +1,40 @@
+========================================================================================
+Report      : ERROR
+Date        : Wed Dec 26 22:07:58 UTC 2018
+Description : Failed to connect to/create the default domain
+Node        : d47368925293
+Process     : python3.6 <3251>
+Thread      : main thread 7f7afa523740
+Internals   : V6.4.140320OSS/24b1387/24b1387/gapi::gapi_domainParticipantFactory::gapi_domainParticipantFactory_create_participant/gapi_domainParticipantFactory.c/280/0/1545862078.639970093
+========================================================================================
+Report      : ERROR
+Date        : Wed Dec 26 22:07:58 UTC 2018
+Description : Failed to connect to/create the default domain
+Node        : d47368925293
+Process     : python3.6 <3251>
+Thread      : main thread 7f7afa523740
+Internals   : V6.4.140320OSS/24b1387/24b1387/gapi::gapi_domainParticipantFactory::gapi_domainParticipantFactory_create_participant/gapi_domainParticipantFactory.c/280/0/1545862078.765168031
+========================================================================================
+Report      : ERROR
+Date        : Wed Dec 26 22:07:58 UTC 2018
+Description : Failed to connect to/create the default domain
+Node        : d47368925293
+Process     : python3.6 <3251>
+Thread      : main thread 7f7afa523740
+Internals   : V6.4.140320OSS/24b1387/24b1387/gapi::gapi_domainParticipantFactory::gapi_domainParticipantFactory_create_participant/gapi_domainParticipantFactory.c/280/0/1545862078.838787982
+========================================================================================
+Report      : ERROR
+Date        : Wed Dec 26 22:07:58 UTC 2018
+Description : Failed to connect to/create the default domain
+Node        : d47368925293
+Process     : python3.6 <3251>
+Thread      : main thread 7f7afa523740
+Internals   : V6.4.140320OSS/24b1387/24b1387/gapi::gapi_domainParticipantFactory::gapi_domainParticipantFactory_create_participant/gapi_domainParticipantFactory.c/280/0/1545862078.919487148
+========================================================================================
+Report      : ERROR
+Date        : Wed Dec 26 22:07:58 UTC 2018
+Description : Failed to connect to/create the default domain
+Node        : d47368925293
+Process     : python3.6 <3251>
+Thread      : main thread 7f7afa523740
+Internals   : V6.4.140320OSS/24b1387/24b1387/gapi::gapi_domainParticipantFactory::gapi_domainParticipantFactory_create_participant/gapi_domainParticipantFactory.c/280/0/1545862078.974117898
