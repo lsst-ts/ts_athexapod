@@ -8,12 +8,6 @@ velocityXYMax : 1
 velocityRxRyMax : 1
 velocityZMax : 1
 velocityRzMax : 1
-positionX : 0
-positionY : 0
-positionZ : 0
-positionU : 0
-positionV : 0
-positionW : 0
 pivotX : 0
 pivotY : 0
 pivotZ : 0

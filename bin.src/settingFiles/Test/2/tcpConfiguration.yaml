@@ -1,4 +1,4 @@
-host: "139.229.136.151"
+host: "140.252.33.129"
 port: 50000
 connectionTimeout: 2
 readTimeout: 2

@@ -8,4 +8,4 @@ aliases:
     Default2:
         settingSet: "Test"
         settingVersion: 2
-simulated: 1
+simulated: 0

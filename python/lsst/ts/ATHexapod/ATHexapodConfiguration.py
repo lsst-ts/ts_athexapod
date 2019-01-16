@@ -33,12 +33,6 @@ class ConfigurationKeeper:
         initialSetup.velocityRxRyMax = self.localConfiguration.readValue('velocityRxRyMax')
         initialSetup.velocityZMax = self.localConfiguration.readValue('velocityZMax')
         initialSetup.velocityRzMax = self.localConfiguration.readValue('velocityRzMax')
-        initialSetup.positionX = self.localConfiguration.readValue('positionX')
-        initialSetup.positionY = self.localConfiguration.readValue('positionY')
-        initialSetup.positionZ = self.localConfiguration.readValue('positionZ')
-        initialSetup.positionU = self.localConfiguration.readValue('positionU')
-        initialSetup.positionV = self.localConfiguration.readValue('positionV')
-        initialSetup.positionW = self.localConfiguration.readValue('positionW')
         initialSetup.pivotX = self.localConfiguration.readValue('pivotX')
         initialSetup.pivotY = self.localConfiguration.readValue('pivotY')
         initialSetup.pivotZ = self.localConfiguration.readValue('pivotZ')
@@ -59,6 +53,15 @@ class ConfigurationKeeper:
         tcpConfiguration.endStr = self.localConfiguration.readValue('endStr')
         tcpConfiguration.maxLength = self.localConfiguration.readValue('maxLength')
         return tcpConfiguration
+
+    def getSettingVersions(self):
+        """Return string with comma separated values as recommended Settings
+
+        Returns:
+            [String] -- list of recommended settings
+        """
+
+        return self.mainConfiguration.getRecommendedSettings()
 
 
 class InitialHexapodSetup:
