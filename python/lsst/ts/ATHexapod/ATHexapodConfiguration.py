@@ -29,10 +29,7 @@ class ConfigurationKeeper:
         initialSetup.limitUVMax = self.localConfiguration.readValue('limitUVMax')
         initialSetup.limitWMin = self.localConfiguration.readValue('limitWMin')
         initialSetup.limitWMax = self.localConfiguration.readValue('limitWMax')
-        initialSetup.velocityXYMax = self.localConfiguration.readValue('velocityXYMax')
-        initialSetup.velocityRxRyMax = self.localConfiguration.readValue('velocityRxRyMax')
-        initialSetup.velocityZMax = self.localConfiguration.readValue('velocityZMax')
-        initialSetup.velocityRzMax = self.localConfiguration.readValue('velocityRzMax')
+        initialSetup.speed = self.localConfiguration.readValue('speed')
         initialSetup.pivotX = self.localConfiguration.readValue('pivotX')
         initialSetup.pivotY = self.localConfiguration.readValue('pivotY')
         initialSetup.pivotZ = self.localConfiguration.readValue('pivotZ')
@@ -72,10 +69,7 @@ class InitialHexapodSetup:
         self.limitUVMax = 7.5
         self.limitWMin = -12.5
         self.limitWMax = 12.5
-        self.velocityXYMax = 1
-        self.velocityRxRyMax = 1
-        self.velocityZMax = 1
-        self.velocityRzMax = 1
+        self.speed = 1
         self.positionX = 0
         self.positionY = 0
         self.positionZ = 0

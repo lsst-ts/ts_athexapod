@@ -396,7 +396,7 @@ class CommunicateTestCase(unittest.TestCase):
         async def doit():
             harness = Harness(initial_state=salobj.State.STANDBY)
             commands = ("start", "enable", "disable", "exitControl", "standby",
-                        "applyPositionLimits", "moveToPosition", "setMaxSpeeds",
+                        "applyPositionLimits", "moveToPosition", "setMaxSystemSpeeds",
                         "applyPositionOffset", "stopAllAxes", "pivot")
             self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
             state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
@@ -444,7 +444,7 @@ class CommunicateTestCase(unittest.TestCase):
             self.assertEqual(state.summaryState, salobj.State.ENABLED)
 
             for bad_command in commands:
-                if bad_command in ("disable", "applyPositionLimits", "moveToPosition", "setMaxSpeeds",
+                if bad_command in ("disable", "applyPositionLimits", "moveToPosition", "setMaxSystemSpeeds",
                                    "applyPositionOffset", "stopAllAxes", "pivot"):
                     continue  # valid command in DISABLED state
                 with self.subTest(bad_command=bad_command):

@@ -18,7 +18,7 @@ class ATHexapodRemote:
         self.sal.salCommand("ATHexapod_command_setValue")
         self.sal.salCommand("ATHexapod_command_applyPositionLimits")
         self.sal.salCommand("ATHexapod_command_moveToPosition")
-        self.sal.salCommand("ATHexapod_command_setMaxSpeeds")
+        self.sal.salCommand("ATHexapod_command_setMaxSystemSpeeds")
         self.sal.salCommand("ATHexapod_command_applyPositionOffset")
         self.sal.salCommand("ATHexapod_command_stopAllAxes")
         self.sal.salCommand("ATHexapod_command_pivot")
@@ -365,29 +365,26 @@ class ATHexapodRemote:
         cmdId = self.issueCommand_moveToPosition(x, y, z, u, v, w)
         return self.waitForCompletion_moveToPosition(cmdId, timeoutInSeconds)
 
-    def issueCommand_setMaxSpeeds(self, xyMax, rxryMax, zMax, rzMax):
-        data = ATHexapod_command_setMaxSpeedsC()
-        data.xyMax = xyMax
-        data.rxryMax = rxryMax
-        data.zMax = zMax
-        data.rzMax = rzMax
+    def issueCommand_setMaxSystemSpeeds(self, speed):
+        data = ATHexapod_command_setMaxSystemSpeedsC()
+        data.speed = speed
 
-        return self.sal.issueCommand_setMaxSpeeds(data)
+        return self.sal.issueCommand_setMaxSystemSpeeds(data)
 
-    def getResponse_setMaxSpeeds(self):
+    def getResponse_setMaxSystemSpeeds(self):
         data = ATHexapod_ackcmdC()
-        result = self.sal.getResponse_setMaxSpeeds(data)
+        result = self.sal.getResponse_setMaxSystemSpeeds(data)
         return result, data
 
-    def waitForCompletion_setMaxSpeeds(self, cmdId, timeoutInSeconds=10):
-        waitResult = self.sal.waitForCompletion_setMaxSpeeds(cmdId, timeoutInSeconds)
-        # ackResult, ack = self.getResponse_setMaxSpeeds()
+    def waitForCompletion_setMaxSystemSpeeds(self, cmdId, timeoutInSeconds=10):
+        waitResult = self.sal.waitForCompletion_setMaxSystemSpeeds(cmdId, timeoutInSeconds)
+        # ackResult, ack = self.getResponse_setMaxSystemSpeeds()
         # return waitResult, ackResult, ack
         return waitResult
 
-    def issueCommandThenWait_setMaxSpeeds(self, xyMax, rxryMax, zMax, rzMax, timeoutInSeconds=10):
-        cmdId = self.issueCommand_setMaxSpeeds(xyMax, rxryMax, zMax, rzMax)
-        return self.waitForCompletion_setMaxSpeeds(cmdId, timeoutInSeconds)
+    def issueCommandThenWait_setMaxSystemSpeeds(self, speed, timeoutInSeconds=10):
+        cmdId = self.issueCommand_setMaxSystemSpeeds(speed)
+        return self.waitForCompletion_setMaxSystemSpeeds(cmdId, timeoutInSeconds)
 
     def issueCommand_applyPositionOffset(self, x, y, z, u, v, w):
         data = ATHexapod_command_applyPositionOffsetC()

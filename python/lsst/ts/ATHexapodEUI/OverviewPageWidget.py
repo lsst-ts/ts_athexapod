@@ -92,27 +92,12 @@ class OverviewPageWidget(QtGui.QWidget):
         self.row += 2
 
     def addVelocityLimits(self):
-        self.velocityXYMax = QtGui.QLineEdit()
-        self.velocityXYMax.setReadOnly(True)
-        self.velocityRxRyMax = QtGui.QLineEdit()
-        self.velocityRxRyMax.setReadOnly(True)
-        self.velocityZMax = QtGui.QLineEdit()
-        self.velocityZMax.setReadOnly(True)
-        self.velocityRzMax = QtGui.QLineEdit()
-        self.velocityRzMax.setReadOnly(True)
+        self.speed = QtGui.QLineEdit()
+        self.speed.setReadOnly(True)
 
         col = self.col
-        self.dataLayout.addWidget(QtGui.QLabel("velocityXYMax"), self.row, col)
-        self.dataLayout.addWidget(self.velocityXYMax, self.row + 1, col)
-        col += 1
-        self.dataLayout.addWidget(QtGui.QLabel("velocityRxRyMax"), self.row, col)
-        self.dataLayout.addWidget(self.velocityRxRyMax, self.row + 1, col)
-        col += 1
-        self.dataLayout.addWidget(QtGui.QLabel("velocityZMax"), self.row, col)
-        self.dataLayout.addWidget(self.velocityZMax, self.row + 1, col)
-        col += 1
-        self.dataLayout.addWidget(QtGui.QLabel("velocityRzMax"), self.row, col)
-        self.dataLayout.addWidget(self.velocityRzMax, self.row + 1, col)
+        self.dataLayout.addWidget(QtGui.QLabel("System Velocity"), self.row, col)
+        self.dataLayout.addWidget(self.speed, self.row + 1, col)
         self.row += 2
 
     def addPivot(self):
@@ -257,14 +242,8 @@ class OverviewPageWidget(QtGui.QWidget):
         self.limitWMax.setText(str(limitWMax))
 
     def processEventSettingsAppliedVelocities(self, data):
-        velocityXYMax = data[-1].velocityXYMax
-        velocityRxRyMax = data[-1].velocityRxRyMax
-        velocityZMax = data[-1].velocityZMax
-        velocityRzMax = data[-1].velocityRzMax
-        self.velocityXYMax.setText(str(velocityXYMax))
-        self.velocityRxRyMax.setText(str(velocityRxRyMax))
-        self.velocityZMax.setText(str(velocityZMax))
-        self.velocityRzMax.setText(str(velocityRzMax))
+        speed = data[-1].systemSpeed
+        self.speed.setText(str(speed))
 
     def processEventSettingsAppliedPivot(self, data):
         pivotX = data[-1].pivotX

@@ -149,7 +149,8 @@ class Model:
         self.realPosition.inMotion = True
         self.detailedState = HexapodDetailedStates.INMOTIONSTATE
         # Update target
-        self.updateCommandedPosition(X=X, Y=Y, Z=Z, U=U, V=V, W=W)
+        Xc, Yc, Zc, Uc, Vc, Wc = await self.hexController.getTargetPositions()
+        self.updateCommandedPosition(X=Xc, Y=Yc, Z=Zc, U=Uc, V=Vc, W=Wc)
 
     async def applyPositionLimits(self, salCommand, skipState=False):
         """Send command to set position limits to the Hexapod controller.
@@ -180,7 +181,7 @@ class Model:
         self.initialSetup.limitWMin = salCommand.wMin
         self.initialSetup.limitWMax = salCommand.wMax
 
-    async def setMaxSpeeds(self, salCommand):
+    async def setMaxSystemSpeeds(self, salCommand):
         """Set maximum speeds, won't be implemented for first version
 
         Arguments:
@@ -191,11 +192,8 @@ class Model:
         """
 
         self.assertInMotion(inspect.currentframe().f_code.co_name)
-        self.initialSetup.velocityXYMax = salCommand.xyMax
-        self.initialSetup.velocityRxRyMax = salCommand.rxryMax
-        self.initialSetup.velocityZMax = salCommand.zMax
-        self.initialSetup.velocityRzMax = salCommand.rzMax
-        raise ValueError("Command not implemented...")
+        await self.hexController.setSystemVelocity(salCommand.speed)
+        self.initialSetup.speed = await self.hexController.getSystemVelocity()
 
     async def applyPositionOffset(self, salCommand):
         """Send command to move to an offset to the Hexapod controller.
@@ -224,8 +222,8 @@ class Model:
         self.realPosition.inMotion = True
         self.detailedState = HexapodDetailedStates.INMOTIONSTATE
         # Update target
-        self.updateCommandedPosition(X=positionToCheck.x, Y=positionToCheck.y, Z=positionToCheck.z,
-                                     U=positionToCheck.u, V=positionToCheck.v, W=positionToCheck.w)
+        Xc, Yc, Zc, Uc, Vc, Wc = await self.hexController.getTargetPositions()
+        self.updateCommandedPosition(X=Xc, Y=Yc, Z=Zc, U=Uc, V=Vc, W=Wc)
 
     async def stopAllAxes(self, salCommand):
         """Sends stop all motion to the PI hexapod controller

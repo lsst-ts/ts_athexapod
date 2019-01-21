@@ -190,17 +190,14 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.publishPositionUpdate()
         await self.waitUntilPosition()
 
-    async def do_setMaxSpeeds(self, id_data):
-        self.assert_enabled("setMaxSpeeds")
+    async def do_setMaxSystemSpeeds(self, id_data):
+        self.assert_enabled("setMaxSystemSpeeds")
 
         # Execute command in hardware
-        await self.model.setMaxSpeeds(id_data.data)
+        await self.model.setMaxSystemSpeeds(id_data.data)
 
         # Update event datatype
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityXYMax', id_data.data.xyMax)
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityRxRyMax', id_data.data.rxryMax)
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityZMax', id_data.data.zMax)
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityRzMax', id_data.data.rzMax)
+        setattr(self.evt_settingsAppliedVelocities_data, 'systemSpeed', self.model.initialSetup.speed)
 
         # send the event
         self.evt_settingsAppliedVelocities.put(self.evt_settingsAppliedVelocities_data)

@@ -257,7 +257,7 @@ class TestAtHexapod(unittest.TestCase):
     def testGetErrors(self):
         """Get error list."""
         async def doit():
-            errors = await self.hexController.getErrors()
+            errors = await self.hexController.checkErrors()
             print(errors)
         asyncio.get_event_loop().run_until_complete(doit())
 
