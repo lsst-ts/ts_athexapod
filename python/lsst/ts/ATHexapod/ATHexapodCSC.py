@@ -92,6 +92,7 @@ class ATHexapodCsc(salobj.BaseCsc):
             await self.model.initialize()
             await self.publish_currentPivot()
             await self.publish_positionLimits()
+            await self.publish_systemVelocity()
             self.publishSettingsAppliedTcp()
         except Exception as e:
             await self.model.disconnect()
@@ -180,6 +181,12 @@ class ATHexapodCsc(salobj.BaseCsc):
         setattr(self.evt_settingsAppliedPositionLimits_data, 'limitWMin', data.wMin)
         setattr(self.evt_settingsAppliedPositionLimits_data, 'limitWMax', data.wMax)
 
+        # send the event
+        self.evt_settingsAppliedPositionLimits.put(self.evt_settingsAppliedPositionLimits_data)
+
+    async def publish_systemVelocity(self):
+        velocity = await self.model.getMaxSystemSpeeds()
+        self.evt_settingsAppliedPositionLimits_data.systemSpeed = velocity
         # send the event
         self.evt_settingsAppliedPositionLimits.put(self.evt_settingsAppliedPositionLimits_data)
 

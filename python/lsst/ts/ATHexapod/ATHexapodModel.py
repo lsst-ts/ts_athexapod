@@ -555,6 +555,16 @@ class Model:
         tcpConfiguration = self.configuration.getTcpConfiguration()
         return tcpConfiguration
 
+    async def getMaxSystemSpeeds(self):
+        """Return System Velocity from the PI controller
+
+        Returns:
+            [float] -- Maximum velocity in mm/s
+        """
+
+        self.initialSetup.speed = await self.hexController.getSystemVelocity()
+        return self.initialSetup.speed
+
 
 class HexapodDetailedStates(Enum):
     INMOTIONSTATE = SALPY_ATHexapod.ATHexapod_shared_DetailedState_InMotionState
