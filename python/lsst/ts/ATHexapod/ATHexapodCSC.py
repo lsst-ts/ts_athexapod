@@ -186,9 +186,9 @@ class ATHexapodCsc(salobj.BaseCsc):
 
     async def publish_systemVelocity(self):
         velocity = await self.model.getMaxSystemSpeeds()
-        self.evt_settingsAppliedPositionLimits_data.systemSpeed = velocity
+        self.evt_settingsAppliedVelocities_data.systemSpeed = velocity
         # send the event
-        self.evt_settingsAppliedPositionLimits.put(self.evt_settingsAppliedPositionLimits_data)
+        self.evt_settingsAppliedVelocities.put(self.evt_settingsAppliedVelocities_data)
 
     async def do_moveToPosition(self, id_data):
         self.assert_enabled("moveToPosition")
