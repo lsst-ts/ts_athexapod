@@ -96,6 +96,10 @@ class Model:
         command.z = self.initialSetup.pivotZ
         await self.pivot(command, skipState=True)
 
+        command = salCommandGeneric()
+        command.speed = self.initialSetup.speed
+        await self.setMaxSystemSpeeds(command, skipState=True)
+
     async def disconnect(self):
         """Safely shutdown the ATHexapod
         """
@@ -181,7 +185,7 @@ class Model:
         self.initialSetup.limitWMin = salCommand.wMin
         self.initialSetup.limitWMax = salCommand.wMax
 
-    async def setMaxSystemSpeeds(self, salCommand):
+    async def setMaxSystemSpeeds(self, salCommand, skipState=False):
         """Set maximum speeds, won't be implemented for first version
 
         Arguments:
@@ -190,8 +194,8 @@ class Model:
         Raises:
             ValueError -- Error occurs
         """
-
-        self.assertInMotion(inspect.currentframe().f_code.co_name)
+        if(not skipState):
+            self.assertInMotion(inspect.currentframe().f_code.co_name)
         await self.hexController.setSystemVelocity(salCommand.speed)
         self.initialSetup.speed = await self.hexController.getSystemVelocity()
 
