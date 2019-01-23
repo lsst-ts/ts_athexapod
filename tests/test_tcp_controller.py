@@ -287,6 +287,22 @@ class TestAtHexapod(unittest.TestCase):
         asyncio.get_event_loop().run_until_complete(doit())
 
     # @unittest.skip("Don't run...")
+    def testSpeedSet(self):
+        """Test set sft limits status."""
+        async def doit():
+            systemVelocity = 1
+            await self.hexController.setSystemVelocity(systemVelocity=systemVelocity)
+            velocity = await self.hexController.getSystemVelocity()
+            self.assertEqual(systemVelocity, velocity)
+
+            systemVelocity = 3
+            await self.hexController.setSystemVelocity(systemVelocity=systemVelocity)
+            velocity = await self.hexController.getSystemVelocity()
+            self.assertEqual(systemVelocity, velocity)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    # @unittest.skip("Don't run...")
     def testVirtualMove(self):
         """Test virtual move."""
         async def doit():

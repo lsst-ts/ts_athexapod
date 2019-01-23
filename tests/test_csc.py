@@ -324,8 +324,51 @@ class CommunicateTestCase(unittest.TestCase):
                 cmd_data_sent.w = 100
                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
+            # est unrealistic values to move to position for V
+            with self.assertRaises(Exception) as context:
+                # send the applyPositionOffset command with random data
+                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                cmd_data_sent.v = 100
+                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
             print(str(context.exception))
             self.assertTrue('-302' in str(context.exception))
+
+            # est unrealistic values to move to position for W
+            with self.assertRaises(Exception) as context:
+                # send the speed command with values out of range
+                cmd_data_sent = harness.remote.setMaxSystemSpeeds.DataType()
+                cmd_data_sent.speed = 100
+                ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+
+            print(str(context.exception))
+            self.assertTrue('-302' in str(context.exception))
+
+            await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
+    def test_velocity_command(self):
+        """Send commands to update velocity and check settingsApplied
+        """
+        print("test_limits_command test...")
+        async def doit():
+            harness = await self.beginningFunc()
+            ack = None
+
+            task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
+            cmd_data_sent = harness.remote.setMaxSystemSpeeds.DataType()
+            cmd_data_sent.speed = 1
+            ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+            evt_data = await task
+            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.data.systemSpeed, places=3)
+
+            task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
+            cmd_data_sent = harness.remote.setMaxSystemSpeeds.DataType()
+            cmd_data_sent.speed = 3
+            ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.data.systemSpeed, places=3)
 
             await self.endFunc(harness)
 
