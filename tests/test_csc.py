@@ -337,7 +337,7 @@ class CommunicateTestCase(unittest.TestCase):
             # est unrealistic values to move to position for W
             with self.assertRaises(Exception) as context:
                 # send the speed command with values out of range
-                cmd_data_sent = harness.remote.setMaxSystemSpeeds.DataType()
+                cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
                 cmd_data_sent.speed = 100
                 ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
 
@@ -358,17 +358,18 @@ class CommunicateTestCase(unittest.TestCase):
             ack = None
 
             task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
-            cmd_data_sent = harness.remote.setMaxSystemSpeeds.DataType()
+            cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
             cmd_data_sent.speed = 1
             ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
             evt_data = await task
-            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.data.systemSpeed, places=3)
+            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
 
             task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
-            cmd_data_sent = harness.remote.setMaxSystemSpeeds.DataType()
+            cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
             cmd_data_sent.speed = 3
             ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
-            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.data.systemSpeed, places=3)
+            evt_data = await task
+            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
 
             await self.endFunc(harness)
 
