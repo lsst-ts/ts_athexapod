@@ -1,5 +1,5 @@
 
-import QTHelpers
+from lsst.ts.ATHexapodEUI import QTHelpers
 from lsst.ts.ATHexapodEUI.ATHexapodEnumerations import SummaryStates
 from lsst.ts.ATHexapodEUI.DataCache import DataCache
 from pyqtgraph.Qt import QtGui
