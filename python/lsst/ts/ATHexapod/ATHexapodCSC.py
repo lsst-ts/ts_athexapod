@@ -54,7 +54,6 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.appliedSettingsMatchStart = False
         self.telemetryInterval = 1
         self.recoverTimeout = 5  # Times that the CSC try to recover communication before going to Fault state
-
         self.telTask = None
         #
         # set up event data structures
@@ -84,22 +83,18 @@ class ATHexapodCsc(salobj.BaseCsc):
         asyncio.ensure_future(self.telemetryLoop())
 
     async def do_start(self, id_data):
+        self.log.setLevel(10)
         if self.summary_state is not salobj.State.STANDBY:
             raise ValueError(f"Start not valid in state: {self.summary_state.name}")
         self.publish_appliedSettingsMatchStart(True)
         self.model.updateSettings(id_data.data.settingsToApply)
         try:
-            print("1.1")
             await self.model.initialize()
-            print("1.2")
-            await self.publish_currentPivot()
-            print("1.3")
+            self.log.debug("Initialize done....")
+            await self.publish_currentPivot()  # Not configurable any more.... (for now....)
             await self.publish_positionLimits()
-            print("1.4")
             await self.publish_systemVelocity()
-            print("1.5")
             self.publishSettingsAppliedTcp()
-            print("1.6")
         except Exception as e:
             await self.model.disconnect()
             raise(e)

@@ -210,7 +210,7 @@ class ATHexapodController:
         return bool(int(await self.communicator.getMessage()))
 
     @checkForRun
-    async def initializePosition(self):
+    async def getTargetPositions(self):
         """
         Function in charge to query positions
         """

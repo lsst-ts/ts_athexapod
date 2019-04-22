@@ -30,9 +30,10 @@ class ConfigurationKeeper:
         initialSetup.limitWMin = self.localConfiguration.readValue('limitWMin')
         initialSetup.limitWMax = self.localConfiguration.readValue('limitWMax')
         initialSetup.speed = self.localConfiguration.readValue('speed')
-        initialSetup.pivotX = self.localConfiguration.readValue('pivotX')
-        initialSetup.pivotY = self.localConfiguration.readValue('pivotY')
-        initialSetup.pivotZ = self.localConfiguration.readValue('pivotZ')
+        # initialSetup.pivotX = self.localConfiguration.readValue('pivotX')
+        # initialSetup.pivotY = self.localConfiguration.readValue('pivotY')
+        # initialSetup.pivotZ = self.localConfiguration.readValue('pivotZ')
+        initialSetup.simulated = self.localConfiguration.readValue('simulator')
         return initialSetup
 
     def getTcpConfiguration(self):
@@ -79,6 +80,7 @@ class InitialHexapodSetup:
         self.pivotX = 0
         self.pivotY = 0
         self.pivotZ = 0
+        self.simulated = 0
 
 
 class TcpConfiguration:
