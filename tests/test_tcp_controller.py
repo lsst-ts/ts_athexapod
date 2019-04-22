@@ -9,14 +9,18 @@ class TestAtHexapod(unittest.TestCase):
 
     def setUp(self):
         async def doit():
+            print("Test 1.0")
             self.hexController = ATHexapodController()
-            self.hexController.configureCommunicator(address='140.252.33.129', port=50000, connectTimeout=5,
+            print("Test 1.1")
+            self.hexController.configureCommunicator(address='192.168.223.84', port=50000, connectTimeout=5,
                                                      readTimeout=4, sendTimeout=4, endStr="\n",
                                                      maxLength=1024)
+            print("Test 1.2")
             await self.hexController.connect()
-            await self.hexController.initializePosition()
+            # await self.hexController.initializePosition()
             self.maxPosition = 4
 
+        print("Test 1")
         asyncio.get_event_loop().run_until_complete(doit())
 
     def tearDown(self):
@@ -58,15 +62,15 @@ class TestAtHexapod(unittest.TestCase):
                     break
                 await asyncio.sleep(1)
 
-            self.assertEqual(Xcmd, Xtgt)
-            self.assertEqual(Ycmd, Ytgt)
-            self.assertEqual(Zcmd, Ztgt)
-            self.assertEqual(Ucmd, Utgt)
-            self.assertEqual(Vcmd, Vtgt)
-            self.assertEqual(Wcmd, Wtgt)
+            self.assertAlmostEqual(Xcmd, Xtgt, places=4)
+            self.assertAlmostEqual(Ycmd, Ytgt, places=4)
+            self.assertAlmostEqual(Zcmd, Ztgt, places=4)
+            self.assertAlmostEqual(Ucmd, Utgt, places=4)
+            self.assertAlmostEqual(Vcmd, Vtgt, places=4)
+            self.assertAlmostEqual(Wcmd, Wtgt, places=4)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Didn't work on the simulator, not sure if will work on the real controller")
+    # @unittest.skip("Didn't work on the simulator, not sure if will work on the real controller")
     def testReasyStatus(self):
         """Send random target and wait until reasyStatus is true."""
         async def doit():
@@ -74,21 +78,23 @@ class TestAtHexapod(unittest.TestCase):
             await self.hexController.moveToPosition(Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd)
 
             for i in range(120):
-                ready = await self.hexController.getReadyStatus()
-                if(ready):
+                moving = await self.hexController.getReadyStatus()
+                inMotion = (moving[0] | moving[1] | moving[2] | moving[3] | moving[4] | moving[5] |
+                            moving[6] | moving[7])
+                if(inMotion):
                     Xtgt, Ytgt, Ztgt, Utgt, Vtgt, Wtgt = await self.hexController.getRealPositions()
                     break
                 await asyncio.sleep(1)
 
-            self.assertEqual(Xcmd, Xtgt)
-            self.assertEqual(Ycmd, Ytgt)
-            self.assertEqual(Zcmd, Ztgt)
-            self.assertEqual(Ucmd, Utgt)
-            self.assertEqual(Vcmd, Vtgt)
-            self.assertEqual(Wcmd, Wtgt)
+            self.assertAlmostEqual(Xcmd, Xtgt, places=4)
+            self.assertAlmostEqual(Ycmd, Ytgt, places=4)
+            self.assertAlmostEqual(Zcmd, Ztgt, places=4)
+            self.assertAlmostEqual(Ucmd, Utgt, places=4)
+            self.assertAlmostEqual(Vcmd, Vtgt, places=4)
+            self.assertAlmostEqual(Wcmd, Wtgt, places=4)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Takes to long to execute...")
+    @unittest.skip("Takes to long to execute...")
     def testMoveToTarget(self):
         """Send target to the hexapod and test if it's the same as
         the hardware target.
@@ -131,7 +137,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertTrue(onTarget)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testLowLimits(self):
         """Test setting up low limits."""
         async def doit():
@@ -162,7 +168,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertAlmostEqual(Wlow, WlowTgt, places=3)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testHighLimits(self):
         """Test setting up high limits."""
         async def doit():
@@ -195,7 +201,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertAlmostEqual(Whigh, WhighTgt, places=3)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testPositionUnit(self):
         async def doit():
             xunit, yunit, zunit, uunit, vunit, wunit = await self.hexController.getUnits()
@@ -207,7 +213,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertEqual(wunit.strip(), "deg")
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testStop(self):
         """Send move command, then stop and compare current positions."""
         async def doit():
@@ -229,7 +235,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertAlmostEqual(Wtgt1, Wtgt2, places=3)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Takes to long to execute...")
+    @unittest.skip("Takes to long to execute...")
     def testOffsetMove(self):
         """Send move offset and compare positions to where it should be."""
         async def doit():
@@ -253,7 +259,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertEqual(Wtgt + offsetW, Wtgt1)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testGetErrors(self):
         """Get error list."""
         async def doit():
@@ -261,7 +267,7 @@ class TestAtHexapod(unittest.TestCase):
             print(errors)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testSoftLimitsStatus(self):
         """Test set sft limits status."""
         async def doit():
@@ -286,7 +292,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertEqual(wb, w)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testSpeedSet(self):
         """Test set sft limits status."""
         async def doit():
@@ -302,7 +308,7 @@ class TestAtHexapod(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Don't run...")
+    @unittest.skip("Don't run...")
     def testVirtualMove(self):
         """Test virtual move."""
         async def doit():

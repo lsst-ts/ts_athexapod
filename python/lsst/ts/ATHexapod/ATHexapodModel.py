@@ -75,11 +75,16 @@ class Model:
                                                  endStr=endStr, maxLength=tcpConfiguration.maxLength)
 
         await self.hexController.connect()
+        print("2.1")
         self.realPosition = StateATHexapodPosition()
+        print("2.2")
         self.targetPosition = CmdATHexapodPosition()
+        print("2.3")
         self.detailedState = HexapodDetailedStates.NOTINMOTIONSTATE
-        await self.hexController.initializePosition()
+        # await self.hexController.initializePosition()
+        print("2.4")
         self.initialSetup = self.configuration.getInitialHexapodSetup()
+        print("2.5")
         # Apply position limits to hardware from configuration files
         command = salCommandGeneric()
         command.xyMax = self.initialSetup.limitXYMax
@@ -89,15 +94,18 @@ class Model:
         command.wMin = self.initialSetup.limitWMin
         command.wMax = self.initialSetup.limitWMax
         await self.applyPositionLimits(command, skipState=True)
+
+        print("2.6")
         # Apply pivots to hardware from configuration files
         command = salCommandGeneric()
         command.x = self.initialSetup.pivotX
         command.y = self.initialSetup.pivotY
         command.z = self.initialSetup.pivotZ
         await self.pivot(command, skipState=True)
-
+        print("2.7")
         command = salCommandGeneric()
         command.speed = self.initialSetup.speed
+        print("2.8")
         await self.setMaxSystemSpeeds(command, skipState=True)
 
     async def disconnect(self):

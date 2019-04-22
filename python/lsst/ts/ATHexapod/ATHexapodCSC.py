@@ -89,11 +89,17 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.publish_appliedSettingsMatchStart(True)
         self.model.updateSettings(id_data.data.settingsToApply)
         try:
+            print("1.1")
             await self.model.initialize()
+            print("1.2")
             await self.publish_currentPivot()
+            print("1.3")
             await self.publish_positionLimits()
+            print("1.4")
             await self.publish_systemVelocity()
+            print("1.5")
             self.publishSettingsAppliedTcp()
+            print("1.6")
         except Exception as e:
             await self.model.disconnect()
             raise(e)
