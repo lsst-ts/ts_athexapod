@@ -522,7 +522,6 @@ class Model:
         timeout = 600
         loopDelay = 0.3
         err = 0.0001
-        await self.waitUntilReadyForCommand()
         while (time.time() - initial_time < timeout):
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
@@ -534,6 +533,7 @@ class Model:
                      (abs(self.realPosition.vvec - self.targetPosition.vvec) < err) and \
                      (abs(self.realPosition.wvec - self.targetPosition.wvec) < err)
 
+        await self.waitUntilReadyForCommand()
         if (not inPosition):
             raise ValueError("Position never reached...")
 
@@ -562,11 +562,11 @@ class Model:
         initial_time = time.time()
         timeout = 600
         loopDelay = 0.3
-        await self.waitUntilReadyForCommand()
         while (time.time() - initial_time <= timeout):
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
                 break
+        await self.waitUntilReadyForCommand()
         if (time.time() - initial_time >= timeout):
             raise ValueError("Motion never stopped...")
 
