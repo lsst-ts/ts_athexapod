@@ -79,6 +79,7 @@ class Model:
         self.targetPosition = CmdATHexapodPosition()
         self.detailedState = HexapodDetailedStates.NOTINMOTIONSTATE
         await self.hexController.initializePosition()
+        await self.waitUntilReadyForCommand()
         self.initialSetup = self.configuration.getInitialHexapodSetup()
         # Apply position limits to hardware from configuration files
         command = salCommandGeneric()
@@ -521,6 +522,7 @@ class Model:
         timeout = 600
         loopDelay = 0.3
         err = 0.0001
+        self.waitUntilReadyForCommand()
         while (time.time() - initial_time < timeout):
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
@@ -535,10 +537,32 @@ class Model:
         if (not inPosition):
             raise ValueError("Position never reached...")
 
+    async def waitUntilReadyForCommand(self, timeout=200):
+        """Will request PI Hexapod status, and wait until is ready to receive new commands.
+        It will trigger an exception if timeout happens
+
+        Keyword Arguments:
+            timeout {int} -- [Seconds until consider a timeout] (default: {200})
+
+        Raises:
+            ValueError: Timeout
+        """
+        initial_time = time.time()
+        ready = False
+        loopDelay = 0.3
+        while (time.time() - initial_time <= timeout):
+            await asyncio.sleep(loopDelay)
+            ready = await self.hexController.getReadyStatus()
+            if ready:
+                break
+        if (not ready):
+            raise ValueError("PI Contoller timeout: System never ready")
+
     async def waitUntilStop(self):
         initial_time = time.time()
         timeout = 600
         loopDelay = 0.3
+        self.waitUntilReadyForCommand()
         while (time.time() - initial_time <= timeout):
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:

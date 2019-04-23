@@ -344,7 +344,6 @@ class ATHexapodController:
         await self.communicator.sendMessage(self.hexc.requestControllerReadyStatus())
         response = await self.communicator.getMessage()
         ready = response == "±"
-        print(response)
         if ready == 1:
             return True
         else:

@@ -48,6 +48,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
         super().__init__(SALPY_ATHexapod, index)
+        self.log.setLevel(10)  # Print all logs
         self.summary_state = initial_state
         self.model = Model()
         self.detailedState = 0  # Last deatiled state published. Initialized at 0, which doesn't exist in SAL
@@ -72,25 +73,26 @@ class ATHexapodCsc(salobj.BaseCsc):
         # set up telemetry data structures
 
         self.tel_positionStatus_data = self.tel_positionStatus.DataType()
-        print('summary state: ', self.summary_state)
+        self.log.debug('summary state: ' + str(self.summary_state))
 
         # Publish list of recommended settings
         settingVersions = self.model.getSettingVersions()
         self.evt_settingVersions_data.recommendedSettingsLabels = settingVersions
         self.evt_settingVersions.put(self.evt_settingVersions_data)
 
-        print('starting telemetryLoop')
+        self.log.debug('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
 
     async def do_start(self, id_data):
-        self.log.setLevel(10)
         if self.summary_state is not salobj.State.STANDBY:
             raise ValueError(f"Start not valid in state: {self.summary_state.name}")
         self.publish_appliedSettingsMatchStart(True)
         self.model.updateSettings(id_data.data.settingsToApply)
         try:
+            self.log.debug("Initializing hexapod position")
             await self.model.initialize()
-            self.log.debug("Initialize done....")
+            await self.model.waitUntilReadyForCommand()  # Wait until is ready to receive commands
+            self.log.debug("Position initialized")
             await self.publish_currentPivot()  # Not configurable any more.... (for now....)
             await self.publish_positionLimits()
             await self.publish_systemVelocity()
@@ -130,7 +132,6 @@ class ATHexapodCsc(salobj.BaseCsc):
             self.telTask = await asyncio.sleep(self.telemetryInterval)
 
     async def sendTelemetry(self):
-        print('sendTelemetry: ', '{:.4f}'.format(time.time()))
         await self.model.updateState()
 
         # Get current positions and publish
@@ -263,10 +264,10 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.evt_positionUpdate_data.positionV = self.model.targetPosition.vvec
         self.evt_positionUpdate_data.positionW = self.model.targetPosition.wvec
 
-        print('evt_positionUpdate_data:')
+        self.log.debug('evt_positionUpdate_data:')
         for prop in dir(self.evt_positionUpdate_data):
             if not prop.startswith('__'):
-                print(prop, getattr(self.evt_positionUpdate_data, prop))
+                self.log.debug(prop + str(getattr(self.evt_positionUpdate_data, prop)))
         self.evt_positionUpdate.put(self.evt_positionUpdate_data)
 
     def publishSettingsAppliedTcp(self):
