@@ -522,7 +522,7 @@ class Model:
         timeout = 600
         loopDelay = 0.3
         err = 0.0001
-        self.waitUntilReadyForCommand()
+        await self.waitUntilReadyForCommand()
         while (time.time() - initial_time < timeout):
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
@@ -562,7 +562,7 @@ class Model:
         initial_time = time.time()
         timeout = 600
         loopDelay = 0.3
-        self.waitUntilReadyForCommand()
+        await self.waitUntilReadyForCommand()
         while (time.time() - initial_time <= timeout):
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
