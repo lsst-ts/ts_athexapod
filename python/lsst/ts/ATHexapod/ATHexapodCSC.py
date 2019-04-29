@@ -102,7 +102,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         await self.model.disconnect()
         super().do_standby(id_data)
 
-    def end_standby(self, id_data):
+    async def end_standby(self, id_data):
         super().end_standby(id_data)
 
     async def telemetryLoop(self):
