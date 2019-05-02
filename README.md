@@ -73,7 +73,6 @@ http://www.lsst.org/lsst/about/contributors .
 Use and redistribution of this software is covered by the GNU Public License 
 Version 3 (GPLv3) or later, as detailed below.  A copy of the GPLv3 is also 
 available at  [GNU Licenses](http://www.gnu.org/licenses/).
-</footer>
 
 ---
 
