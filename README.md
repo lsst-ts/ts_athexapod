@@ -58,8 +58,10 @@ Inside the software folder there is a folder called settingFiles, inside this fo
   ** tcpConfiguration.yaml: TCP Configuration for the ATHexapod controller 
      *** use endl for termination char
 
-<footer>
+--- 
 
+# License
+ 
 LSST Data Management System Software
 Copyright © 2008-2019 AURA/LSST.
 
@@ -74,6 +76,7 @@ available at  [GNU Licenses](http://www.gnu.org/licenses/).
 </footer>
 
 ---
+
 _**Ref:**_ [ATHexapod software user guide][athexapodguide]
 
 
