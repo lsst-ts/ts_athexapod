@@ -342,7 +342,8 @@ class ATHexapodController:
         current class variable  'self.controllerReady' accordingly
         """
         await self.communicator.sendMessage(self.hexc.requestControllerReadyStatus())
-        ready = (await self.communicator.getMessage()) == "±"
+        response = await self.communicator.getMessage()
+        ready = response == "±"
         if ready == 1:
             return True
         else:

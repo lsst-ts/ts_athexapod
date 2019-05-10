@@ -48,7 +48,7 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_main(self):
         print("Excecutable tests...")
         async def doit():
@@ -324,8 +324,52 @@ class CommunicateTestCase(unittest.TestCase):
                 cmd_data_sent.w = 100
                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
+            # est unrealistic values to move to position for V
+            with self.assertRaises(Exception) as context:
+                # send the applyPositionOffset command with random data
+                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                cmd_data_sent.v = 100
+                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
             print(str(context.exception))
             self.assertTrue('-302' in str(context.exception))
+
+            # est unrealistic values to move to position for W
+            with self.assertRaises(Exception) as context:
+                # send the speed command with values out of range
+                cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
+                cmd_data_sent.speed = 100
+                ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+
+            print(str(context.exception))
+            self.assertTrue('-302' in str(context.exception))
+
+            await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
+    def test_velocity_command(self):
+        """Send commands to update velocity and check settingsApplied
+        """
+        print("test_limits_command test...")
+        async def doit():
+            harness = await self.beginningFunc()
+            ack = None
+
+            task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
+            cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
+            cmd_data_sent.speed = 1
+            ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+            evt_data = await task
+            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
+
+            task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
+            cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
+            cmd_data_sent.speed = 3
+            ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+            evt_data = await task
+            self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
 
             await self.endFunc(harness)
 
@@ -396,7 +440,7 @@ class CommunicateTestCase(unittest.TestCase):
         async def doit():
             harness = Harness(initial_state=salobj.State.STANDBY)
             commands = ("start", "enable", "disable", "exitControl", "standby",
-                        "applyPositionLimits", "moveToPosition", "setMaxSpeeds",
+                        "applyPositionLimits", "moveToPosition", "setMaxSystemSpeeds",
                         "applyPositionOffset", "stopAllAxes", "pivot")
             self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
             state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
@@ -415,7 +459,7 @@ class CommunicateTestCase(unittest.TestCase):
             # send start; new state is DISABLED
             cmd_attr = getattr(harness.remote, f"cmd_start")
             cmd_attr_dataType = cmd_attr.DataType()
-            setattr(cmd_attr_dataType, "settingsToApply", "Default2")
+            setattr(cmd_attr_dataType, "settingsToApply", "Default1")
             id_ack = await cmd_attr.start(cmd_attr_dataType)
             self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
             self.assertEqual(id_ack.ack.error, 0)
@@ -444,7 +488,7 @@ class CommunicateTestCase(unittest.TestCase):
             self.assertEqual(state.summaryState, salobj.State.ENABLED)
 
             for bad_command in commands:
-                if bad_command in ("disable", "applyPositionLimits", "moveToPosition", "setMaxSpeeds",
+                if bad_command in ("disable", "applyPositionLimits", "moveToPosition", "setMaxSystemSpeeds",
                                    "applyPositionOffset", "stopAllAxes", "pivot"):
                     continue  # valid command in DISABLED state
                 with self.subTest(bad_command=bad_command):
@@ -612,7 +656,7 @@ class CommunicateTestCase(unittest.TestCase):
         # send start; new state is DISABLED
         cmd_attr = getattr(harness.remote, f"cmd_start")
         cmd_attr_dataType = cmd_attr.DataType()
-        setattr(cmd_attr_dataType, "settingsToApply", "Default2")
+        setattr(cmd_attr_dataType, "settingsToApply", "Default1")
         id_ack = await cmd_attr.start(cmd_attr_dataType)
         state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
         self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)

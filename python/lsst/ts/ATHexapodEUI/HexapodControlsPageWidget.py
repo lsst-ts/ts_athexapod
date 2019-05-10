@@ -25,7 +25,7 @@ class HexapodControlsPageWidget(QtGui.QWidget):
         QTHelpers.updateSizePolicy(self.moveToPositionButon)
         self.moveToPositionButon.clicked.connect(self.issueCommandMoveToPosition)
 
-        self.setMaxSpeedsButton = QtGui.QPushButton("setMaxSpeeds")
+        self.setMaxSpeedsButton = QtGui.QPushButton("setMaxSystemSpeeds")
         QTHelpers.updateSizePolicy(self.setMaxSpeedsButton)
         self.setMaxSpeedsButton.clicked.connect(self.issueCommandApplyVelocityLimits)
 
@@ -324,12 +324,8 @@ class HexapodControlsPageWidget(QtGui.QWidget):
         self.controlsLayout.addWidget(self.stopAll, row + 1, col)
 
     def issueCommandApplyVelocityLimits(self):
-        xyVelMax = float(self.xyVelMax.text())
-        rxryVelMax = float(self.rxryVelMax.text())
-        zVelMax = float(self.zVelMax.text())
-        rzVelMax = float(self.rzVelMax.text())
-
-        self.ATHexapod.issueCommand_setMaxSpeeds(xyVelMax, rxryVelMax, zVelMax, rzVelMax)
+        speed = float(self.speed.text())
+        self.ATHexapod.issueCommand_setMaxSystemSpeeds(speed)
 
     def addApplyVelocityLimitsButtonControl(self, row, col):
         """Add button and inputs for Apply Position Offset to qwidget
@@ -340,30 +336,11 @@ class HexapodControlsPageWidget(QtGui.QWidget):
         """
 
         row += 1
-        self.xyVelMax = QtGui.QLineEdit()
-        self.xyVelMax.setValidator(QtGui.QDoubleValidator(-5, 5, 3))
-        self.xyVelMax.setText("0")
-        self.rxryVelMax = QtGui.QLineEdit()
-        self.rxryVelMax.setValidator(QtGui.QDoubleValidator(-5, 5, 3))
-        self.rxryVelMax.setText("0")
-        self.zVelMax = QtGui.QLineEdit()
-        self.zVelMax.setValidator(QtGui.QDoubleValidator(-5, 5, 3))
-        self.zVelMax.setText("0")
-        self.rzVelMax = QtGui.QLineEdit()
-        self.rzVelMax.setValidator(QtGui.QDoubleValidator(-5, 5, 3))
-        self.rzVelMax.setText("0")
+        self.speed = QtGui.QLineEdit()
+        self.speed.setValidator(QtGui.QDoubleValidator(-5, 5, 3))
+        self.speed.setText("0")
 
         self.controlsLayout.addWidget(self.setMaxSpeedsButton, row + 1, col)
-
+        self.controlsLayout.addWidget(self.speed, row + 1, col + 1)
         col += 1
-        self.controlsLayout.addWidget(QtGui.QLabel("xyVelMax"), row, col)
-        self.controlsLayout.addWidget(self.xyVelMax, row + 1, col)
-        col += 1
-        self.controlsLayout.addWidget(QtGui.QLabel("rxryVelMax"), row, col)
-        self.controlsLayout.addWidget(self.rxryVelMax, row + 1, col)
-        col += 1
-        self.controlsLayout.addWidget(QtGui.QLabel("zVelMax"), row, col)
-        self.controlsLayout.addWidget(self.zVelMax, row + 1, col)
-        col += 1
-        self.controlsLayout.addWidget(QtGui.QLabel("rzVelMax"), row, col)
-        self.controlsLayout.addWidget(self.rzVelMax, row + 1, col)
+        self.controlsLayout.addWidget(QtGui.QLabel("SystemVelocity"), row, col)

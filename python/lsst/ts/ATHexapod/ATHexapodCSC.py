@@ -48,13 +48,13 @@ class ATHexapodCsc(salobj.BaseCsc):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
         super().__init__(SALPY_ATHexapod, index)
+        self.log.setLevel(10)  # Print all logs
         self.summary_state = initial_state
         self.model = Model()
         self.detailedState = 0  # Last deatiled state published. Initialized at 0, which doesn't exist in SAL
         self.appliedSettingsMatchStart = False
         self.telemetryInterval = 1
         self.recoverTimeout = 5  # Times that the CSC try to recover communication before going to Fault state
-
         self.telTask = None
         #
         # set up event data structures
@@ -73,14 +73,14 @@ class ATHexapodCsc(salobj.BaseCsc):
         # set up telemetry data structures
 
         self.tel_positionStatus_data = self.tel_positionStatus.DataType()
-        print('summary state: ', self.summary_state)
+        self.log.debug('summary state: ' + str(self.summary_state))
 
         # Publish list of recommended settings
         settingVersions = self.model.getSettingVersions()
         self.evt_settingVersions_data.recommendedSettingsLabels = settingVersions
         self.evt_settingVersions.put(self.evt_settingVersions_data)
 
-        print('starting telemetryLoop')
+        self.log.debug('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
 
     async def do_start(self, id_data):
@@ -89,9 +89,13 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.publish_appliedSettingsMatchStart(True)
         self.model.updateSettings(id_data.data.settingsToApply)
         try:
+            self.log.debug("Initializing hexapod position")
             await self.model.initialize()
-            await self.publish_currentPivot()
+            await self.model.waitUntilReadyForCommand()  # Wait until is ready to receive commands
+            self.log.debug("Position initialized")
+            await self.publish_currentPivot()  # Not configurable any more.... (for now....)
             await self.publish_positionLimits()
+            await self.publish_systemVelocity()
             self.publishSettingsAppliedTcp()
         except Exception as e:
             await self.model.disconnect()
@@ -128,7 +132,6 @@ class ATHexapodCsc(salobj.BaseCsc):
             self.telTask = await asyncio.sleep(self.telemetryInterval)
 
     async def sendTelemetry(self):
-        print('sendTelemetry: ', '{:.4f}'.format(time.time()))
         await self.model.updateState()
 
         # Get current positions and publish
@@ -183,6 +186,12 @@ class ATHexapodCsc(salobj.BaseCsc):
         # send the event
         self.evt_settingsAppliedPositionLimits.put(self.evt_settingsAppliedPositionLimits_data)
 
+    async def publish_systemVelocity(self):
+        velocity = await self.model.getMaxSystemSpeeds()
+        self.evt_settingsAppliedVelocities_data.systemSpeed = velocity
+        # send the event
+        self.evt_settingsAppliedVelocities.put(self.evt_settingsAppliedVelocities_data)
+
     async def do_moveToPosition(self, id_data):
         self.assert_enabled("moveToPosition")
 
@@ -190,17 +199,14 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.publishPositionUpdate()
         await self.waitUntilPosition()
 
-    async def do_setMaxSpeeds(self, id_data):
-        self.assert_enabled("setMaxSpeeds")
+    async def do_setMaxSystemSpeeds(self, id_data):
+        self.assert_enabled("setMaxSystemSpeeds")
 
         # Execute command in hardware
-        await self.model.setMaxSpeeds(id_data.data)
+        await self.model.setMaxSystemSpeeds(id_data.data)
 
         # Update event datatype
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityXYMax', id_data.data.xyMax)
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityRxRyMax', id_data.data.rxryMax)
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityZMax', id_data.data.zMax)
-        setattr(self.evt_settingsAppliedVelocities_data, 'velocityRzMax', id_data.data.rzMax)
+        setattr(self.evt_settingsAppliedVelocities_data, 'systemSpeed', self.model.initialSetup.speed)
 
         # send the event
         self.evt_settingsAppliedVelocities.put(self.evt_settingsAppliedVelocities_data)
@@ -258,10 +264,10 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.evt_positionUpdate_data.positionV = self.model.targetPosition.vvec
         self.evt_positionUpdate_data.positionW = self.model.targetPosition.wvec
 
-        print('evt_positionUpdate_data:')
+        self.log.debug('evt_positionUpdate_data:')
         for prop in dir(self.evt_positionUpdate_data):
             if not prop.startswith('__'):
-                print(prop, getattr(self.evt_positionUpdate_data, prop))
+                self.log.debug(prop + str(getattr(self.evt_positionUpdate_data, prop)))
         self.evt_positionUpdate.put(self.evt_positionUpdate_data)
 
     def publishSettingsAppliedTcp(self):

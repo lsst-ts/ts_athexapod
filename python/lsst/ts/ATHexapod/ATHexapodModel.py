@@ -79,6 +79,7 @@ class Model:
         self.targetPosition = CmdATHexapodPosition()
         self.detailedState = HexapodDetailedStates.NOTINMOTIONSTATE
         await self.hexController.initializePosition()
+        await self.waitUntilReadyForCommand()
         self.initialSetup = self.configuration.getInitialHexapodSetup()
         # Apply position limits to hardware from configuration files
         command = salCommandGeneric()
@@ -89,12 +90,16 @@ class Model:
         command.wMin = self.initialSetup.limitWMin
         command.wMax = self.initialSetup.limitWMax
         await self.applyPositionLimits(command, skipState=True)
+
         # Apply pivots to hardware from configuration files
+        # command = salCommandGeneric()
+        # command.x = self.initialSetup.pivotX
+        # command.y = self.initialSetup.pivotY
+        # command.z = self.initialSetup.pivotZ
+        # await self.pivot(command, skipState=True)
         command = salCommandGeneric()
-        command.x = self.initialSetup.pivotX
-        command.y = self.initialSetup.pivotY
-        command.z = self.initialSetup.pivotZ
-        await self.pivot(command, skipState=True)
+        command.speed = self.initialSetup.speed
+        await self.setMaxSystemSpeeds(command, skipState=True)
 
     async def disconnect(self):
         """Safely shutdown the ATHexapod
@@ -149,7 +154,8 @@ class Model:
         self.realPosition.inMotion = True
         self.detailedState = HexapodDetailedStates.INMOTIONSTATE
         # Update target
-        self.updateCommandedPosition(X=X, Y=Y, Z=Z, U=U, V=V, W=W)
+        Xc, Yc, Zc, Uc, Vc, Wc = await self.hexController.getTargetPositions()
+        self.updateCommandedPosition(X=Xc, Y=Yc, Z=Zc, U=Uc, V=Vc, W=Wc)
 
     async def applyPositionLimits(self, salCommand, skipState=False):
         """Send command to set position limits to the Hexapod controller.
@@ -180,7 +186,7 @@ class Model:
         self.initialSetup.limitWMin = salCommand.wMin
         self.initialSetup.limitWMax = salCommand.wMax
 
-    async def setMaxSpeeds(self, salCommand):
+    async def setMaxSystemSpeeds(self, salCommand, skipState=False):
         """Set maximum speeds, won't be implemented for first version
 
         Arguments:
@@ -189,13 +195,10 @@ class Model:
         Raises:
             ValueError -- Error occurs
         """
-
-        self.assertInMotion(inspect.currentframe().f_code.co_name)
-        self.initialSetup.velocityXYMax = salCommand.xyMax
-        self.initialSetup.velocityRxRyMax = salCommand.rxryMax
-        self.initialSetup.velocityZMax = salCommand.zMax
-        self.initialSetup.velocityRzMax = salCommand.rzMax
-        raise ValueError("Command not implemented...")
+        if(not skipState):
+            self.assertInMotion(inspect.currentframe().f_code.co_name)
+        await self.hexController.setSystemVelocity(salCommand.speed)
+        self.initialSetup.speed = await self.hexController.getSystemVelocity()
 
     async def applyPositionOffset(self, salCommand):
         """Send command to move to an offset to the Hexapod controller.
@@ -224,8 +227,8 @@ class Model:
         self.realPosition.inMotion = True
         self.detailedState = HexapodDetailedStates.INMOTIONSTATE
         # Update target
-        self.updateCommandedPosition(X=positionToCheck.x, Y=positionToCheck.y, Z=positionToCheck.z,
-                                     U=positionToCheck.u, V=positionToCheck.v, W=positionToCheck.w)
+        Xc, Yc, Zc, Uc, Vc, Wc = await self.hexController.getTargetPositions()
+        self.updateCommandedPosition(X=Xc, Y=Yc, Z=Zc, U=Uc, V=Vc, W=Wc)
 
     async def stopAllAxes(self, salCommand):
         """Sends stop all motion to the PI hexapod controller
@@ -530,8 +533,30 @@ class Model:
                      (abs(self.realPosition.vvec - self.targetPosition.vvec) < err) and \
                      (abs(self.realPosition.wvec - self.targetPosition.wvec) < err)
 
+        await self.waitUntilReadyForCommand()
         if (not inPosition):
             raise ValueError("Position never reached...")
+
+    async def waitUntilReadyForCommand(self, timeout=200):
+        """Will request PI Hexapod status, and wait until is ready to receive new commands.
+        It will trigger an exception if timeout happens
+
+        Keyword Arguments:
+            timeout {int} -- [Seconds until consider a timeout] (default: {200})
+
+        Raises:
+            ValueError: Timeout
+        """
+        initial_time = time.time()
+        ready = False
+        loopDelay = 0.3
+        while (time.time() - initial_time <= timeout):
+            await asyncio.sleep(loopDelay)
+            ready = await self.hexController.getReadyStatus()
+            if ready:
+                break
+        if (not ready):
+            raise ValueError("PI Contoller timeout: System never ready")
 
     async def waitUntilStop(self):
         initial_time = time.time()
@@ -541,6 +566,7 @@ class Model:
             await asyncio.sleep(loopDelay)
             if self.detailedState is HexapodDetailedStates.NOTINMOTIONSTATE:
                 break
+        await self.waitUntilReadyForCommand()
         if (time.time() - initial_time >= timeout):
             raise ValueError("Motion never stopped...")
 
@@ -552,6 +578,16 @@ class Model:
         """
         tcpConfiguration = self.configuration.getTcpConfiguration()
         return tcpConfiguration
+
+    async def getMaxSystemSpeeds(self):
+        """Return System Velocity from the PI controller
+
+        Returns:
+            [float] -- Maximum velocity in mm/s
+        """
+
+        self.initialSetup.speed = await self.hexController.getSystemVelocity()
+        return self.initialSetup.speed
 
 
 class HexapodDetailedStates(Enum):
