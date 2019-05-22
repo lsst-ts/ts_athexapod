@@ -84,6 +84,15 @@ class ATHexapodCsc(salobj.BaseCsc):
         asyncio.ensure_future(self.telemetryLoop())
 
     async def do_start(self, id_data):
+        """Start the TCP connection in the ATHexapod
+
+        Arguments:
+            id_data {cmd_start} -- Start to with settingsToApply
+            attribute
+
+        Raises:
+            ValueError: Raise exception if cannont connect or initialize
+        """
         if self.summary_state is not salobj.State.STANDBY:
             raise ValueError(f"Start not valid in state: {self.summary_state.name}")
         self.publish_appliedSettingsMatchStart(True)

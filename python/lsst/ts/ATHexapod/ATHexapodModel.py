@@ -63,6 +63,13 @@ class Model:
 
         self.configuration.updateConfiguration(settingsToApply)
 
+    async def aplplyReference(self):
+        """ Apply reference If any of the axes is not referenced
+        """
+        refx, refy, refz, refu, refv, refw, refa, refb = await self.hexController.getReferenceStatus()
+        if(not (refx or refy or refz or refu or refv or refw or refa or refb)):
+            await self.hexController.initializePosition()
+
     async def initialize(self):
         """Initialize and connect to TCP PI Hexapod controller socket
         """
@@ -78,7 +85,9 @@ class Model:
         self.realPosition = StateATHexapodPosition()
         self.targetPosition = CmdATHexapodPosition()
         self.detailedState = HexapodDetailedStates.NOTINMOTIONSTATE
-        await self.hexController.initializePosition()
+
+        await self.aplplyReference()
+
         await self.waitUntilReadyForCommand()
         self.initialSetup = self.configuration.getInitialHexapodSetup()
         # Apply position limits to hardware from configuration files
