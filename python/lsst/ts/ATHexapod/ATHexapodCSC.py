@@ -100,14 +100,15 @@ class ATHexapodCsc(salobj.BaseCsc):
         except Exception as e:
             await self.model.disconnect()
             raise(e)
-        super().do_start(id_data)
+        else:
+            await super().do_start(id_data)
 
     async def do_standby(self, id_data):
         await self.model.disconnect()
-        super().do_standby(id_data)
+        await super().do_standby(id_data)
 
-    def end_standby(self, id_data):
-        super().end_standby(id_data)
+    async def end_standby(self, id_data):
+        await super().end_standby(id_data)
 
     async def telemetryLoop(self):
         if self.telTask and not self.telTask.done():
