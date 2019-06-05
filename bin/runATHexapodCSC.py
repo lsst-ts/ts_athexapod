@@ -19,16 +19,16 @@
 #
 
 from lsst.ts.ATHexapod.ATHexapodCSC import ATHexapodCsc
-import argparse
 import asyncio
-
+import argparse
 
 def main():
     parser = argparse.ArgumentParser(f"Run ATHexapod")
     parser.add_argument("-s", "--simulate", action="store_true",
                         help="Run in simuation mode?")
     args = parser.parse_args()
-    ATHexapodCsc.main(index=True, initial_simulation_mode=args.simulate)
+    ATHexapodCsc.main(index=0, initial_simulation_mode=args.simulate)
+    
 
 csc = main()
 asyncio.get_event_loop().run_until_complete(csc.done_task)

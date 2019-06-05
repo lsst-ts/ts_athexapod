@@ -47,7 +47,6 @@ class ATHexapodCsc(salobj.BaseCsc):
     def __init__(self, index, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
-        super().__init__(SALPY_ATHexapod, index)
         self.log.setLevel(10)  # Print all logs
         self.summary_state = initial_state
         self.model = Model()
@@ -81,7 +80,7 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         self.log.debug('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
-        super().__init__("ATDome", index=index, initial_state=initial_state,
+        super().__init__("ATHexapod", index=index, initial_state=initial_state,
                          initial_simulation_mode=initial_simulation_mode)
 
     async def do_start(self, id_data):
