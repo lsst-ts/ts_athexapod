@@ -71,7 +71,6 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.evt_errorCode_data = self.evt_errorCode.DataType()
 
         # set up telemetry data structures
-
         self.tel_positionStatus_data = self.tel_positionStatus.DataType()
         self.log.debug('summary state: ' + str(self.summary_state))
 
@@ -102,8 +101,6 @@ class ATHexapodCsc(salobj.BaseCsc):
         try:
             self.log.debug("Initializing hexapod position")
             await self.model.initialize()
-            await self.model.waitUntilReadyForCommand()  # Wait until is ready to receive commands
-            self.log.debug("Position initialized")
             await self.publish_currentPivot()  # Not configurable any more.... (for now....)
             await self.publish_positionLimits()
             await self.publish_systemVelocity()
@@ -112,6 +109,12 @@ class ATHexapodCsc(salobj.BaseCsc):
             await self.model.disconnect()
             raise(e)
         super().do_start(id_data)
+
+    async def do_enable(self, id_data):
+        self.log.debug("Initializing position, please wait....")
+        await self.model.applyReference()
+        self.log.debug("Position initialized...")
+        super().do_enable(id_data)
 
     async def do_standby(self, id_data):
         await self.model.disconnect()
