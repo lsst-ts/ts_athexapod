@@ -44,7 +44,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         - State.STANDBY if you want full emulation of a CSC.
     """
 
-    def __init__(self, index, initial_state=salobj.State.STANDBY):
+    def __init__(self, index, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
         super().__init__(SALPY_ATHexapod, index)
@@ -82,6 +82,8 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         self.log.debug('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
+        super().__init__("ATDome", index=index, initial_state=initial_state,
+                         initial_simulation_mode=initial_simulation_mode)
 
     async def do_start(self, id_data):
         """Start the TCP connection in the ATHexapod
@@ -203,7 +205,13 @@ class ATHexapodCsc(salobj.BaseCsc):
 
     async def do_moveToPosition(self, id_data):
         self.assert_enabled("moveToPosition")
-
+        if (self.simulation_mode == 1):
+            id_data.data.x = format(id_data.data.x, '.3f')
+            id_data.data.y = format(id_data.data.y, '.3f')
+            id_data.data.z = format(id_data.data.z, '.3f')
+            id_data.data.u = format(id_data.data.u, '.3f')
+            id_data.data.v = format(id_data.data.v, '.3f')
+            id_data.data.w = format(id_data.data.w, '.3f')
         await self.model.moveToPosition(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
