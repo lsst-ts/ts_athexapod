@@ -44,7 +44,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         - State.STANDBY if you want full emulation of a CSC.
     """
 
-    def __init__(self, index, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
+    def __init__(self, index=0, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
         super().__init__(SALPY_ATHexapod, index=index, initial_state=initial_state,
@@ -101,27 +101,27 @@ class ATHexapodCsc(salobj.BaseCsc):
         try:
             self.log.debug("Initializing hexapod position")
             await self.model.initialize()
-            await self.publish_currentPivot()  # Not configurable any more.... (for now....)
-            await self.publish_positionLimits()
-            await self.publish_systemVelocity()
             self.publishSettingsAppliedTcp()
         except Exception as e:
             await self.model.disconnect()
             raise(e)
-        super().do_start(id_data)
+        await super().do_start(id_data)
 
     async def do_enable(self, id_data):
         self.log.debug("Initializing position, please wait....")
         await self.model.applyReference()
+        self.log.debug("Applying configuration to the controller....")
+        await self.model.configure()
         self.log.debug("Position initialized...")
-        super().do_enable(id_data)
+        await self.publish_currentPivot()  # Not configurable any more.... (for now....)
+        await self.publish_positionLimits()
+        await self.publish_systemVelocity()
+        self.log.debug("Enable CSC")
+        await super().do_enable(id_data)
 
     async def do_standby(self, id_data):
         await self.model.disconnect()
-        super().do_standby(id_data)
-
-    async def end_standby(self, id_data):
-        super().end_standby(id_data)
+        await super().do_standby(id_data)
 
     async def telemetryLoop(self):
         if self.telTask and not self.telTask.done():

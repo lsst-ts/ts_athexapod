@@ -130,7 +130,7 @@ class ATHexapodCommand:
         sensors and do not need a reference move. For this reason,
         FRF? always responds with 1 for these axes.
         """
-        return "FRF X Y Z U V W A B"
+        return "FRF?"
 
     def performsReference(self, X: bool = True, Y: bool = False, Z: bool = False,
                           U: bool = False, V: bool = False, W: bool = False):

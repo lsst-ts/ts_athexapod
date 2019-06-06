@@ -66,29 +66,13 @@ class Model:
     async def applyReference(self):
         """ Apply reference If any of the axes is not referenced
         """
-        refx, refy, refz, refu, refv, refw, refa, refb = await self.hexController.getReferenceStatus()
-        if(not (refx or refy or refz or refu or refv or refw or refa or refb)):
+        refx, refy, refz, refu, refv, refw = await self.hexController.getReferenceStatus()
+        if(not (refx or refy or refz or refu or refv or refw)):
             await self.hexController.initializePosition()
-        await self.model.waitUntilReadyForCommand()  # Wait until is ready to receive commands
+        await self.waitUntilReadyForCommand()  # Wait until is ready to receive commands
 
-    async def initialize(self):
-        """Initialize and connect to TCP PI Hexapod controller socket
-        """
-        tcpConfiguration = self.configuration.getTcpConfiguration()
-        endStr = '\n' if tcpConfiguration.endStr is "endl" else '\n'
-        self.hexController.configureCommunicator(address=tcpConfiguration.host, port=tcpConfiguration.port,
-                                                 connectTimeout=tcpConfiguration.connectionTimeout,
-                                                 readTimeout=tcpConfiguration.readTimeout,
-                                                 sendTimeout=tcpConfiguration.sendTimeout,
-                                                 endStr=endStr, maxLength=tcpConfiguration.maxLength)
-
-        await self.hexController.connect()
-        self.realPosition = StateATHexapodPosition()
-        self.targetPosition = CmdATHexapodPosition()
-        self.detailedState = HexapodDetailedStates.NOTINMOTIONSTATE
-
+    async def configure(self):
         await self.waitUntilReadyForCommand()
-        self.initialSetup = self.configuration.getInitialHexapodSetup()
         # Apply position limits to hardware from configuration files
         command = salCommandGeneric()
         command.xyMax = self.initialSetup.limitXYMax
@@ -108,6 +92,23 @@ class Model:
         command = salCommandGeneric()
         command.speed = self.initialSetup.speed
         await self.setMaxSystemSpeeds(command, skipState=True)
+
+    async def initialize(self):
+        """Initialize and connect to TCP PI Hexapod controller socket
+        """
+        tcpConfiguration = self.configuration.getTcpConfiguration()
+        endStr = '\n' if tcpConfiguration.endStr is "endl" else '\n'
+        self.hexController.configureCommunicator(address=tcpConfiguration.host, port=tcpConfiguration.port,
+                                                 connectTimeout=tcpConfiguration.connectionTimeout,
+                                                 readTimeout=tcpConfiguration.readTimeout,
+                                                 sendTimeout=tcpConfiguration.sendTimeout,
+                                                 endStr=endStr, maxLength=tcpConfiguration.maxLength)
+
+        await self.hexController.connect()
+        self.realPosition = StateATHexapodPosition()
+        self.targetPosition = CmdATHexapodPosition()
+        self.detailedState = HexapodDetailedStates.NOTINMOTIONSTATE
+        self.initialSetup = self.configuration.getInitialHexapodSetup()
 
     async def disconnect(self):
         """Safely shutdown the ATHexapod
@@ -558,9 +559,11 @@ class Model:
         initial_time = time.time()
         ready = False
         loopDelay = 0.3
+        print("waiting")
         while (time.time() - initial_time <= timeout):
             await asyncio.sleep(loopDelay)
             ready = await self.hexController.getReadyStatus()
+            print(ready)
             if ready:
                 break
         if (not ready):

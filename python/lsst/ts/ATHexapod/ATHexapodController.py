@@ -105,18 +105,15 @@ class ATHexapodController:
         Check if any axes is not currently referenced
         """
         await self.communicator.sendMessage(self.hexc.getReferencingResult())
-        x = str(await self.communicator.getMessage()).split("=")
-        y = str(await self.communicator.getMessage()).split("=")
-        z = str(await self.communicator.getMessage()).split("=")
-        u = str(await self.communicator.getMessage()).split("=")
-        v = str(await self.communicator.getMessage()).split("=")
-        w = str(await self.communicator.getMessage()).split("=")
-        a = str(await self.communicator.getMessage()).split("=")
-        b = str(await self.communicator.getMessage()).split("=")
+        axis,x = str(await self.communicator.getMessage()).split("=")
+        axis,y = str(await self.communicator.getMessage()).split("=")
+        axis,z = str(await self.communicator.getMessage()).split("=")
+        axis,u = str(await self.communicator.getMessage()).split("=")
+        axis,v = str(await self.communicator.getMessage()).split("=")
+        axis,w = str(await self.communicator.getMessage()).split("=")
         await self.checkErrors()
         return (bool(int(x)), bool(int(y)), bool(int(z)),
-                bool(int(u)), bool(int(v)), bool(int(w)),
-                bool(int(a)), bool(int(b)))
+                bool(int(u)), bool(int(v)), bool(int(w)))
 
     @checkForRun
     async def initializePosition(self, X: bool=True, Y: bool=False, Z: bool=False,
@@ -127,7 +124,6 @@ class ATHexapodController:
         This command is only executed if the controller
         responds that it doesn't have a reference
         """
-
         await self.communicator.sendMessage(self.hexc.performsReference(X, Y, Z, U, V, W))
         await self.checkErrors()
 
