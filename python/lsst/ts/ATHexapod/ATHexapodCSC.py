@@ -47,7 +47,10 @@ class ATHexapodCsc(salobj.BaseCsc):
     def __init__(self, index, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
+        super().__init__(SALPY_ATHexapod, index=index, initial_state=initial_state,
+                         initial_simulation_mode=initial_simulation_mode)
         self.log.setLevel(10)  # Print all logs
+        self.defer_simulation_mode_until_configured = False
         self.summary_state = initial_state
         self.model = Model()
         self.detailedState = 0  # Last deatiled state published. Initialized at 0, which doesn't exist in SAL
@@ -80,8 +83,6 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         self.log.debug('starting telemetryLoop')
         asyncio.ensure_future(self.telemetryLoop())
-        super().__init__("ATHexapod", index=index, initial_state=initial_state,
-                         initial_simulation_mode=initial_simulation_mode)
 
     async def do_start(self, id_data):
         """Start the TCP connection in the ATHexapod
@@ -337,3 +338,40 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         # send the event
         self.evt_inPosition.put(self.evt_inPosition_data)
+
+    @classmethod
+    def add_arguments(cls, parser):
+        """Add arguments to the argument parser created by `main`.
+        Parameters
+        ----------
+        parser : `argparse.ArgumentParser`
+            The argument parser.
+        Notes
+        -----
+        If you override this method then you should almost certainly override
+        `add_kwargs_from_args` as well.
+        """
+        parser.add_argument("-s", "--simulate", action="store_true",
+                            help="Run in simuation mode?")
+
+
+    @classmethod
+    def add_kwargs_from_args(cls, args, kwargs):
+        """Add constructor keyword arguments based on parsed arguments.
+        Parameters
+        ----------
+        args : `argparse.namespace`
+            Parsed command.
+        kwargs : `dict`
+            Keyword argument dict for the constructor.
+            Update this based on ``args``.
+            The index argument will already be present if relevant.
+        Notes
+        -----
+        If you override this method then you should almost certainly override
+        `add_arguments` as well.
+        """
+        kwargs["initial_simulation_mode"] = args.simulate
+
+    async def implement_simulation_mode(self, simulation_mode):
+        pass
