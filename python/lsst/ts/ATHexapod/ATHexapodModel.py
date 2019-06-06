@@ -559,11 +559,9 @@ class Model:
         initial_time = time.time()
         ready = False
         loopDelay = 0.3
-        print("waiting")
         while (time.time() - initial_time <= timeout):
             await asyncio.sleep(loopDelay)
             ready = await self.hexController.getReadyStatus()
-            print(ready)
             if ready:
                 break
         if (not ready):

@@ -209,12 +209,12 @@ class ATHexapodCsc(salobj.BaseCsc):
     async def do_moveToPosition(self, id_data):
         self.assert_enabled("moveToPosition")
         if (self.simulation_mode == 1):
-            id_data.data.x = format(id_data.data.x, '.3f')
-            id_data.data.y = format(id_data.data.y, '.3f')
-            id_data.data.z = format(id_data.data.z, '.3f')
-            id_data.data.u = format(id_data.data.u, '.3f')
-            id_data.data.v = format(id_data.data.v, '.3f')
-            id_data.data.w = format(id_data.data.w, '.3f')
+            id_data.data.x = round(id_data.data.x, 3)
+            id_data.data.y = round(id_data.data.y, 3)
+            id_data.data.z = round(id_data.data.z, 3)
+            id_data.data.u = round(id_data.data.u, 3)
+            id_data.data.v = round(id_data.data.v, 3)
+            id_data.data.w = round(id_data.data.w, 3)
         await self.model.moveToPosition(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
@@ -236,6 +236,13 @@ class ATHexapodCsc(salobj.BaseCsc):
 
     async def do_applyPositionOffset(self, id_data):
         self.assert_enabled("applyPositionOffset")
+        if (self.simulation_mode == 1):
+            id_data.data.x = round(id_data.data.x, 3)
+            id_data.data.y = round(id_data.data.y, 3)
+            id_data.data.z = round(id_data.data.z, 3)
+            id_data.data.u = round(id_data.data.u, 3)
+            id_data.data.v = round(id_data.data.v, 3)
+            id_data.data.w = round(id_data.data.w, 3)
         await self.model.applyPositionOffset(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()

@@ -334,7 +334,6 @@ class ATHexapodController:
         """
         await self.communicator.sendMessage(self.hexc.requestMotionStatus())
         message = await self.communicator.getMessage()
-        print("Message " + message)
         result = int(message, 16)
         status = '{0:08b}'.format(result)
 
