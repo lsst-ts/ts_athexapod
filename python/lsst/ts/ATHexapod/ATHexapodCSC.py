@@ -118,10 +118,15 @@ class ATHexapodCsc(salobj.BaseCsc):
         await self.publish_systemVelocity()
         self.log.debug("Enable CSC")
         await super().do_enable(id_data)
+        else:
+            await super().do_start(id_data)
 
     async def do_standby(self, id_data):
         await self.model.disconnect()
         await super().do_standby(id_data)
+
+    async def end_standby(self, id_data):
+        await super().end_standby(id_data)
 
     async def telemetryLoop(self):
         if self.telTask and not self.telTask.done():
