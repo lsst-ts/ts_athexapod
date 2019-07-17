@@ -100,11 +100,29 @@ class ATHexapodController:
             await self.checkErrors()
 
     @checkForRun
+    async def getReferenceStatus(self):
+        """
+        Check if any axes is not currently referenced
+        """
+        await self.communicator.sendMessage(self.hexc.getReferencingResult())
+        axis,x = str(await self.communicator.getMessage()).split("=")
+        axis,y = str(await self.communicator.getMessage()).split("=")
+        axis,z = str(await self.communicator.getMessage()).split("=")
+        axis,u = str(await self.communicator.getMessage()).split("=")
+        axis,v = str(await self.communicator.getMessage()).split("=")
+        axis,w = str(await self.communicator.getMessage()).split("=")
+        await self.checkErrors()
+        return (bool(int(x)), bool(int(y)), bool(int(z)),
+                bool(int(u)), bool(int(v)), bool(int(w)))
+
+    @checkForRun
     async def initializePosition(self, X: bool=True, Y: bool=False, Z: bool=False,
                                  U: bool=False, V: bool=False, W: bool=False):
         """
-        set reference position to the device
-        use performsReference
+        Set reference position to the device
+        uses a performsReference command.
+        This command is only executed if the controller
+        responds that it doesn't have a reference
         """
         await self.communicator.sendMessage(self.hexc.performsReference(X, Y, Z, U, V, W))
         await self.checkErrors()
@@ -316,7 +334,6 @@ class ATHexapodController:
         """
         await self.communicator.sendMessage(self.hexc.requestMotionStatus())
         message = await self.communicator.getMessage()
-        print("Message " + message)
         result = int(message, 16)
         status = '{0:08b}'.format(result)
 

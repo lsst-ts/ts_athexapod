@@ -114,6 +114,24 @@ class ATHexapodCommand:
         target += " W " + str(float(W)) if W is not None else ""
         return "MOV" + target
 
+    def getReferencingResult(self):
+        """
+        (p. 175) Get Referencing Result
+        Axes X, Y, Z, U, V, W, A and B are considered to be
+        "referenced" when a reference move has been successfully
+        completed with FRF (p. 174).
+        Axes A and B are considered to be "referenced" even if the
+        parameter Sensor Reference Mode (ID 0x02000A00) was
+        changed to value 1 (p. 98) with SPA (p. 224). It is
+        necessary to change the parameter value when the
+        connected stage is not equipped with a reference point
+        switch and can therefore not carry out a reference move.
+        Axes K, L and M are equipped with absolute-measuring
+        sensors and do not need a reference move. For this reason,
+        FRF? always responds with 1 for these axes.
+        """
+        return "FRF?"
+
     def performsReference(self, X: bool = True, Y: bool = False, Z: bool = False,
                           U: bool = False, V: bool = False, W: bool = False):
         """Perform a reference.

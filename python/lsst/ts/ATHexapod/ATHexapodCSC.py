@@ -44,11 +44,13 @@ class ATHexapodCsc(salobj.BaseCsc):
         - State.STANDBY if you want full emulation of a CSC.
     """
 
-    def __init__(self, index, initial_state=salobj.State.STANDBY):
+    def __init__(self, index=0, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
-        super().__init__(SALPY_ATHexapod, index)
+        super().__init__(SALPY_ATHexapod, index=index, initial_state=initial_state,
+                         initial_simulation_mode=initial_simulation_mode)
         self.log.setLevel(10)  # Print all logs
+        self.defer_simulation_mode_until_configured = False
         self.summary_state = initial_state
         self.model = Model()
         self.detailedState = 0  # Last deatiled state published. Initialized at 0, which doesn't exist in SAL
@@ -71,7 +73,6 @@ class ATHexapodCsc(salobj.BaseCsc):
         self.evt_errorCode_data = self.evt_errorCode.DataType()
 
         # set up telemetry data structures
-
         self.tel_positionStatus_data = self.tel_positionStatus.DataType()
         self.log.debug('summary state: ' + str(self.summary_state))
 
@@ -84,6 +85,15 @@ class ATHexapodCsc(salobj.BaseCsc):
         asyncio.ensure_future(self.telemetryLoop())
 
     async def do_start(self, id_data):
+        """Start the TCP connection in the ATHexapod
+
+        Arguments:
+            id_data {cmd_start} -- Start to with settingsToApply
+            attribute
+
+        Raises:
+            ValueError: Raise exception if cannont connect or initialize
+        """
         if self.summary_state is not salobj.State.STANDBY:
             raise ValueError(f"Start not valid in state: {self.summary_state.name}")
         self.publish_appliedSettingsMatchStart(True)
@@ -91,23 +101,30 @@ class ATHexapodCsc(salobj.BaseCsc):
         try:
             self.log.debug("Initializing hexapod position")
             await self.model.initialize()
-            await self.model.waitUntilReadyForCommand()  # Wait until is ready to receive commands
-            self.log.debug("Position initialized")
-            await self.publish_currentPivot()  # Not configurable any more.... (for now....)
-            await self.publish_positionLimits()
-            await self.publish_systemVelocity()
             self.publishSettingsAppliedTcp()
         except Exception as e:
             await self.model.disconnect()
             raise(e)
-        super().do_start(id_data)
+        await super().do_start(id_data)
+
+    async def do_enable(self, id_data):
+        self.log.debug("Initializing position, please wait....")
+        await self.model.applyReference()
+        self.log.debug("Applying configuration to the controller....")
+        await self.model.configure()
+        self.log.debug("Position initialized...")
+        await self.publish_currentPivot()  # Not configurable any more.... (for now....)
+        await self.publish_positionLimits()
+        await self.publish_systemVelocity()
+        self.log.debug("Enable CSC")
+        await super().do_enable(id_data)
 
     async def do_standby(self, id_data):
         await self.model.disconnect()
-        super().do_standby(id_data)
+        await super().do_standby(id_data)
 
     async def end_standby(self, id_data):
-        super().end_standby(id_data)
+        await super().end_standby(id_data)
 
     async def telemetryLoop(self):
         if self.telTask and not self.telTask.done():
@@ -194,7 +211,13 @@ class ATHexapodCsc(salobj.BaseCsc):
 
     async def do_moveToPosition(self, id_data):
         self.assert_enabled("moveToPosition")
-
+        if (self.simulation_mode == 1):
+            id_data.data.x = round(id_data.data.x, 3)
+            id_data.data.y = round(id_data.data.y, 3)
+            id_data.data.z = round(id_data.data.z, 3)
+            id_data.data.u = round(id_data.data.u, 3)
+            id_data.data.v = round(id_data.data.v, 3)
+            id_data.data.w = round(id_data.data.w, 3)
         await self.model.moveToPosition(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
@@ -216,6 +239,13 @@ class ATHexapodCsc(salobj.BaseCsc):
 
     async def do_applyPositionOffset(self, id_data):
         self.assert_enabled("applyPositionOffset")
+        if (self.simulation_mode == 1):
+            id_data.data.x = round(id_data.data.x, 3)
+            id_data.data.y = round(id_data.data.y, 3)
+            id_data.data.z = round(id_data.data.z, 3)
+            id_data.data.u = round(id_data.data.u, 3)
+            id_data.data.v = round(id_data.data.v, 3)
+            id_data.data.w = round(id_data.data.w, 3)
         await self.model.applyPositionOffset(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
@@ -318,3 +348,40 @@ class ATHexapodCsc(salobj.BaseCsc):
 
         # send the event
         self.evt_inPosition.put(self.evt_inPosition_data)
+
+    @classmethod
+    def add_arguments(cls, parser):
+        """Add arguments to the argument parser created by `main`.
+        Parameters
+        ----------
+        parser : `argparse.ArgumentParser`
+            The argument parser.
+        Notes
+        -----
+        If you override this method then you should almost certainly override
+        `add_kwargs_from_args` as well.
+        """
+        parser.add_argument("-s", "--simulate", action="store_true",
+                            help="Run in simuation mode?")
+
+
+    @classmethod
+    def add_kwargs_from_args(cls, args, kwargs):
+        """Add constructor keyword arguments based on parsed arguments.
+        Parameters
+        ----------
+        args : `argparse.namespace`
+            Parsed command.
+        kwargs : `dict`
+            Keyword argument dict for the constructor.
+            Update this based on ``args``.
+            The index argument will already be present if relevant.
+        Notes
+        -----
+        If you override this method then you should almost certainly override
+        `add_arguments` as well.
+        """
+        kwargs["initial_simulation_mode"] = args.simulate
+
+    async def implement_simulation_mode(self, simulation_mode):
+        pass
