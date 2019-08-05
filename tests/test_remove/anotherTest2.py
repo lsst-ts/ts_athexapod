@@ -16,11 +16,13 @@ remote = salobj.Remote(SALPY_Test, index=1)
 print("create controller")
 controller = salobj.Controller(SALPY_Test, index=1)
 
+
 def putScalar(scalar):
     data = controller.evt_scalars.DataType()
     data.int0 = scalar
     print(f"put scalars event with int0={data.int0}")
     controller.evt_scalars.put(data)
+
 
 async def sendCmd_getMsg():
     remote.evt_scalars.flush()
@@ -33,13 +35,15 @@ async def sendCmd_getMsg():
     print(f"read scalars event with int0={data.int0}")
     return data
 
+
 async def getCmd_sendMsg(x):
     await controller.cmd_start.next()  # Wait until it gets a start command
     print("Command received...")
     putScalar(x)  # Publish event with int0=x
 
+
 async def doit():
-    x = random.randint(0,100)
+    x = random.randint(0, 100)
     asyncio.ensure_future(getCmd_sendMsg(x))
     data = await sendCmd_getMsg()
     assert x == data.int0
