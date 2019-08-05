@@ -22,9 +22,6 @@ __all__ = ["ATHexapodCsc"]
 from lsst.ts import salobj
 from lsst.ts.ATHexapod.ATHexapodModel import Model, HexapodErrorCodes
 import asyncio
-import time
-
-import SALPY_ATHexapod
 
 
 class ATHexapodCsc(salobj.BaseCsc):
@@ -47,7 +44,7 @@ class ATHexapodCsc(salobj.BaseCsc):
     def __init__(self, index=0, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
-        super().__init__(SALPY_ATHexapod, index=index, initial_state=initial_state,
+        super().__init__("ATHexapod", index=index, initial_state=initial_state,
                          initial_simulation_mode=initial_simulation_mode)
         self.log.setLevel(10)  # Print all logs
         self.defer_simulation_mode_until_configured = False
@@ -363,7 +360,6 @@ class ATHexapodCsc(salobj.BaseCsc):
         """
         parser.add_argument("-s", "--simulate", action="store_true",
                             help="Run in simuation mode?")
-
 
     @classmethod
     def add_kwargs_from_args(cls, args, kwargs):

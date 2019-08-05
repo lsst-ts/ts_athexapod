@@ -34,14 +34,14 @@ class ATHexapodController:
             return ret
         return wrapper
 
-    def configureCommunicator(self, address, port, connectTimeout=2, readTimeout=2, sendTimeout=2,
-                              endStr='\n', maxLength=1024):
+    def configureCommunicator(self, address, port, connectTimeout = 2, readTimeout = 2, sendTimeout = 2, 
+                              endStr = '\n', maxLength = 1024):
         """
         Configure communication protocol
         """
         messageHandler = TCPEndStrAsync(endStr, maxLength)
-        self.communicator = TcpClientAsync(address, port, connectTimeout, readTimeout, sendTimeout,
-                                           messageHandler=messageHandler)
+        self.communicator = TcpClientAsync(address, port, connectTimeout, readTimeout, sendTimeout, 
+                                           messageHandler = messageHandler)
 
     @checkForRun
     async def connect(self):
@@ -60,8 +60,8 @@ class ATHexapodController:
         await self.communicator.disconnect()
 
     @checkForRun
-    async def moveToPosition(self, X: float=None, Y: float=None, Z: float=None,
-                             U: float=None, V: float=None, W: float=None):
+    async def moveToPosition(self, X: float = None, Y: float = None, Z: float = None, 
+                             U: float = None, V: float = None, W: float = None):
         """
         move to position
         use setTargetPosition
@@ -70,7 +70,7 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def setSystemVelocity(self, systemVelocity: float=None):
+    async def setSystemVelocity(self, systemVelocity: float = None):
         """
         set system velocity
         use setSystemVelocity
@@ -79,10 +79,10 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def setPositionLimits(self, minPositionX=None, minPositionY=None, minPositionZ=None,
-                                minPositionU=None, minPositionV=None, minPositionW=None,
-                                maxPositionX=None, maxPositionY=None, maxPositionZ=None,
-                                maxPositionU=None, maxPositionV=None, maxPositionW=None):
+    async def setPositionLimits(self, minPositionX = None, minPositionY = None, minPositionZ = None, 
+                                minPositionU = None, minPositionV = None, minPositionW = None, 
+                                maxPositionX = None, maxPositionY = None, maxPositionZ = None, 
+                                maxPositionU = None, maxPositionV = None, maxPositionW = None):
         """
         set position limits
         use setSystemVelocity
@@ -105,19 +105,19 @@ class ATHexapodController:
         Check if any axes is not currently referenced
         """
         await self.communicator.sendMessage(self.hexc.getReferencingResult())
-        axis,x = str(await self.communicator.getMessage()).split("=")
-        axis,y = str(await self.communicator.getMessage()).split("=")
-        axis,z = str(await self.communicator.getMessage()).split("=")
-        axis,u = str(await self.communicator.getMessage()).split("=")
-        axis,v = str(await self.communicator.getMessage()).split("=")
-        axis,w = str(await self.communicator.getMessage()).split("=")
+        axis, x = str(await self.communicator.getMessage()).split(" = ")
+        axis, y = str(await self.communicator.getMessage()).split(" = ")
+        axis, z = str(await self.communicator.getMessage()).split(" = ")
+        axis, u = str(await self.communicator.getMessage()).split(" = ")
+        axis, v = str(await self.communicator.getMessage()).split(" = ")
+        axis, w = str(await self.communicator.getMessage()).split(" = ")
         await self.checkErrors()
-        return (bool(int(x)), bool(int(y)), bool(int(z)),
+        return (bool(int(x)), bool(int(y)), bool(int(z)), 
                 bool(int(u)), bool(int(v)), bool(int(w)))
 
     @checkForRun
-    async def initializePosition(self, X: bool=True, Y: bool=False, Z: bool=False,
-                                 U: bool=False, V: bool=False, W: bool=False):
+    async def initializePosition(self, X: bool = True, Y: bool = False, Z: bool = False, 
+                                 U: bool = False, V: bool = False, W: bool = False):
         """
         Set reference position to the device
         uses a performsReference command.
@@ -128,13 +128,13 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def moveOffset(self, dX: float=None, dY: float=None, dZ: float=None,
-                         dU: float=None, dV: float=None, dW: float=None):
+    async def moveOffset(self, dX: float = None, dY: float = None, dZ: float = None, 
+                         dU: float = None, dV: float = None, dW: float = None):
         """
         move position by a relative position (related to current)
         use setTargetPosition
         """
-        await self.communicator.sendMessage(self.hexc.setTargetRelativeToCurrentPosition(dX, dY, dZ, dU, dV,
+        await self.communicator.sendMessage(self.hexc.setTargetRelativeToCurrentPosition(dX, dY, dZ, dU, dV, 
                                             dW))
         await self.checkErrors()
 
@@ -152,10 +152,10 @@ class ATHexapodController:
         noError = [0, 10]
         if errorNumber in noError:
             return errorNumber
-        raise(Exception(gcserror.translate_error(value=errorNumber)))
+        raise(Exception(gcserror.translate_error(value = errorNumber)))
 
     @checkForRun
-    async def setPivot(self, X: float=None, Y: float=None, Z: float=None):
+    async def setPivot(self, X: float = None, Y: float = None, Z: float = None):
         """
         set pivot on the device
         use setPivotPoint
@@ -170,14 +170,14 @@ class ATHexapodController:
         use getPivotPoint
         """
         await self.communicator.sendMessage(self.hexc.getPivotPoint())
-        axis1, pivotX = str(await self.communicator.getMessage()).split("=")
-        axis2, pivotY = str(await self.communicator.getMessage()).split("=")
-        axis3, pivotZ = str(await self.communicator.getMessage()).split("=")
+        axis1, pivotX = str(await self.communicator.getMessage()).split(" = ")
+        axis2, pivotY = str(await self.communicator.getMessage()).split(" = ")
+        axis3, pivotZ = str(await self.communicator.getMessage()).split(" = ")
         return float(pivotX), float(pivotY), float(pivotZ)
 
     @checkForRun
-    async def setSoftLimit(self, X: bool=None, Y: bool=None, Z: bool=None,
-                           U: bool=None, V: bool=None, W: bool=None):
+    async def setSoftLimit(self, X: bool = None, Y: bool = None, Z: bool = None, 
+                           U: bool = None, V: bool = None, W: bool = None):
         """
         Activate software limits
         """
@@ -185,8 +185,8 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def setSoftLimitStatus(self, X: bool=None, Y: bool=None, Z: bool=None,
-                                 U: bool=None, V: bool=None, W: bool=None):
+    async def setSoftLimitStatus(self, X: bool = None, Y: bool = None, Z: bool = None, 
+                                 U: bool = None, V: bool = None, W: bool = None):
         """
         Get software limits status
         """
@@ -199,12 +199,12 @@ class ATHexapodController:
         Get software limits status
         """
         await self.communicator.sendMessage(self.hexc.getSoftLimitStatus())
-        axis1, x = str(await self.communicator.getMessage()).split("=")
-        axis2, y = str(await self.communicator.getMessage()).split("=")
-        axis3, z = str(await self.communicator.getMessage()).split("=")
-        axis4, u = str(await self.communicator.getMessage()).split("=")
-        axis5, v = str(await self.communicator.getMessage()).split("=")
-        axis6, w = str(await self.communicator.getMessage()).split("=")
+        axis1, x = str(await self.communicator.getMessage()).split(" = ")
+        axis2, y = str(await self.communicator.getMessage()).split(" = ")
+        axis3, z = str(await self.communicator.getMessage()).split(" = ")
+        axis4, u = str(await self.communicator.getMessage()).split(" = ")
+        axis5, v = str(await self.communicator.getMessage()).split(" = ")
+        axis6, w = str(await self.communicator.getMessage()).split(" = ")
         return bool(int(x)), bool(int(y)), bool(int(z)), bool(int(u)), bool(int(v)), bool(int(w))
 
     @checkForRun
@@ -217,8 +217,8 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def validPosition(self, X: float=None, Y: float=None, Z: float=None,
-                            U: float=None, V: float=None, W: float=None):
+    async def validPosition(self, X: float = None, Y: float = None, Z: float = None, 
+                            U: float = None, V: float = None, W: float = None):
         """
         Check if position commanded can be reached.
         Return True if possible and False if not
@@ -233,12 +233,12 @@ class ATHexapodController:
         Function in charge to query positions
         """
         await self.communicator.sendMessage(self.hexc.getTargetPosition())
-        axis1, x = str(await self.communicator.getMessage()).split("=")
-        axis2, y = str(await self.communicator.getMessage()).split("=")
-        axis3, z = str(await self.communicator.getMessage()).split("=")
-        axis4, u = str(await self.communicator.getMessage()).split("=")
-        axis5, v = str(await self.communicator.getMessage()).split("=")
-        axis6, w = str(await self.communicator.getMessage()).split("=")
+        axis1, x = str(await self.communicator.getMessage()).split(" = ")
+        axis2, y = str(await self.communicator.getMessage()).split(" = ")
+        axis3, z = str(await self.communicator.getMessage()).split(" = ")
+        axis4, u = str(await self.communicator.getMessage()).split(" = ")
+        axis5, v = str(await self.communicator.getMessage()).split(" = ")
+        axis6, w = str(await self.communicator.getMessage()).split(" = ")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
@@ -249,12 +249,12 @@ class ATHexapodController:
         :return:
         """
         await self.communicator.sendMessage(self.hexc.getPositionUnit())
-        axis1, xunit = str(await self.communicator.getMessage()).split("=")
-        axis2, yunit = str(await self.communicator.getMessage()).split("=")
-        axis3, zunit = str(await self.communicator.getMessage()).split("=")
-        axis4, uunit = str(await self.communicator.getMessage()).split("=")
-        axis5, vunit = str(await self.communicator.getMessage()).split("=")
-        axis6, wunit = str(await self.communicator.getMessage()).split("=")
+        axis1, xunit = str(await self.communicator.getMessage()).split(" = ")
+        axis2, yunit = str(await self.communicator.getMessage()).split(" = ")
+        axis3, zunit = str(await self.communicator.getMessage()).split(" = ")
+        axis4, uunit = str(await self.communicator.getMessage()).split(" = ")
+        axis5, vunit = str(await self.communicator.getMessage()).split(" = ")
+        axis6, wunit = str(await self.communicator.getMessage()).split(" = ")
         return xunit, yunit, zunit, uunit, vunit, wunit
 
     @checkForRun
@@ -263,12 +263,12 @@ class ATHexapodController:
         Function in charge to query the actual positions of the hexapod
         """
         await self.communicator.sendMessage(self.hexc.getRealPosition())
-        axis1, x = str(await self.communicator.getMessage()).split("=")
-        axis2, y = str(await self.communicator.getMessage()).split("=")
-        axis3, z = str(await self.communicator.getMessage()).split("=")
-        axis4, u = str(await self.communicator.getMessage()).split("=")
-        axis5, v = str(await self.communicator.getMessage()).split("=")
-        axis6, w = str(await self.communicator.getMessage()).split("=")
+        axis1, x = str(await self.communicator.getMessage()).split(" = ")
+        axis2, y = str(await self.communicator.getMessage()).split(" = ")
+        axis3, z = str(await self.communicator.getMessage()).split(" = ")
+        axis4, u = str(await self.communicator.getMessage()).split(" = ")
+        axis5, v = str(await self.communicator.getMessage()).split(" = ")
+        axis6, w = str(await self.communicator.getMessage()).split(" = ")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
@@ -278,12 +278,12 @@ class ATHexapodController:
         get current low positions limits
         """
         await self.communicator.sendMessage(self.hexc.getLowPositionSoftLimit())
-        axis1, x = str(await self.communicator.getMessage()).split("=")
-        axis2, y = str(await self.communicator.getMessage()).split("=")
-        axis3, z = str(await self.communicator.getMessage()).split("=")
-        axis4, u = str(await self.communicator.getMessage()).split("=")
-        axis5, v = str(await self.communicator.getMessage()).split("=")
-        axis6, w = str(await self.communicator.getMessage()).split("=")
+        axis1, x = str(await self.communicator.getMessage()).split(" = ")
+        axis2, y = str(await self.communicator.getMessage()).split(" = ")
+        axis3, z = str(await self.communicator.getMessage()).split(" = ")
+        axis4, u = str(await self.communicator.getMessage()).split(" = ")
+        axis5, v = str(await self.communicator.getMessage()).split(" = ")
+        axis6, w = str(await self.communicator.getMessage()).split(" = ")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
@@ -293,12 +293,12 @@ class ATHexapodController:
         Update current high positions limits
         """
         await self.communicator.sendMessage(self.hexc.getHighPositionSoftLimit())
-        axis1, x = str(await self.communicator.getMessage()).split("=")
-        axis2, y = str(await self.communicator.getMessage()).split("=")
-        axis3, z = str(await self.communicator.getMessage()).split("=")
-        axis4, u = str(await self.communicator.getMessage()).split("=")
-        axis5, v = str(await self.communicator.getMessage()).split("=")
-        axis6, w = str(await self.communicator.getMessage()).split("=")
+        axis1, x = str(await self.communicator.getMessage()).split(" = ")
+        axis2, y = str(await self.communicator.getMessage()).split(" = ")
+        axis3, z = str(await self.communicator.getMessage()).split(" = ")
+        axis4, u = str(await self.communicator.getMessage()).split(" = ")
+        axis5, v = str(await self.communicator.getMessage()).split(" = ")
+        axis6, w = str(await self.communicator.getMessage()).split(" = ")
 
         return float(x), float(y), float(z), float(u), float(v), float(w)
 
@@ -317,13 +317,13 @@ class ATHexapodController:
         Returns true if it is on Target
         """
         await self.communicator.sendMessage(self.hexc.getOnTargetState())
-        Axis1, onTargetX = str(await self.communicator.getMessage()).split("=")
-        Axis2, onTargetY = str(await self.communicator.getMessage()).split("=")
-        Axis3, onTargetZ = str(await self.communicator.getMessage()).split("=")
-        Axis4, onTargetU = str(await self.communicator.getMessage()).split("=")
-        Axis5, onTargetV = str(await self.communicator.getMessage()).split("=")
-        Axis6, onTargetW = str(await self.communicator.getMessage()).split("=")
-        return (bool(int(onTargetX)), bool(int(onTargetY)), bool(int(onTargetZ)),
+        Axis1, onTargetX = str(await self.communicator.getMessage()).split(" = ")
+        Axis2, onTargetY = str(await self.communicator.getMessage()).split(" = ")
+        Axis3, onTargetZ = str(await self.communicator.getMessage()).split(" = ")
+        Axis4, onTargetU = str(await self.communicator.getMessage()).split(" = ")
+        Axis5, onTargetV = str(await self.communicator.getMessage()).split(" = ")
+        Axis6, onTargetW = str(await self.communicator.getMessage()).split(" = ")
+        return (bool(int(onTargetX)), bool(int(onTargetY)), bool(int(onTargetZ)), 
                 bool(int(onTargetU)), bool(int(onTargetV)), bool(int(onTargetW)))
 
     @checkForRun
@@ -337,7 +337,7 @@ class ATHexapodController:
         result = int(message, 16)
         status = '{0:08b}'.format(result)
 
-        return (bool(int(status[7])), bool(int(status[6])), bool(int(status[5])), bool(int(status[4])),
+        return (bool(int(status[7])), bool(int(status[6])), bool(int(status[5])), bool(int(status[4])), 
                 bool(int(status[3])), bool(int(status[2])), bool(int(status[1])), bool(int(status[0])))
 
     @checkForRun
@@ -349,7 +349,7 @@ class ATHexapodController:
         await self.communicator.sendMessage(self.hexc.queryForPositionChange())
         result = int(await self.communicator.getMessage())
         status = '{0:08b}'.format(result)
-        return (bool(status[7]), bool(status[6]), bool(status[5]), bool(status[4]),
+        return (bool(status[7]), bool(status[6]), bool(status[5]), bool(status[4]), 
                 bool(status[3]), bool(status[2]), bool(status[1]), bool(status[0]))
 
     @checkForRun
@@ -360,8 +360,8 @@ class ATHexapodController:
         """
         await self.communicator.sendMessage(self.hexc.requestControllerReadyStatus())
         response = await self.communicator.getMessage()
-        ready = response == "±"
-        if ready == 1:
+        ready = response ==  "±"
+        if ready ==  1:
             return True
         else:
             return False
@@ -397,10 +397,10 @@ class ATHexapodPosition:
 
         self.systemVelocity = 0
 
-    def updateLimits(self, minPositionX=None, minPositionY=None, minPositionZ=None,
-                     minPositionU=None, minPositionV=None, minPositionW=None,
-                     maxPositionX=None, maxPositionY=None, maxPositionZ=None,
-                     maxPositionU=None, maxPositionV=None, maxPositionW=None):
+    def updateLimits(self, minPositionX = None, minPositionY = None, minPositionZ = None, 
+                     minPositionU = None, minPositionV = None, minPositionW = None, 
+                     maxPositionX = None, maxPositionY = None, maxPositionZ = None, 
+                     maxPositionU = None, maxPositionV = None, maxPositionW = None):
         if (maxPositionX is not None):
             self.maxPositionX = float(maxPositionX)
         if (maxPositionY is not None):
@@ -433,8 +433,8 @@ class ATHexapodPosition:
             self.minPositionX, self.minPositionY, self.minPositionZ, \
             self.minPositionU, self.minPositionV, self.minPositionW
 
-    def updatePosition(self, positionX=None, positionY=None, positionZ=None,
-                       positionU=None, positionV=None, positionW=None):
+    def updatePosition(self, positionX = None, positionY = None, positionZ = None, 
+                       positionU = None, positionV = None, positionW = None):
         if (positionX is not None):
             self.positionX = float(positionX)
         if (positionY is not None):
@@ -448,7 +448,7 @@ class ATHexapodPosition:
         if (positionW is not None):
             self.positionW = float(positionW)
 
-    def updatePivot(self, pivotX=None, pivotY=None, pivotZ=None):
+    def updatePivot(self, pivotX = None, pivotY = None, pivotZ = None):
         if(pivotX is not None):
             self.pivotX = float(pivotX)
 
@@ -458,7 +458,7 @@ class ATHexapodPosition:
         if(pivotZ is not None):
             self.pivotZ = float(pivotZ)
 
-    def updateSystemVelocity(self, systemVelocity=None):
+    def updateSystemVelocity(self, systemVelocity = None):
         if systemVelocity is not None:
             self.systemVelocity = float(systemVelocity)
 
