@@ -32,7 +32,7 @@ class Harness:
         salobj.test_utils.set_random_lsst_dds_domain()
         self.index = 1
         self.csc = ATHexapod.ATHexapodCsc(
-            index=self.index, config_dir=config_dir,
+            index=self.index,
             initial_state=initial_state,
             initial_simulation_mode=1,
             mock_port=next(port_generator))
