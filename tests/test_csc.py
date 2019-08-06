@@ -34,8 +34,7 @@ class Harness:
         self.csc = ATHexapod.ATHexapodCsc(
             index=self.index,
             initial_state=initial_state,
-            initial_simulation_mode=1,
-            mock_port=next(port_generator))
+            initial_simulation_mode=1)
         self.remote = salobj.Remote(domain=self.csc.domain, name="ATHexapod", index=self.index)
 
     async def __aenter__(self):
