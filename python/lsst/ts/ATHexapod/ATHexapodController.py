@@ -4,7 +4,6 @@ from lsst.ts.ATHexapod.ATHexapodCommands import ATHexapodCommand
 from lsst.ts.pythonCommunicator.TcpCommunicator import TcpClientAsync, TCPEndStrAsync
 from lsst.ts.pipython import gcserror
 from functools import wraps
-import time
 import asyncio
 
 
@@ -12,7 +11,7 @@ class ATHexapodController:
     def __init__(self):
         self.hexc = ATHexapodCommand()
         self.controllerReady = False
-        self.communicator = None
+        self.communicator=None
         self.lock = asyncio.Lock()
 
     def checkForRun(f):
@@ -35,7 +34,7 @@ class ATHexapodController:
         return wrapper
 
     def configureCommunicator(self, address, port, connectTimeout = 2, readTimeout = 2, sendTimeout = 2, 
-                              endStr = '\n', maxLength = 1024):
+                              endStr='\n', maxLength = 1024):
         """
         Configure communication protocol
         """
@@ -60,8 +59,8 @@ class ATHexapodController:
         await self.communicator.disconnect()
 
     @checkForRun
-    async def moveToPosition(self, X: float = None, Y: float = None, Z: float = None, 
-                             U: float = None, V: float = None, W: float = None):
+    async def moveToPosition(self, X: float=None, Y: float=None, Z: float=None, 
+                             U: float=None, V: float=None, W: float=None):
         """
         move to position
         use setTargetPosition
@@ -70,7 +69,7 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def setSystemVelocity(self, systemVelocity: float = None):
+    async def setSystemVelocity(self, systemVelocity: float=None):
         """
         set system velocity
         use setSystemVelocity
@@ -79,10 +78,10 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def setPositionLimits(self, minPositionX = None, minPositionY = None, minPositionZ = None, 
-                                minPositionU = None, minPositionV = None, minPositionW = None, 
-                                maxPositionX = None, maxPositionY = None, maxPositionZ = None, 
-                                maxPositionU = None, maxPositionV = None, maxPositionW = None):
+    async def setPositionLimits(self, minPositionX=None, minPositionY=None, minPositionZ=None, 
+                                minPositionU=None, minPositionV=None, minPositionW=None, 
+                                maxPositionX=None, maxPositionY=None, maxPositionZ=None, 
+                                maxPositionU=None, maxPositionV=None, maxPositionW=None):
         """
         set position limits
         use setSystemVelocity
@@ -128,8 +127,8 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def moveOffset(self, dX: float = None, dY: float = None, dZ: float = None, 
-                         dU: float = None, dV: float = None, dW: float = None):
+    async def moveOffset(self, dX: float=None, dY: float=None, dZ: float=None, 
+                         dU: float=None, dV: float=None, dW: float=None):
         """
         move position by a relative position (related to current)
         use setTargetPosition
@@ -155,7 +154,7 @@ class ATHexapodController:
         raise(Exception(gcserror.translate_error(value = errorNumber)))
 
     @checkForRun
-    async def setPivot(self, X: float = None, Y: float = None, Z: float = None):
+    async def setPivot(self, X: float=None, Y: float=None, Z: float=None):
         """
         set pivot on the device
         use setPivotPoint
@@ -176,8 +175,8 @@ class ATHexapodController:
         return float(pivotX), float(pivotY), float(pivotZ)
 
     @checkForRun
-    async def setSoftLimit(self, X: bool = None, Y: bool = None, Z: bool = None, 
-                           U: bool = None, V: bool = None, W: bool = None):
+    async def setSoftLimit(self, X: bool=None, Y: bool=None, Z: bool=None, 
+                           U: bool=None, V: bool=None, W: bool=None):
         """
         Activate software limits
         """
@@ -185,8 +184,8 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def setSoftLimitStatus(self, X: bool = None, Y: bool = None, Z: bool = None, 
-                                 U: bool = None, V: bool = None, W: bool = None):
+    async def setSoftLimitStatus(self, X: bool=None, Y: bool=None, Z: bool=None, 
+                                 U: bool=None, V: bool=None, W: bool=None):
         """
         Get software limits status
         """
@@ -217,8 +216,8 @@ class ATHexapodController:
         await self.checkErrors()
 
     @checkForRun
-    async def validPosition(self, X: float = None, Y: float = None, Z: float = None, 
-                            U: float = None, V: float = None, W: float = None):
+    async def validPosition(self, X: float=None, Y: float=None, Z: float=None, 
+                            U: float=None, V: float=None, W: float=None):
         """
         Check if position commanded can be reached.
         Return True if possible and False if not
@@ -397,10 +396,10 @@ class ATHexapodPosition:
 
         self.systemVelocity = 0
 
-    def updateLimits(self, minPositionX = None, minPositionY = None, minPositionZ = None, 
-                     minPositionU = None, minPositionV = None, minPositionW = None, 
-                     maxPositionX = None, maxPositionY = None, maxPositionZ = None, 
-                     maxPositionU = None, maxPositionV = None, maxPositionW = None):
+    def updateLimits(self, minPositionX=None, minPositionY=None, minPositionZ=None, 
+                     minPositionU=None, minPositionV=None, minPositionW=None, 
+                     maxPositionX=None, maxPositionY=None, maxPositionZ=None, 
+                     maxPositionU=None, maxPositionV=None, maxPositionW=None):
         if (maxPositionX is not None):
             self.maxPositionX = float(maxPositionX)
         if (maxPositionY is not None):
@@ -433,8 +432,8 @@ class ATHexapodPosition:
             self.minPositionX, self.minPositionY, self.minPositionZ, \
             self.minPositionU, self.minPositionV, self.minPositionW
 
-    def updatePosition(self, positionX = None, positionY = None, positionZ = None, 
-                       positionU = None, positionV = None, positionW = None):
+    def updatePosition(self, positionX=None, positionY=None, positionZ=None, 
+                       positionU=None, positionV=None, positionW=None):
         if (positionX is not None):
             self.positionX = float(positionX)
         if (positionY is not None):
@@ -448,7 +447,7 @@ class ATHexapodPosition:
         if (positionW is not None):
             self.positionW = float(positionW)
 
-    def updatePivot(self, pivotX = None, pivotY = None, pivotZ = None):
+    def updatePivot(self, pivotX=None, pivotY=None, pivotZ=None):
         if(pivotX is not None):
             self.pivotX = float(pivotX)
 
@@ -458,7 +457,7 @@ class ATHexapodPosition:
         if(pivotZ is not None):
             self.pivotZ = float(pivotZ)
 
-    def updateSystemVelocity(self, systemVelocity = None):
+    def updateSystemVelocity(self, systemVelocity=None):
         if systemVelocity is not None:
             self.systemVelocity = float(systemVelocity)
 

@@ -12,9 +12,10 @@ except ImportError:
     SALPY_ATHexapod = None
 
 from lsst.ts import salobj
-from lsst.ts.ATHexapod import ATHexapodCSC
+from lsst.ts import ATHexapod
 
 np.random.seed(47)
+port_generator = salobj.index_generator(imin=3200)
 
 
 def fillWithRandom(data, lowValue, highValue):
@@ -27,11 +28,23 @@ def fillWithRandom(data, lowValue, highValue):
 
 
 class Harness:
-    def __init__(self, initial_state):
-        index = 0
-        self.csc = ATHexapodCSC.ATHexapodCsc(index, initial_state=initial_state)
-        self.remote = salobj.Remote(SALPY_ATHexapod, index)
+    def __init__(self, initial_state, config_dir=None):
         salobj.test_utils.set_random_lsst_dds_domain()
+        self.index = 1
+        self.csc = ATHexapod.ATHexapodCsc(
+            index=self.index, config_dir=config_dir,
+            initial_state=initial_state,
+            initial_simulation_mode=1,
+            mock_port=next(port_generator))
+        self.remote = salobj.Remote(domain=self.csc.domain, name="ATHexapod", index=self.index)
+
+    async def __aenter__(self):
+        await self.csc.start_task
+        await self.remote.start_task
+        return self
+
+    async def __aexit__(self, *args):
+        await self.csc.close()
 
 
 class CommunicateTestCase(unittest.TestCase):
