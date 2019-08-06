@@ -33,7 +33,7 @@ class Harness:
         self.index = 1
         self.csc = ATHexapod.ATHexapodCsc(
             index=self.index,
-            initial_state=initial_state,
+            #initial_state=initial_state,
             initial_simulation_mode=1)
         self.remote = salobj.Remote(domain=self.csc.domain, name="ATHexapod", index=self.index)
 
