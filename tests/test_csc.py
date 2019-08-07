@@ -196,16 +196,16 @@ class CommunicateTestCase(unittest.TestCase):
         """
         print("Move offset twice test...")
         async def doit():
-            harness = await self.beginningFunc()
+            async with Harness(initial_state=salobj.State.ENABLED) as harness:
 
-            # send the applyPositionOffset command with random data
-            cmd_data_sent = self.make_random_cmd_moveOffset(harness)
-            await self.moveOffsetAndValidate(harness, cmd_data_sent)
+                # send the applyPositionOffset command with random data
+                cmd_data_sent = self.make_random_cmd_moveOffset(harness)
+                await self.moveOffsetAndValidate(harness, cmd_data_sent)
 
-            cmd_data_sent = self.make_random_cmd_moveOffset(harness)
-            await self.moveOffsetAndValidate(harness, cmd_data_sent)
+                cmd_data_sent = self.make_random_cmd_moveOffset(harness)
+                await self.moveOffsetAndValidate(harness, cmd_data_sent)
 
-            await self.endFunc(harness)
+                await self.endFunc(harness)
 
         asyncio.get_event_loop().run_until_complete(doit())
 
@@ -215,147 +215,147 @@ class CommunicateTestCase(unittest.TestCase):
         """
         print("test_limits_command test...")
         async def doit():
-            harness = await self.beginningFunc()
-            ack = None
+            async with Harness(initial_state=salobj.State.ENABLED) as harness:
+                ack = None
 
-            # Test unrealistic values to move offset for X
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-                cmd_data_sent.x = 100
-                ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move offset for X
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.x = 100
+                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # Test unrealistic values to move offset for Y
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-                cmd_data_sent.y = 100
-                ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move offset for Y
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.y = 100
+                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # Test unrealistic values to move offset for Z
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-                cmd_data_sent.z = 100
-                ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move offset for Z
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.z = 100
+                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # Test unrealistic values to move offset for U
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-                cmd_data_sent.u = 100
-                ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move offset for U
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.u = 100
+                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # est unrealistic values to move offset for V
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-                cmd_data_sent.v = 100
-                ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                # est unrealistic values to move offset for V
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.v = 100
+                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # est unrealistic values to move offset for W
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-                cmd_data_sent.w = 100
-                ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                # est unrealistic values to move offset for W
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.w = 100
+                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # Test unrealistic values to move to position for X
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-                cmd_data_sent.x = 100
-                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move to position for X
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.x = 100
+                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # Test unrealistic values to move to position for Y
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-                cmd_data_sent.y = 100
-                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move to position for Y
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.y = 100
+                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # Test unrealistic values to move to position for Z
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-                cmd_data_sent.z = 100
-                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move to position for Z
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.z = 100
+                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # Test unrealistic values to move to position for U
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-                cmd_data_sent.u = 100
-                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                # Test unrealistic values to move to position for U
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.u = 100
+                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # est unrealistic values to move to position for V
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-                cmd_data_sent.v = 100
-                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                # est unrealistic values to move to position for V
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.v = 100
+                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # est unrealistic values to move to position for W
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-                cmd_data_sent.w = 100
-                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                # est unrealistic values to move to position for W
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.w = 100
+                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
-            # est unrealistic values to move to position for V
-            with self.assertRaises(Exception) as context:
-                # send the applyPositionOffset command with random data
-                cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-                cmd_data_sent.v = 100
-                ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                # est unrealistic values to move to position for V
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.v = 100
+                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            # est unrealistic values to move to position for W
-            with self.assertRaises(Exception) as context:
-                # send the speed command with values out of range
-                cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
-                cmd_data_sent.speed = 100
-                ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+                # est unrealistic values to move to position for W
+                with self.assertRaises(Exception) as context:
+                    # send the speed command with values out of range
+                    cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
+                    cmd_data_sent.speed = 100
+                    ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
 
-            print(str(context.exception))
-            self.assertTrue('-302' in str(context.exception))
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
 
-            await self.endFunc(harness)
+                await self.endFunc(harness)
 
         asyncio.get_event_loop().run_until_complete(doit())
 
