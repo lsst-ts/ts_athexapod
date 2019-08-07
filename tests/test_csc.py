@@ -51,12 +51,12 @@ class CommunicateTestCase(unittest.TestCase):
     def test_heartbeat(self):
         print("Heartbeat test...")
         async def doit():
-            harness = Harness(initial_state=salobj.State.STANDBY)
-            start_time = time.time()
-            await harness.remote.evt_heartbeat.next(flush=True, timeout=2)
-            await harness.remote.evt_heartbeat.next(flush=True, timeout=2)
-            duration = time.time() - start_time
-            self.assertLess(abs(duration - 2), 1.5)  # not clear what this limit should be
+            async with Harness(initial_state=salobj.State.ENABLED) as harness:
+                start_time = time.time()
+                await harness.remote.evt_heartbeat.next(flush=True, timeout=2)
+                await harness.remote.evt_heartbeat.next(flush=True, timeout=2)
+                duration = time.time() - start_time
+                self.assertLess(abs(duration - 2), 1.5)  # not clear what this limit should be
 
         asyncio.get_event_loop().run_until_complete(doit())
 
@@ -91,41 +91,40 @@ class CommunicateTestCase(unittest.TestCase):
         """
         print("position limits  test...")
         async def doit():
-            harness = await self.beginningFunc()
+            async with Harness(initial_state=salobj.State.ENABLED) as harness:
+                # send the applyPositionLimits command with random data
+                cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
+                # set a long timeout here to allow for simulated hardware delay inside the CSC
+                task = harness.remote.evt_settingsAppliedPositionLimits.next(flush=True, timeout=30)
+                # Check if applied is being published
+                task2 = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
 
-            # send the applyPositionLimits command with random data
-            cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
-            # set a long timeout here to allow for simulated hardware delay inside the CSC
-            task = harness.remote.evt_settingsAppliedPositionLimits.next(flush=True, timeout=30)
-            # Check if applied is being published
-            task2 = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
+                await harness.remote.cmd_applyPositionLimits.start(cmd_data_sent, timeout=30)
 
-            await harness.remote.cmd_applyPositionLimits.start(cmd_data_sent, timeout=30)
+                # see if new data was broadcast correctly
+                evt_data = await task
+                evt2_data = await task2
+                self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
 
-            # see if new data was broadcast correctly
-            evt_data = await task
-            evt2_data = await task2
-            self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
+                print('cmd_data_sent:')
+                for prop in dir(cmd_data_sent):
+                    if not prop.startswith('__'):
+                        print(prop, getattr(cmd_data_sent, prop))
 
-            print('cmd_data_sent:')
-            for prop in dir(cmd_data_sent):
-                if not prop.startswith('__'):
-                    print(prop, getattr(cmd_data_sent, prop))
+                print('evt_data:')
+                for prop in dir(evt_data):
+                    if not prop.startswith('__'):
+                        print(prop, getattr(evt_data, prop))
 
-            print('evt_data:')
-            for prop in dir(evt_data):
-                if not prop.startswith('__'):
-                    print(prop, getattr(evt_data, prop))
+                # Check that they are the same
+                self.assertAlmostEqual(cmd_data_sent.uvMax, evt_data.limitUVMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.wMax, evt_data.limitWMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.wMin, evt_data.limitWMin, places=4)
+                self.assertAlmostEqual(cmd_data_sent.xyMax, evt_data.limitXYMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.zMax, evt_data.limitZMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.zMin, evt_data.limitZMin, places=4)
 
-            # Check that they are the same
-            self.assertAlmostEqual(cmd_data_sent.uvMax, evt_data.limitUVMax, places=4)
-            self.assertAlmostEqual(cmd_data_sent.wMax, evt_data.limitWMax, places=4)
-            self.assertAlmostEqual(cmd_data_sent.wMin, evt_data.limitWMin, places=4)
-            self.assertAlmostEqual(cmd_data_sent.xyMax, evt_data.limitXYMax, places=4)
-            self.assertAlmostEqual(cmd_data_sent.zMax, evt_data.limitZMax, places=4)
-            self.assertAlmostEqual(cmd_data_sent.zMin, evt_data.limitZMin, places=4)
-
-            await self.endFunc(harness)
+                await self.endFunc(harness)
 
         asyncio.get_event_loop().run_until_complete(doit())
 
