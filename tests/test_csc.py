@@ -30,12 +30,8 @@ def fillWithRandom(data, lowValue, highValue):
 class Harness:
     def __init__(self, initial_state, config_dir=None):
         salobj.test_utils.set_random_lsst_dds_domain()
-        self.index = 1
-        self.csc = ATHexapod.ATHexapodCsc(
-            index=self.index,
-            #initial_state=initial_state,
-            initial_simulation_mode=1)
-        self.remote = salobj.Remote(domain=self.csc.domain, name="ATHexapod", index=self.index)
+        self.csc = ATHexapod.ATHexapodCsc(initial_simulation_mode=1)
+        self.remote = salobj.Remote(domain=self.csc.domain, name="ATHexapod")
 
     async def __aenter__(self):
         await self.csc.start_task
