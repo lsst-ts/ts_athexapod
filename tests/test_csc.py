@@ -460,7 +460,7 @@ class CommunicateTestCase(unittest.TestCase):
                         print('From STANDBY: ', bad_command)
                         cmd_attr = getattr(harness.remote, f"cmd_{bad_command}")
                         with salobj.test_utils.assertRaisesAckError(
-                                ack=harness.remote.salinfo.lib.SAL__CMD_FAILED):
+                                ack=salobj.SalRetCode.CMD_FAILED):
                             await cmd_attr.start(cmd_attr.DataType())
 
                 # send start; new state is DISABLED
@@ -468,7 +468,7 @@ class CommunicateTestCase(unittest.TestCase):
                 cmd_attr_dataType = cmd_attr.DataType()
                 setattr(cmd_attr_dataType, "settingsToApply", "Default1")
                 id_ack = await cmd_attr.start(cmd_attr_dataType)
-                self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+                self.assertEqual(id_ack.ack.ack, salobh.SalRetCode.CMD_FAILED)
                 self.assertEqual(id_ack.ack.error, 0)
 
                 self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
@@ -482,13 +482,13 @@ class CommunicateTestCase(unittest.TestCase):
                     with self.subTest(bad_command=bad_command):
                         cmd_attr = getattr(harness.remote, f"cmd_{bad_command}")
                         with salobj.test_utils.assertRaisesAckError(
-                                ack=harness.remote.salinfo.lib.SAL__CMD_FAILED):
+                                ack=salobj.SalRetCode.CMD_FAILED):
                             await cmd_attr.start(cmd_attr.DataType())
 
                 # send enable; new state is ENABLED
                 cmd_attr = getattr(harness.remote, f"cmd_enable")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
                 self.assertEqual(id_ack.ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.ENABLED)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
@@ -501,13 +501,13 @@ class CommunicateTestCase(unittest.TestCase):
                     with self.subTest(bad_command=bad_command):
                         cmd_attr = getattr(harness.remote, f"cmd_{bad_command}")
                         with salobj.test_utils.assertRaisesAckError(
-                                ack=harness.remote.salinfo.lib.SAL__CMD_FAILED):
+                                ack=salobj.SalRetCode.CMD_FAILED):
                             await cmd_attr.start(cmd_attr.DataType())
 
                 # send disable; new state is DISABLED
                 cmd_attr = getattr(harness.remote, f"cmd_disable")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
                 self.assertEqual(id_ack.ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
@@ -516,7 +516,7 @@ class CommunicateTestCase(unittest.TestCase):
                 # send standby; new state is STANDBY
                 cmd_attr = getattr(harness.remote, f"cmd_standby")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
                 self.assertEqual(id_ack.ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
@@ -525,7 +525,7 @@ class CommunicateTestCase(unittest.TestCase):
                 # send exitControl; new state is OFFLINE
                 cmd_attr = getattr(harness.remote, f"cmd_exitControl")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
                 self.assertEqual(id_ack.ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.OFFLINE)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
@@ -666,7 +666,7 @@ class CommunicateTestCase(unittest.TestCase):
         setattr(cmd_attr_dataType, "settingsToApply", "Default1")
         id_ack = await cmd_attr.start(cmd_attr_dataType)
         state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
         self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
         self.assertEqual(state.summaryState, salobj.State.DISABLED)
@@ -676,7 +676,7 @@ class CommunicateTestCase(unittest.TestCase):
         cmd_attr = getattr(harness.remote, f"cmd_enable")
         id_ack = await cmd_attr.start(cmd_attr.DataType())
         state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
         self.assertEqual(harness.csc.summary_state, salobj.State.ENABLED)
         self.assertEqual(state.summaryState, salobj.State.ENABLED)
@@ -686,7 +686,7 @@ class CommunicateTestCase(unittest.TestCase):
         cmd_attr = getattr(harness.remote, f"cmd_disable")
         id_ack = await cmd_attr.start(cmd_attr.DataType())
         state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
         self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
         self.assertEqual(state.summaryState, salobj.State.DISABLED)
@@ -696,7 +696,7 @@ class CommunicateTestCase(unittest.TestCase):
         cmd_attr = getattr(harness.remote, f"cmd_standby")
         id_ack = await cmd_attr.start(cmd_attr.DataType())
         state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, harness.remote.salinfo.lib.SAL__CMD_COMPLETE)
+        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
         self.assertEqual(id_ack.ack.error, 0)
         self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
         self.assertEqual(state.summaryState, salobj.State.STANDBY)
