@@ -94,7 +94,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         if self.summary_state is not salobj.State.STANDBY:
             raise ValueError(f"Start not valid in state: {self.summary_state.name}")
         self.publish_appliedSettingsMatchStart(True)
-        self.model.updateSettings(id_data.data.settingsToApply)
+        self.model.updateSettings(id_data.settingsToApply)
         try:
             self.log.debug("Initializing hexapod position")
             await self.model.initialize()
@@ -209,12 +209,12 @@ class ATHexapodCsc(salobj.BaseCsc):
     async def do_moveToPosition(self, id_data):
         self.assert_enabled("moveToPosition")
         if (self.simulation_mode == 1):
-            id_data.data.x = round(id_data.data.x, 3)
-            id_data.data.y = round(id_data.data.y, 3)
-            id_data.data.z = round(id_data.data.z, 3)
-            id_data.data.u = round(id_data.data.u, 3)
-            id_data.data.v = round(id_data.data.v, 3)
-            id_data.data.w = round(id_data.data.w, 3)
+            id_data.x = round(id_data.x, 3)
+            id_data.y = round(id_data.y, 3)
+            id_data.z = round(id_data.z, 3)
+            id_data.u = round(id_data.u, 3)
+            id_data.v = round(id_data.v, 3)
+            id_data.w = round(id_data.w, 3)
         await self.model.moveToPosition(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
@@ -237,12 +237,12 @@ class ATHexapodCsc(salobj.BaseCsc):
     async def do_applyPositionOffset(self, id_data):
         self.assert_enabled("applyPositionOffset")
         if (self.simulation_mode == 1):
-            id_data.data.x = round(id_data.data.x, 3)
-            id_data.data.y = round(id_data.data.y, 3)
-            id_data.data.z = round(id_data.data.z, 3)
-            id_data.data.u = round(id_data.data.u, 3)
-            id_data.data.v = round(id_data.data.v, 3)
-            id_data.data.w = round(id_data.data.w, 3)
+            id_data.x = round(id_data.x, 3)
+            id_data.y = round(id_data.y, 3)
+            id_data.z = round(id_data.z, 3)
+            id_data.u = round(id_data.u, 3)
+            id_data.v = round(id_data.v, 3)
+            id_data.w = round(id_data.w, 3)
         await self.model.applyPositionOffset(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
