@@ -89,17 +89,30 @@ class CommunicateTestCase(unittest.TestCase):
         async def doit():
             async with Harness(initial_state=salobj.State.ENABLED) as harness:
                 # send the applyPositionLimits command with random data
-                cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
-                # set a long timeout here to allow for simulated hardware delay inside the CSC
-                task = harness.remote.evt_settingsAppliedPositionLimits.next(flush=True, timeout=30)
-                # Check if applied is being published
-                task2 = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
 
-                await harness.remote.cmd_applyPositionLimits.start(cmd_data_sent, timeout=30)
+                # cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
+
+                # set a long timeout here to allow for simulated hardware delay inside the CSC
+                harness.remote.evt_settingsAppliedPositionLimits.flush()
+                harness.remote.evt_appliedSettingsMatchStart.flush()
+
+                # task = harness.remote.evt_settingsAppliedPositionLimits.next(flush=True, timeout=30)
+                # Check if applied is being published
+                # task2 = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
+
+                pos = {"uvMax": np.random.uniform(0., 10.), 
+                       "wMax": np.random.uniform(0., 10.),
+                       "wMin": -np.random.uniform(0., 10.),
+                       "xyMax": np.random.uniform(0., 10.),
+                       "zMax": np.random.uniform(0., 10.),
+                       "zMin": -np.random.uniform(0., 10.),
+                       "timeout": 30.
+                       }
+                await harness.remote.cmd_applyPositionLimits.set_start(**pos)
 
                 # see if new data was broadcast correctly
-                evt_data = await task
-                evt2_data = await task2
+                evt_data = await harness.remote.evt_settingsAppliedPositionLimits.next(fluah=False, timeout=10)
+                evt2_data = await harness.remote.evt_appliedSettingsMatchStart.next(fluah=False, timeout=10)
                 self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
 
                 print('cmd_data_sent:')
@@ -633,17 +646,6 @@ class CommunicateTestCase(unittest.TestCase):
             # Go to standby
             await self.goto_Disable_from_Enable(harness)
             await self.goto_Standby_from_Disable(harness)
-
-    def make_random_cmd_applyPositionLimits(self, harness):
-        data = harness.remote.cmd_applyPositionLimits.DataType()
-        fillWithRandom(data, -10.0, 10.0)
-        data.uvMax = abs(data.uvMax)
-        data.wMax = abs(data.wMax)
-        data.wMin = -abs(data.wMin)
-        data.xyMax = abs(data.xyMax)
-        data.zMax = abs(data.zMax)
-        data.zMin = -abs(data.zMin)
-        return data
 
     def make_random_cmd_moveToPosition(self, harness):
         data = harness.remote.cmd_moveToPosition.DataType()
