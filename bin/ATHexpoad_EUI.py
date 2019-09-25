@@ -2,7 +2,6 @@
 # -'''- coding: utf-8 -'''-
 
 import sys
-import time
 
 from lsst.ts.ATHexapodEUI.ATHexapodRemote import ATHexapodRemote
 
@@ -38,6 +37,7 @@ class EUI(QtGui.QDialog):
         self.layout.addLayout(self.middleLayerLayout)
         self.layout.addLayout(self.bottomLayerLayout)
         self.setLayout(self.layout)
+
 
 if __name__ == '__main__':
     # Create the Qt Application

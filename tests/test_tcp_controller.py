@@ -48,7 +48,7 @@ class TestAtHexapod(unittest.TestCase):
             self.assertEqual(pivotZ, 0)
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Takes to long to execute...")
+    @unittest.skip("Takes to long to execute...")
     def testTarget(self):
         async def doit():
             """Send target to the hexapod and test if it's the same as

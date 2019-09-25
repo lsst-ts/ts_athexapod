@@ -22,9 +22,6 @@ __all__ = ["ATHexapodCsc"]
 from lsst.ts import salobj
 from lsst.ts.ATHexapod.ATHexapodModel import Model, HexapodErrorCodes
 import asyncio
-import time
-
-import SALPY_ATHexapod
 
 
 class ATHexapodCsc(salobj.BaseCsc):
@@ -47,7 +44,7 @@ class ATHexapodCsc(salobj.BaseCsc):
     def __init__(self, index=0, initial_state=salobj.State.STANDBY, initial_simulation_mode=0):
         if initial_state not in salobj.State:
             raise ValueError(f"intial_state={initial_state} is not a salobj.State enum")
-        super().__init__(SALPY_ATHexapod, index=index, initial_state=initial_state,
+        super().__init__("ATHexapod", index=index, initial_state=initial_state,
                          initial_simulation_mode=initial_simulation_mode)
         self.log.setLevel(10)  # Print all logs
         self.defer_simulation_mode_until_configured = False
@@ -97,7 +94,7 @@ class ATHexapodCsc(salobj.BaseCsc):
         if self.summary_state is not salobj.State.STANDBY:
             raise ValueError(f"Start not valid in state: {self.summary_state.name}")
         self.publish_appliedSettingsMatchStart(True)
-        self.model.updateSettings(id_data.data.settingsToApply)
+        self.model.updateSettings(id_data.settingsToApply)
         try:
             self.log.debug("Initializing hexapod position")
             await self.model.initialize()
@@ -212,12 +209,12 @@ class ATHexapodCsc(salobj.BaseCsc):
     async def do_moveToPosition(self, id_data):
         self.assert_enabled("moveToPosition")
         if (self.simulation_mode == 1):
-            id_data.data.x = round(id_data.data.x, 3)
-            id_data.data.y = round(id_data.data.y, 3)
-            id_data.data.z = round(id_data.data.z, 3)
-            id_data.data.u = round(id_data.data.u, 3)
-            id_data.data.v = round(id_data.data.v, 3)
-            id_data.data.w = round(id_data.data.w, 3)
+            id_data.x = round(id_data.x, 3)
+            id_data.y = round(id_data.y, 3)
+            id_data.z = round(id_data.z, 3)
+            id_data.u = round(id_data.u, 3)
+            id_data.v = round(id_data.v, 3)
+            id_data.w = round(id_data.w, 3)
         await self.model.moveToPosition(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
@@ -240,12 +237,12 @@ class ATHexapodCsc(salobj.BaseCsc):
     async def do_applyPositionOffset(self, id_data):
         self.assert_enabled("applyPositionOffset")
         if (self.simulation_mode == 1):
-            id_data.data.x = round(id_data.data.x, 3)
-            id_data.data.y = round(id_data.data.y, 3)
-            id_data.data.z = round(id_data.data.z, 3)
-            id_data.data.u = round(id_data.data.u, 3)
-            id_data.data.v = round(id_data.data.v, 3)
-            id_data.data.w = round(id_data.data.w, 3)
+            id_data.x = round(id_data.x, 3)
+            id_data.y = round(id_data.y, 3)
+            id_data.z = round(id_data.z, 3)
+            id_data.u = round(id_data.u, 3)
+            id_data.v = round(id_data.v, 3)
+            id_data.w = round(id_data.w, 3)
         await self.model.applyPositionOffset(id_data.data)
         self.publishPositionUpdate()
         await self.waitUntilPosition()
@@ -363,7 +360,6 @@ class ATHexapodCsc(salobj.BaseCsc):
         """
         parser.add_argument("-s", "--simulate", action="store_true",
                             help="Run in simuation mode?")
-
 
     @classmethod
     def add_kwargs_from_args(cls, args, kwargs):

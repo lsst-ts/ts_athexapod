@@ -18,7 +18,7 @@ controller = salobj.Controller(SALPY_ATHexapod, index=None)
 
 
 async def send_event(x, y, z, u, v, w):
-    #await asyncio.sleep(0.5)
+    # await asyncio.sleep(0.5)
     await controller.cmd_start.next()
     print("Command received...")
     data = remote.evt_positionUpdate.DataType()
@@ -30,12 +30,13 @@ async def send_event(x, y, z, u, v, w):
     data.positionW = w
     print(f"event sent:")
     for prop in dir(data):
-      if not prop.startswith('__'):
-        print(prop, getattr(data, prop))
+        if not prop.startswith('__'):
+            print(prop, getattr(data, prop))
     controller.evt_positionUpdate.put(data)
 
+
 async def send_event_rnd():
-    #await asyncio.sleep(0.5)
+    # await asyncio.sleep(0.5)
     await controller.cmd_start.next()
     print("Command received...")
     data = remote.evt_positionUpdate.DataType()
@@ -47,9 +48,10 @@ async def send_event_rnd():
     data.positionW = random.uniform(1, 10)
     print(f"event sent:")
     for prop in dir(data):
-      if not prop.startswith('__'):
-        print(prop, getattr(data, prop))
+        if not prop.startswith('__'):
+            print(prop, getattr(data, prop))
     controller.evt_positionUpdate.put(data)
+
 
 async def sendCommand_getMessage():
     # await asyncio.sleep(0.1)
@@ -60,8 +62,9 @@ async def sendCommand_getMessage():
     data = await task
     print(f"event received:")
     for prop in dir(data):
-      if not prop.startswith('__'):
-        print(prop, getattr(data, prop))
+        if not prop.startswith('__'):
+            print(prop, getattr(data, prop))
+
 
 async def doit():
     asyncio.ensure_future(send_event_rnd())
