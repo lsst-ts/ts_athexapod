@@ -11,3 +11,4 @@ _g = globals()
 _g.update(build_package_configs(
     project_name='example',
     version=lsst.ts.ATHexapod.version.__version__))
+extensions.append("sphinxcontrib.plantuml")

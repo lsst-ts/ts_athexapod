@@ -1,2 +1,2 @@
-from .ATHexapodCSC import *
-from .ATHexapodSim import *
+from . import csc
+from . import version

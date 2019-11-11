@@ -1,3 +1,5 @@
 pyqtgraph
 numpy
 pyqt5
+documenteer[pipelines]
+sphinxcontrib-plantuml

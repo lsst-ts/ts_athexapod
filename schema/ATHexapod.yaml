@@ -1,0 +1,68 @@
+$schema: http://json-schema.org/draft-07/schema#
+$id: https://github.com/lsst-ts/ts_salobjATHexapod/blob/master/schema/ATHexapod.yaml
+title: ATHexapod v1
+description: Schema for ATHexapod configuration files
+type: object
+properties:
+  limit_xy_max:
+    description: The max limits of the xy axii
+    type: number
+    default: 22.5
+  limit_z_min:
+    description: The min limits of the z axis
+    type: number
+    default: -12.5
+  limit_z_max:
+    description: The max limits of the z axis
+    type: number
+    default: 12.5
+  limit_uv_max:
+    description: The max limits of the UV axii.
+    type: number
+    default: 7.5
+  limit_w_min:
+    description: The min limit of the W axis.
+    type: number
+    default: -12.5
+  limit_w_max:
+    description: The max limit of the W axis.
+    type: number
+    default: 12.5
+  speed:
+    description: The speed.
+    type: integer
+    default: 1
+  simulator:
+    description: Whether it connects to the simulator or the real hexapod.
+    type: boolean
+    default: false
+  host:
+    description: The ip address or host name of the hexapod controller or simulator.
+    type: string
+    default: "192.168.1.11"
+  port:
+    description: The port of the tcp connection to the controller or simulator.
+    type: integer
+    default: 50000
+    minimum: 0
+    maximum: 65535
+  connection_timeout:
+    description: The amount of time to wait for timeout of the connection.
+    type: number
+    default: 2
+  read_timeout:
+    description: The amount of time to wait for a response from the connection.
+    type: number
+    default: 2
+  send_timeout:
+    description: The amount of time to wait for a response to be sent.
+    type: number
+    default: 2
+  end_str:
+    description: The string signifiying the end of a message.
+    type: string
+    default: "endl"
+  max_length:
+    description: The maximum number of bytes a message can be.
+    type: integer
+    default: 1024

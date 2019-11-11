@@ -1,0 +1,24 @@
+@startuml ATHexapod State Diagram
+[*] --> StandbyState: enterControl
+StandbyState --> [*]: exitControl
+StandbyState --> DisabledState: start
+DisabledState --> EnabledState: enable
+EnabledState --> DisabledState: disable
+DisabledState --> StandbyState: standby
+StandbyState --> FaultState: fault
+DisabledState --> FaultState: fault
+EnabledState --> FaultState: fault
+FaultState --> StandbyState: standby
+state EnabledState {
+    state InMotionState {
+        InMotionState: stopAllAxes
+    }
+    state NotInMotionState {
+        NotInMotionState: applyPositionLimits
+        NotInMotionState: moveToPosition
+        NotInMotionState: setMaxSystemSpeeds
+        NotInMotionState: applyPositionOffset
+        NotInMotionState: pivot
+    }
+}
+@enduml
