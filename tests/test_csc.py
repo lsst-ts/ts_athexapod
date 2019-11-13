@@ -20,8 +20,8 @@ def fillWithRandom(data, lowValue, highValue):
     Parameters
     ----------
     data
-    lowValue : float
-    highValue : float
+    lowValue : `float`
+    highValue : `float`
 
     """
     reservedFields = ['action', 'device', 'itemValue', 'property']
@@ -95,412 +95,404 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
+    @unittest.skip("Skip to run tests 1 by 1 during development...")
+    def test_applyPositionLimits_command(self):
+        """Update the position limits and then listen to check if the limits were applied."""
+        print("position limits  test...")
+
+        async def doit():
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+
+                # go to disable
+                await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # go to enable
+                await harness.remote.cmd_enable.start(timeout=10)
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # send the applyPositionLimits command with random data
+
+                cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
+
+                # set a long timeout here to allow for simulated hardware delay inside the CSC
+                harness.remote.evt_settingsAppliedPositionLimits.flush()
+                harness.remote.evt_appliedSettingsMatchStart.flush()
+
+                # task = harness.remote.evt_settingsAppliedPositionLimits.next(flush=True, timeout=30)
+                # Check if applied is being published
+                # task2 = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
+
+                pos = {"uvMax": np.random.uniform(0., 10.),
+                       "wMax": np.random.uniform(0., 10.),
+                       "wMin": -np.random.uniform(0., 10.),
+                       "xyMax": np.random.uniform(0., 10.),
+                       "zMax": np.random.uniform(0., 10.),
+                       "zMin": -np.random.uniform(0., 10.),
+                       "timeout": 30.
+                       }
+                await harness.remote.cmd_applyPositionLimits.set_start(**pos)
+
+                # see if new data was broadcast correctly
+                evt_data = await harness.remote.evt_settingsAppliedPositionLimits.next(flush=False,
+                                                                                       timeout=10)
+                evt2_data = await harness.remote.evt_appliedSettingsMatchStart.next(flush=False, timeout=10)
+                self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
+
+                print('cmd_data_sent:')
+                for prop in dir(cmd_data_sent):
+                    if not prop.startswith('__'):
+                        print(prop, getattr(cmd_data_sent, prop))
+
+                print('evt_data:')
+                for prop in dir(evt_data):
+                    if not prop.startswith('__'):
+                        print(prop, getattr(evt_data, prop))
+
+                # Check that they are the same
+                self.assertAlmostEqual(cmd_data_sent.uvMax, evt_data.limitUVMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.wMax, evt_data.limitWMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.wMin, evt_data.limitWMin, places=4)
+                self.assertAlmostEqual(cmd_data_sent.xyMax, evt_data.limitXYMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.zMax, evt_data.limitZMax, places=4)
+                self.assertAlmostEqual(cmd_data_sent.zMin, evt_data.limitZMin, places=4)
+
+                await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    @unittest.skip("Skip due to timeouterror")
+    def test_moveToPosition_command(self):
+        """Move to a random position and compare the commanded position to the position read on the device."""
+        print("Move to a random position  test...")
+
+        async def doit():
+            harness = await self.beginningFunc()
+
+            # send the moveToPosition command with random data
+            cmd_data_sent = self.make_random_cmd_moveToPosition(harness)
+
+            task = harness.remote.evt_positionUpdate.next(flush=True, timeout=30)
+            # set a long timeout here to allow for hexapod to get to the commanded position
+            await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+            # see if new data was broadcast correctly
+            evt_data = await task
+            # get las position update
+            tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
+
+            print('cmd_data_sent:')
+            for prop in dir(cmd_data_sent):
+                if not prop.startswith('__'):
+                    print(prop, getattr(cmd_data_sent, prop))
+
+            print('evt_data:')
+            for prop in dir(evt_data):
+                if not prop.startswith('__'):
+                    print(prop, getattr(evt_data, prop))
+
+            print('tel_data:')
+            for prop in dir(tel_data):
+                if not prop.startswith('__'):
+                    print(prop, getattr(tel_data, prop))
+
+            # Check that the commanded position is the same as the target published
+            self.assertAlmostEqual(cmd_data_sent.x, evt_data.positionX, places=4)
+            self.assertAlmostEqual(cmd_data_sent.y, evt_data.positionY, places=4)
+            self.assertAlmostEqual(cmd_data_sent.z, evt_data.positionZ, places=4)
+            self.assertAlmostEqual(cmd_data_sent.u, evt_data.positionU, places=4)
+            self.assertAlmostEqual(cmd_data_sent.v, evt_data.positionV, places=4)
+            self.assertAlmostEqual(cmd_data_sent.w, evt_data.positionW, places=4)
+
+            # Check that the real position is the same as the commanded
+            self.assertAlmostEqual(cmd_data_sent.x, tel_data.reportedPosition[0], places=4)
+            self.assertAlmostEqual(cmd_data_sent.y, tel_data.reportedPosition[1], places=4)
+            self.assertAlmostEqual(cmd_data_sent.z, tel_data.reportedPosition[2], places=4)
+            self.assertAlmostEqual(cmd_data_sent.u, tel_data.reportedPosition[3], places=4)
+            self.assertAlmostEqual(cmd_data_sent.v, tel_data.reportedPosition[4], places=4)
+            self.assertAlmostEqual(cmd_data_sent.w, tel_data.reportedPosition[5], places=4)
+
+            # Check that the target position is the same as the commanded
+            self.assertAlmostEqual(cmd_data_sent.x, tel_data.setpointPosition[0], places=4)
+            self.assertAlmostEqual(cmd_data_sent.y, tel_data.setpointPosition[1], places=4)
+            self.assertAlmostEqual(cmd_data_sent.z, tel_data.setpointPosition[2], places=4)
+            self.assertAlmostEqual(cmd_data_sent.u, tel_data.setpointPosition[3], places=4)
+            self.assertAlmostEqual(cmd_data_sent.v, tel_data.setpointPosition[4], places=4)
+            self.assertAlmostEqual(cmd_data_sent.w, tel_data.setpointPosition[5], places=4)
+
+            await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
     # @unittest.skip("Skip to run tests 1 by 1 during development...")
-    # def test_applyPositionLimits_command(self):
-    #     """Update the position limits through cmd_applyPositionLimits and then listen to
-    #     evt_settingsAppliedPositionLimits to check if the limits were applied.
-    #     """
-    #     print("position limits  test...")
-    #     async def doit():
-    #         async with Harness(initial_state=salobj.State.STANDBY) as harness:
-
-    #             # go to disable
-    #             await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-
-    #             #go to enable
-    #             await harness.remote.cmd_enable.start(timeout=10)
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-
-    #             # send the applyPositionLimits command with random data
-
-    #             # cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
-
-    #             # set a long timeout here to allow for simulated hardware delay inside the CSC
-    #             harness.remote.evt_settingsAppliedPositionLimits.flush()
-    #             harness.remote.evt_appliedSettingsMatchStart.flush()
-
-    #             # task = harness.remote.evt_settingsAppliedPositionLimits.next(flush=True, timeout=30)
-    #             # Check if applied is being published
-    #             # task2 = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
-
-    #             pos = {"uvMax": np.random.uniform(0., 10.),
-    #                    "wMax": np.random.uniform(0., 10.),
-    #                    "wMin": -np.random.uniform(0., 10.),
-    #                    "xyMax": np.random.uniform(0., 10.),
-    #                    "zMax": np.random.uniform(0., 10.),
-    #                    "zMin": -np.random.uniform(0., 10.),
-    #                    "timeout": 30.
-    #                    }
-    #             await harness.remote.cmd_applyPositionLimits.set_start(**pos)
-
-    #             # see if new data was broadcast correctly
-    #             evt_data = await harness.remote.evt_settingsAppliedPositionLimits.next(flush=False,
-    #                                                                                    timeout=10)
-    #             evt2_data = await harness.remote.evt_appliedSettingsMatchStart.next(flush=False, timeout=10)
-    #             self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
-
-    #             print('cmd_data_sent:')
-    #             for prop in dir(cmd_data_sent):
-    #                 if not prop.startswith('__'):
-    #                     print(prop, getattr(cmd_data_sent, prop))
-
-    #             print('evt_data:')
-    #             for prop in dir(evt_data):
-    #                 if not prop.startswith('__'):
-    #                     print(prop, getattr(evt_data, prop))
-
-    #             # Check that they are the same
-    #             self.assertAlmostEqual(cmd_data_sent.uvMax, evt_data.limitUVMax, places=4)
-    #             self.assertAlmostEqual(cmd_data_sent.wMax, evt_data.limitWMax, places=4)
-    #             self.assertAlmostEqual(cmd_data_sent.wMin, evt_data.limitWMin, places=4)
-    #             self.assertAlmostEqual(cmd_data_sent.xyMax, evt_data.limitXYMax, places=4)
-    #             self.assertAlmostEqual(cmd_data_sent.zMax, evt_data.limitZMax, places=4)
-    #             self.assertAlmostEqual(cmd_data_sent.zMin, evt_data.limitZMin, places=4)
-
-    #             await self.endFunc(harness)
-
-    #     asyncio.get_event_loop().run_until_complete(doit())
-
-    # @unittest.skip("Skip due to timeouterror")
-    # def test_moveToPosition_command(self):
-    #     """Move to a random position and then compare the commanded position to the position read on the
-    #        device
-    #     """
-    #     print("Move to a random position  test...")
-    #     async def doit():
-    #         harness = await self.beginningFunc()
-
-    #         # send the moveToPosition command with random data
-    #         cmd_data_sent = self.make_random_cmd_moveToPosition(harness)
-
-    #         task = harness.remote.evt_positionUpdate.next(flush=True, timeout=30)
-    #         # set a long timeout here to allow for hexapod to get to the commanded position
-    #         await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-    #         # see if new data was broadcast correctly
-    #         evt_data = await task
-    #         # get las position update
-    #         tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
-
-    #         print('cmd_data_sent:')
-    #         for prop in dir(cmd_data_sent):
-    #             if not prop.startswith('__'):
-    #                 print(prop, getattr(cmd_data_sent, prop))
-
-    #         print('evt_data:')
-    #         for prop in dir(evt_data):
-    #             if not prop.startswith('__'):
-    #                 print(prop, getattr(evt_data, prop))
-
-    #         print('tel_data:')
-    #         for prop in dir(tel_data):
-    #             if not prop.startswith('__'):
-    #                 print(prop, getattr(tel_data, prop))
-
-    #         # Check that the commanded position is the same as the target published
-    #         self.assertAlmostEqual(cmd_data_sent.x, evt_data.positionX, places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.y, evt_data.positionY, places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.z, evt_data.positionZ, places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.u, evt_data.positionU, places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.v, evt_data.positionV, places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.w, evt_data.positionW, places=4)
-
-    #         # Check that the real position is the same as the commanded
-    #         self.assertAlmostEqual(cmd_data_sent.x, tel_data.reportedPosition[0], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.y, tel_data.reportedPosition[1], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.z, tel_data.reportedPosition[2], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.u, tel_data.reportedPosition[3], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.v, tel_data.reportedPosition[4], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.w, tel_data.reportedPosition[5], places=4)
-
-    #         # Check that the target position is the same as the commanded
-    #         self.assertAlmostEqual(cmd_data_sent.x, tel_data.setpointPosition[0], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.y, tel_data.setpointPosition[1], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.z, tel_data.setpointPosition[2], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.u, tel_data.setpointPosition[3], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.v, tel_data.setpointPosition[4], places=4)
-    #         self.assertAlmostEqual(cmd_data_sent.w, tel_data.setpointPosition[5], places=4)
-
-    #         await self.endFunc(harness)
-
-    #     asyncio.get_event_loop().run_until_complete(doit())
-
-    # # @unittest.skip("Skip to run tests 1 by 1 during development...")
-    # def test_moveOffset_command(self):
-    #     """Move offset twice and everytime checks if the hexapod move a difference in position commanded.
-    #     """
-    #     print("Move offset twice test...")
-    #     async def doit():
-    #         async with Harness(initial_state=salobj.State.STANDBY) as harness:
-
-    #             # send the applyPositionOffset command with random data
-    #             cmd_data_sent = self.make_random_cmd_moveOffset(harness)
-    #             await self.moveOffsetAndValidate(harness, cmd_data_sent)
-
-    #             cmd_data_sent = self.make_random_cmd_moveOffset(harness)
-    #             await self.moveOffsetAndValidate(harness, cmd_data_sent)
-
-    #             await self.endFunc(harness)
-
-    #     asyncio.get_event_loop().run_until_complete(doit())
-
-    # # @unittest.skip("Skip to run tests 1 by 1 during development...")
-    # def test_limits_command(self):
-    #     """Send commands out of range and check if the command is rejected
-    #     """
-    #     print("test_limits_command test...")
-
-    #     async def doit():
-    #         async with Harness(initial_state=salobj.State.STANDBY) as harness:
-    #             # go to disable
-    #             await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-
-    #             #go to enable
-    #             await harness.remote.cmd_enable.start(timeout=10)
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-    #             ack = None
-
-    #             # Test unrealistic values to move offset for X
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-    #                 cmd_data_sent.x = 100
-    #                 ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # Test unrealistic values to move offset for Y
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-    #                 cmd_data_sent.y = 100
-    #                 ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # Test unrealistic values to move offset for Z
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-    #                 cmd_data_sent.z = 100
-    #                 ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # Test unrealistic values to move offset for U
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-    #                 cmd_data_sent.u = 100
-    #                 ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # est unrealistic values to move offset for V
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-    #                 cmd_data_sent.v = 100
-    #                 ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # est unrealistic values to move offset for W
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
-    #                 cmd_data_sent.w = 100
-    #                 ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # Test unrealistic values to move to position for X
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-    #                 cmd_data_sent.x = 100
-    #                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # Test unrealistic values to move to position for Y
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-    #                 cmd_data_sent.y = 100
-    #                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # Test unrealistic values to move to position for Z
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-    #                 cmd_data_sent.z = 100
-    #                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # Test unrealistic values to move to position for U
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-    #                 cmd_data_sent.u = 100
-    #                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # est unrealistic values to move to position for V
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-    #                 cmd_data_sent.v = 100
-    #                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # est unrealistic values to move to position for W
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-    #                 cmd_data_sent.w = 100
-    #                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-
-    #             # est unrealistic values to move to position for V
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the applyPositionOffset command with random data
-    #                 cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
-    #                 cmd_data_sent.v = 100
-    #                 ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             # est unrealistic values to move to position for W
-    #             with self.assertRaises(Exception) as context:
-    #                 # send the speed command with values out of range
-    #                 cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
-    #                 cmd_data_sent.speed = 100
-    #                 ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
-
-    #             print(str(context.exception))
-    #             self.assertTrue('-302' in str(context.exception))
-
-    #             await self.endFunc(harness)
-
-    #     asyncio.get_event_loop().run_until_complete(doit())
-
-    # # @unittest.skip("Skip to run tests 1 by 1 during development...")
-    # def test_velocity_command(self):
-    #     """Send commands to update velocity and check settingsApplied
-    #     """
-    #     print("test_limits_command test...")
-    #     async def doit():
-    #         async with Harness(initial_state=salobj.State.STANDBY) as harness:
-    #             await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default2")
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-
-    #             #go to enable
-    #             await harness.remote.cmd_enable.start(timeout=10)
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-    #             ack = None
-
-    #             task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
-    #             cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
-    #             cmd_data_sent.speed = 1
-    #             self.assertEqual(state.summaryState, salobj.State.STANDBY)
-    #             ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
-    #             evt_data = await task
-    #             self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
-
-    #             task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
-    #             cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
-    #             cmd_data_sent.speed = 3
-    #             ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
-    #             evt_data = await task
-    #             self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
-
-    #             await self.endFunc(harness)
-
-    #     asyncio.get_event_loop().run_until_complete(doit())
-
-    # # @unittest.skip("Skip to run tests 1 by 1 during development...")
-    # def test_pivot_command(self):
-    #     """Send pivot commands and check that events appliedSettingsMatchStart is set false and
-    #        settingsAppliedPivot
-    #     have the same values as the commanded
-    #     """
-    #     print("test_pivot_command test...")
-
-    #     async def doit():
-    #         async with Harness(initial_state=salobj.State.STANDBY) as harness:
-    #             # go to disable
-    #             await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-
-    #             #go to enable
-    #             await harness.remote.cmd_enable.start(timeout=10)
-    #             state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-
-    #             # cmd_data_sent = self.make_random_cmd_pivot(harness)
-    #             pos = {"x": np.random.uniform(-5., 5.),
-    #                    "y": np.random.uniform(-5., 5.),
-    #                    "z": np.random.uniform(-5., 5.)}
-    #             # taskAppStgMatch = harness.remote.evt_appliedSettingsMatchStart.next(flush=True,
-    #                                                                                   timeout=30)
-    #             # taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
-    #             harness.remote.evt_appliedSettingsMatchStart.flush()
-    #             harness.remote.evt_settingsAppliedPivot.flush()
-
-    #             ack = await harness.remote.cmd_pivot.set_start(**pos)
-    #             print("Pivot command:")
-    #             self.printAll(pos)
-
-    #             # Validate settingsApplied has been published
-    #             evt1_data = await harness.remote.evt_settingsAppliedPivot.next(flush=False, timeout=30)
-    #             print("Pivot event:")
-    #             self.printAll(evt1_data)
-    #             self.assertAlmostEqual(evt1_data.pivotX, pos["x"], places=3)
-    #             self.assertAlmostEqual(evt1_data.pivotY, pos["y"], places=3)
-    #             self.assertAlmostEqual(evt1_data.pivotZ, pos["z"], places=3)
-
-    #             # Validate appliedSettingsMatchStartIsTrue has been updated
-    #             evt2_data = await harness.remote.evt_appliedSettingsMatchStart.next(flush=False, timeout=30)
-    #             self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
-
-    #             pos2 = {"x": np.random.uniform(-5., 5.),
-    #                    "y": np.random.uniform(-5., 5.),
-    #                    "z": np.random.uniform(-5., 5.)}
-    #             print("Pivot command:")
-    #             self.printAll(pos2)
-
-    #             #taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
-    #             harness.remote.evt_appliedSettingsMatchStart.flush()
-    #             ack = await harness.remote.cmd_pivot.start(cmd_data_sent, timeout=600)
-
-    #             # Validate settingsApplied has been published
-    #             evt1_data = await taskPivot
-    #             print("Pivot event:")
-    #             self.printAll(evt1_data)
-    #             self.assertAlmostEqual(evt1_data.pivotX, cmd_data_sent.x, places=3)
-    #             self.assertAlmostEqual(evt1_data.pivotY, cmd_data_sent.y, places=3)
-    #             self.assertAlmostEqual(evt1_data.pivotZ, cmd_data_sent.z, places=3)
-
-    #             await self.endFunc(harness)
-
-    #     asyncio.get_event_loop().run_until_complete(doit())
+    def test_moveOffset_command(self):
+        """Move offset twice and everytime checks if the hexapod move a difference in position commanded."""
+        print("Move offset twice test...")
+
+        async def doit():
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+
+                # send the applyPositionOffset command with random data
+                cmd_data_sent = self.make_random_cmd_moveOffset(harness)
+                await self.moveOffsetAndValidate(harness, cmd_data_sent)
+
+                cmd_data_sent = self.make_random_cmd_moveOffset(harness)
+                await self.moveOffsetAndValidate(harness, cmd_data_sent)
+
+                await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
+    def test_limits_command(self):
+        """Send commands out of range and check if the command is rejected."""
+        print("test_limits_command test...")
+
+        async def doit():
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                # go to disable
+                await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # go to enable
+                await harness.remote.cmd_enable.start(timeout=10)
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # Test unrealistic values to move offset for X
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.x = 100
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # Test unrealistic values to move offset for Y
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.y = 100
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # Test unrealistic values to move offset for Z
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.z = 100
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # Test unrealistic values to move offset for U
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.u = 100
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # est unrealistic values to move offset for V
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.v = 100
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # est unrealistic values to move offset for W
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
+                    cmd_data_sent.w = 100
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # Test unrealistic values to move to position for X
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.x = 100
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # Test unrealistic values to move to position for Y
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.y = 100
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # Test unrealistic values to move to position for Z
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.z = 100
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # Test unrealistic values to move to position for U
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.u = 100
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # est unrealistic values to move to position for V
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.v = 100
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # est unrealistic values to move to position for W
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.w = 100
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
+                # est unrealistic values to move to position for V
+                with self.assertRaises(Exception) as context:
+                    # send the applyPositionOffset command with random data
+                    cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
+                    cmd_data_sent.v = 100
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                # est unrealistic values to move to position for W
+                with self.assertRaises(Exception) as context:
+                    # send the speed command with values out of range
+                    cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
+                    cmd_data_sent.speed = 100
+                    await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+
+                print(str(context.exception))
+                self.assertTrue('-302' in str(context.exception))
+
+                await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
+    def test_velocity_command(self):
+        """Send commands to update velocity and check settingsApplied."""
+        print("test_limits_command test...")
+
+        async def doit():
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default2")
+                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # go to enable
+                await harness.remote.cmd_enable.start(timeout=10)
+                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
+                cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
+                cmd_data_sent.speed = 1
+                self.assertEqual(state.summaryState, salobj.State.STANDBY)
+                await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+                evt_data = await task
+                self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
+
+                task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
+                cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
+                cmd_data_sent.speed = 3
+                await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+                evt_data = await task
+                self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
+
+                await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
+
+    # @unittest.skip("Skip to run tests 1 by 1 during development...")
+    def test_pivot_command(self):
+        """Send pivot command and check that applied pivot has the same values."""
+        print("test_pivot_command test...")
+
+        async def doit():
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                # go to disable
+                await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # go to enable
+                await harness.remote.cmd_enable.start(timeout=10)
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                cmd_data_sent = self.make_random_cmd_pivot(harness)
+                pos = {"x": np.random.uniform(-5., 5.),
+                       "y": np.random.uniform(-5., 5.),
+                       "z": np.random.uniform(-5., 5.)}
+                harness.remote.evt_appliedSettingsMatchStart.next(flush=True,
+                                                                  timeout=30)
+                taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
+                harness.remote.evt_appliedSettingsMatchStart.flush()
+                harness.remote.evt_settingsAppliedPivot.flush()
+
+                await harness.remote.cmd_pivot.set_start(**pos)
+                print("Pivot command:")
+                self.printAll(pos)
+
+                # Validate settingsApplied has been published
+                evt1_data = await harness.remote.evt_settingsAppliedPivot.next(flush=False, timeout=30)
+                print("Pivot event:")
+                self.printAll(evt1_data)
+                self.assertAlmostEqual(evt1_data.pivotX, pos["x"], places=3)
+                self.assertAlmostEqual(evt1_data.pivotY, pos["y"], places=3)
+                self.assertAlmostEqual(evt1_data.pivotZ, pos["z"], places=3)
+
+                # Validate appliedSettingsMatchStartIsTrue has been updated
+                evt2_data = await harness.remote.evt_appliedSettingsMatchStart.next(flush=False, timeout=30)
+                self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
+
+                pos2 = {"x": np.random.uniform(-5., 5.),
+                        "y": np.random.uniform(-5., 5.),
+                        "z": np.random.uniform(-5., 5.)}
+                print("Pivot command:")
+                self.printAll(pos2)
+
+                taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
+                harness.remote.evt_appliedSettingsMatchStart.flush()
+                await harness.remote.cmd_pivot.start(cmd_data_sent, timeout=600)
+
+                # Validate settingsApplied has been published
+                evt1_data = await taskPivot
+                print("Pivot event:")
+                self.printAll(evt1_data)
+                self.assertAlmostEqual(evt1_data.pivotX, cmd_data_sent.x, places=3)
+                self.assertAlmostEqual(evt1_data.pivotY, cmd_data_sent.y, places=3)
+                self.assertAlmostEqual(evt1_data.pivotZ, cmd_data_sent.z, places=3)
+
+                await self.endFunc(harness)
+
+        asyncio.get_event_loop().run_until_complete(doit())
 
     # @unittest.skip("demonstrating skipping")
     def test_standard_state_transitions(self):

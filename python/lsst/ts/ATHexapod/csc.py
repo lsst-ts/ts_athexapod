@@ -1,6 +1,5 @@
 """ATHexapod CSC."""
 import pathlib
-import argparse
 
 from lsst.ts import salobj
 from lsst.ts.idl.enums import ATHexapod
@@ -155,11 +154,3 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
     async def telemetry(self):
         """Handle telemetry publishing."""
         pass
-
-    @classmethod
-    async def amain(cls):
-        """Create parser and run CSC."""
-        parser = argparse.ArgumentParser(f"Run {cls.__name__}")
-        parser.parse_args()
-        csc = cls(initial_simulation_mode=0)
-        await csc.done_task

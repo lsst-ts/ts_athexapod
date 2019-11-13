@@ -5,37 +5,33 @@ description: Schema for ATHexapod configuration files
 type: object
 properties:
   limit_xy_max:
-    description: The max limits of the xy axii
+    description: The max limits of the xy axii. mm
     type: number
     default: 22.5
   limit_z_min:
-    description: The min limits of the z axis
+    description: The min limits of the z axis. mm
     type: number
     default: -12.5
   limit_z_max:
-    description: The max limits of the z axis
+    description: The max limits of the z axis. mm
     type: number
     default: 12.5
   limit_uv_max:
-    description: The max limits of the UV axii.
+    description: The max limits of the UV axii. degree
     type: number
     default: 7.5
   limit_w_min:
-    description: The min limit of the W axis.
+    description: The min limit of the W axis. degree
     type: number
     default: -12.5
   limit_w_max:
-    description: The max limit of the W axis.
+    description: The max limit of the W axis. degree
     type: number
     default: 12.5
   speed:
-    description: The speed.
-    type: integer
+    description: The speed. mm/s
+    type: number
     default: 1
-  simulator:
-    description: Whether it connects to the simulator or the real hexapod.
-    type: boolean
-    default: false
   host:
     description: The ip address or host name of the hexapod controller or simulator.
     type: string
@@ -47,15 +43,15 @@ properties:
     minimum: 0
     maximum: 65535
   connection_timeout:
-    description: The amount of time to wait for timeout of the connection.
+    description: The amount of time to wait for timeout of the connection. Seconds.
     type: number
     default: 2
   read_timeout:
-    description: The amount of time to wait for a response from the connection.
+    description: The amount of time to wait for a response from the connection. Seconds.
     type: number
     default: 2
   send_timeout:
-    description: The amount of time to wait for a response to be sent.
+    description: The amount of time to wait for a response to be sent. Seconds.
     type: number
     default: 2
   end_str:
@@ -63,6 +59,6 @@ properties:
     type: string
     default: "endl"
   max_length:
-    description: The maximum number of bytes a message can be.
+    description: The maximum number of bytes a message can be. Bytes.
     type: integer
     default: 1024
