@@ -1,6 +1,6 @@
 #!/usr/bin python
 # -*- coding: utf-8 -*-
-"""Provide GCSError defines and GCSError exception class."""
+"""Provide GCSError definitions and GCSError exception class."""
 # Too many lines in module pylint: disable=C0302
 
 from logging import debug
@@ -1383,6 +1383,7 @@ __ERRMSG = {
 
 def translate_error(value):
     """Return a readable error message of `value`.
+
     @param value : Error value as integer.
     @return Error message as string.
     """
@@ -1397,10 +1398,6 @@ class GCSError(Exception):
     """GCSError exception."""
 
     def __init__(self, value, message=''):
-        """GCSError exception.
-        @param value : Error value as integer.
-        @param message : Optional message to show in exceptions string representation.
-        """
         Exception.__init__(self)
         self.val = value
         self.msg = translate_error(value)
@@ -1409,13 +1406,17 @@ class GCSError(Exception):
         debug('GCSError: %s', self.msg)
 
     def __str__(self):
+        """Handle string representation."""
         return self.msg
 
     def __repr__(self):
+        """Intrepeter representation."""
         return self.msg
 
     def __eq__(self, other):
+        """Equality operator handler."""
         return self.val == other
 
     def __ne__(self, other):
+        """Inequality operator handler."""
         return self.val != other

@@ -1,24 +1,29 @@
 #!/usr/bin/env python
-
+"""Tests the CSC."""
 import asyncio
 import time
 import unittest
 
 import numpy as np
 
-try:
-    import SALPY_ATHexapod
-except ImportError:
-    SALPY_ATHexapod = None
-
 from lsst.ts import salobj
 from lsst.ts import ATHexapod
+from lsst.ts.idl.enums.ATHexapod import DetailedState
 
 np.random.seed(47)
 port_generator = salobj.index_generator(imin=3200)
 
 
 def fillWithRandom(data, lowValue, highValue):
+    """Fill with random data.
+
+    Parameters
+    ----------
+    data
+    lowValue : `float`
+    highValue : `float`
+
+    """
     reservedFields = ['action', 'device', 'itemValue', 'property']
 
     for field in dir(data):
@@ -28,24 +33,32 @@ def fillWithRandom(data, lowValue, highValue):
 
 
 class Harness:
+    """Harness for unit tests."""
+
     def __init__(self, initial_state, config_dir=None):
         salobj.test_utils.set_random_lsst_dds_domain()
-        self.csc = ATHexapod.ATHexapodCsc(initial_simulation_mode=1)
+        self.csc = ATHexapod.csc.ATHexapodCSC(initial_simulation_mode=0)
         self.remote = salobj.Remote(domain=self.csc.domain, name="ATHexapod")
 
     async def __aenter__(self):
+        """Asynchronously with harness."""
         await self.csc.start_task
         await self.remote.start_task
         return self
 
     async def __aexit__(self, *args):
+        """Asynchronously exit with harness."""
         await self.csc.close()
 
 
 class CommunicateTestCase(unittest.TestCase):
+    """Communication test case."""
+
     @unittest.skip("skip due to timeout error")
     def test_heartbeat(self):
+        """Tests the heartbeat."""
         print("Heartbeat test...")
+
         async def doit():
             async with Harness(initial_state=salobj.State.STANDBY) as harness:
                 start_time = time.time()
@@ -58,12 +71,14 @@ class CommunicateTestCase(unittest.TestCase):
 
     @unittest.skip("demonstrating skipping")
     def test_main(self):
+        """Test that the executable starts."""
         print("Excecutable tests...")
+
         async def doit():
             index = 0
             process = await asyncio.create_subprocess_exec("../bin.src/runATHexapodCSC.py", str(index))
             try:
-                remote = salobj.Remote(SALPY_ATHexapod, index)
+                remote = salobj.Remote(domain=salobj.Domain(), name="ATHexapod")
                 summaryState_data = await remote.evt_summaryState.next(flush=False, timeout=10)
                 self.assertEqual(summaryState_data.summaryState, salobj.State.STANDBY)
                 remote.evt_summaryState.flush()
@@ -80,26 +95,25 @@ class CommunicateTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    # @unittest.skip("Skip to run tests 1 by 1 during development...")
+    @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_applyPositionLimits_command(self):
-        """Update the position limits through cmd_applyPositionLimits and then listen to 
-        evt_settingsAppliedPositionLimits to check if the limits were applied.
-        """
+        """Update the position limits and then listen to check if the limits were applied."""
         print("position limits  test...")
+
         async def doit():
             async with Harness(initial_state=salobj.State.STANDBY) as harness:
 
                 # go to disable
                 await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
-                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-                
-                #go to enable
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # go to enable
                 await harness.remote.cmd_enable.start(timeout=10)
-                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
 
                 # send the applyPositionLimits command with random data
 
-                # cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
+                cmd_data_sent = self.make_random_cmd_applyPositionLimits(harness)
 
                 # set a long timeout here to allow for simulated hardware delay inside the CSC
                 harness.remote.evt_settingsAppliedPositionLimits.flush()
@@ -109,7 +123,7 @@ class CommunicateTestCase(unittest.TestCase):
                 # Check if applied is being published
                 # task2 = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
 
-                pos = {"uvMax": np.random.uniform(0., 10.), 
+                pos = {"uvMax": np.random.uniform(0., 10.),
                        "wMax": np.random.uniform(0., 10.),
                        "wMin": -np.random.uniform(0., 10.),
                        "xyMax": np.random.uniform(0., 10.),
@@ -120,7 +134,8 @@ class CommunicateTestCase(unittest.TestCase):
                 await harness.remote.cmd_applyPositionLimits.set_start(**pos)
 
                 # see if new data was broadcast correctly
-                evt_data = await harness.remote.evt_settingsAppliedPositionLimits.next(flush=False, timeout=10)
+                evt_data = await harness.remote.evt_settingsAppliedPositionLimits.next(flush=False,
+                                                                                       timeout=10)
                 evt2_data = await harness.remote.evt_appliedSettingsMatchStart.next(flush=False, timeout=10)
                 self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
 
@@ -148,9 +163,9 @@ class CommunicateTestCase(unittest.TestCase):
 
     @unittest.skip("Skip due to timeouterror")
     def test_moveToPosition_command(self):
-        """Move to a random position and then compare the commanded position to the position read on the device
-        """
+        """Move to a random position and compare the commanded position to the position read on the device."""
         print("Move to a random position  test...")
+
         async def doit():
             harness = await self.beginningFunc()
 
@@ -210,9 +225,9 @@ class CommunicateTestCase(unittest.TestCase):
 
     # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_moveOffset_command(self):
-        """Move offset twice and everytime checks if the hexapod move a difference in position commanded.
-        """
+        """Move offset twice and everytime checks if the hexapod move a difference in position commanded."""
         print("Move offset twice test...")
+
         async def doit():
             async with Harness(initial_state=salobj.State.STANDBY) as harness:
 
@@ -229,27 +244,25 @@ class CommunicateTestCase(unittest.TestCase):
 
     # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_limits_command(self):
-        """Send commands out of range and check if the command is rejected
-        """
+        """Send commands out of range and check if the command is rejected."""
         print("test_limits_command test...")
 
         async def doit():
             async with Harness(initial_state=salobj.State.STANDBY) as harness:
                 # go to disable
                 await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
-                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-                
-                #go to enable
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                # go to enable
                 await harness.remote.cmd_enable.start(timeout=10)
-                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-                ack = None
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
 
                 # Test unrealistic values to move offset for X
                 with self.assertRaises(Exception) as context:
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
                     cmd_data_sent.x = 100
-                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -259,7 +272,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
                     cmd_data_sent.y = 100
-                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -269,7 +282,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
                     cmd_data_sent.z = 100
-                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -279,7 +292,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
                     cmd_data_sent.u = 100
-                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -289,7 +302,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
                     cmd_data_sent.v = 100
-                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -299,7 +312,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_applyPositionOffset.DataType()
                     cmd_data_sent.w = 100
-                    ack = await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_applyPositionOffset.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -309,7 +322,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
                     cmd_data_sent.x = 100
-                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -319,7 +332,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
                     cmd_data_sent.y = 100
-                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -329,7 +342,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
                     cmd_data_sent.z = 100
-                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -339,7 +352,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
                     cmd_data_sent.u = 100
-                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -349,7 +362,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
                     cmd_data_sent.v = 100
-                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -359,14 +372,14 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
                     cmd_data_sent.w = 100
-                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
                 # est unrealistic values to move to position for V
                 with self.assertRaises(Exception) as context:
                     # send the applyPositionOffset command with random data
                     cmd_data_sent = harness.remote.cmd_moveToPosition.DataType()
                     cmd_data_sent.v = 100
-                    ack = await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_moveToPosition.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -376,7 +389,7 @@ class CommunicateTestCase(unittest.TestCase):
                     # send the speed command with values out of range
                     cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
                     cmd_data_sent.speed = 100
-                    ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+                    await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
 
                 print(str(context.exception))
                 self.assertTrue('-302' in str(context.exception))
@@ -387,31 +400,30 @@ class CommunicateTestCase(unittest.TestCase):
 
     # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_velocity_command(self):
-        """Send commands to update velocity and check settingsApplied
-        """
+        """Send commands to update velocity and check settingsApplied."""
         print("test_limits_command test...")
+
         async def doit():
             async with Harness(initial_state=salobj.State.STANDBY) as harness:
                 await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default2")
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-                
-                #go to enable
+
+                # go to enable
                 await harness.remote.cmd_enable.start(timeout=10)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-                ack = None
 
                 task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
                 cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
                 cmd_data_sent.speed = 1
                 self.assertEqual(state.summaryState, salobj.State.STANDBY)
-                ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+                await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
                 evt_data = await task
                 self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
 
                 task = harness.remote.evt_settingsAppliedVelocities.next(flush=True, timeout=30)
                 cmd_data_sent = harness.remote.cmd_setMaxSystemSpeeds.DataType()
                 cmd_data_sent.speed = 3
-                ack = await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
+                await harness.remote.cmd_setMaxSystemSpeeds.start(cmd_data_sent, timeout=600)
                 evt_data = await task
                 self.assertAlmostEqual(cmd_data_sent.speed, evt_data.systemSpeed, places=3)
 
@@ -421,31 +433,30 @@ class CommunicateTestCase(unittest.TestCase):
 
     # @unittest.skip("Skip to run tests 1 by 1 during development...")
     def test_pivot_command(self):
-        """Send pivot commands and check that events appliedSettingsMatchStart is set false and settingsAppliedPivot
-        have the same values as the commanded
-        """
+        """Send pivot command and check that applied pivot has the same values."""
         print("test_pivot_command test...")
 
         async def doit():
             async with Harness(initial_state=salobj.State.STANDBY) as harness:
                 # go to disable
                 await harness.remote.cmd_start.set_start(timeout=10, settingsToApply="Default1")
-                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-                
-                #go to enable
-                await harness.remote.cmd_enable.start(timeout=10)
-                state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
 
-                # cmd_data_sent = self.make_random_cmd_pivot(harness)
+                # go to enable
+                await harness.remote.cmd_enable.start(timeout=10)
+                await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+
+                cmd_data_sent = self.make_random_cmd_pivot(harness)
                 pos = {"x": np.random.uniform(-5., 5.),
                        "y": np.random.uniform(-5., 5.),
                        "z": np.random.uniform(-5., 5.)}
-                # taskAppStgMatch = harness.remote.evt_appliedSettingsMatchStart.next(flush=True, timeout=30)
-                # taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
+                harness.remote.evt_appliedSettingsMatchStart.next(flush=True,
+                                                                  timeout=30)
+                taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
                 harness.remote.evt_appliedSettingsMatchStart.flush()
                 harness.remote.evt_settingsAppliedPivot.flush()
 
-                ack = await harness.remote.cmd_pivot.set_start(**pos)
+                await harness.remote.cmd_pivot.set_start(**pos)
                 print("Pivot command:")
                 self.printAll(pos)
 
@@ -462,14 +473,14 @@ class CommunicateTestCase(unittest.TestCase):
                 self.assertEqual(evt2_data.appliedSettingsMatchStartIsTrue, 0)
 
                 pos2 = {"x": np.random.uniform(-5., 5.),
-                       "y": np.random.uniform(-5., 5.),
-                       "z": np.random.uniform(-5., 5.)}
+                        "y": np.random.uniform(-5., 5.),
+                        "z": np.random.uniform(-5., 5.)}
                 print("Pivot command:")
                 self.printAll(pos2)
 
-                #taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
+                taskPivot = harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=30)
                 harness.remote.evt_appliedSettingsMatchStart.flush()
-                ack = await harness.remote.cmd_pivot.start(cmd_data_sent, timeout=600)
+                await harness.remote.cmd_pivot.start(cmd_data_sent, timeout=600)
 
                 # Validate settingsApplied has been published
                 evt1_data = await taskPivot
@@ -498,7 +509,7 @@ class CommunicateTestCase(unittest.TestCase):
         * exitControl: STANDBY, FAULT to OFFLINE (quit)
         """
         print("test_standard_state_transitions test...")
-        
+
         async def doit():
             async with Harness(initial_state=salobj.State.STANDBY) as harness:
                 commands = ("start", "enable", "disable", "exitControl", "standby",
@@ -521,13 +532,12 @@ class CommunicateTestCase(unittest.TestCase):
                 # send start; new state is DISABLED
                 cmd_attr = getattr(harness.remote, f"cmd_start")
                 cmd_attr_dataType = cmd_attr.DataType()
-                setattr(cmd_attr_dataType, "settingsToApply", "Default1")
+                setattr(cmd_attr_dataType, "settingsToApply", "")
                 id_ack = await cmd_attr.start(cmd_attr_dataType)
-                self.assertEqual(id_ack.ack.ack, salobh.SalRetCode.CMD_FAILED)
-                self.assertEqual(id_ack.ack.error, 0)
+                self.assertEqual(id_ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+                self.assertEqual(id_ack.error, 0)
 
                 self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
-                state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
                 self.assertEqual(state.summaryState, salobj.State.DISABLED)
 
@@ -543,16 +553,16 @@ class CommunicateTestCase(unittest.TestCase):
                 # send enable; new state is ENABLED
                 cmd_attr = getattr(harness.remote, f"cmd_enable")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-                self.assertEqual(id_ack.ack.error, 0)
+                self.assertEqual(id_ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+                self.assertEqual(id_ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.ENABLED)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
                 self.assertEqual(state.summaryState, salobj.State.ENABLED)
 
                 for bad_command in commands:
-                    if bad_command in ("disable", "applyPositionLimits", "moveToPosition", "setMaxSystemSpeeds",
-                                    "applyPositionOffset", "stopAllAxes", "pivot"):
-                        continue  # valid command in DISABLED state
+                    if bad_command in ("disable", "applyPositionLimits", "moveToPosition",
+                                       "setMaxSystemSpeeds", "applyPositionOffset", "stopAllAxes", "pivot"):
+                        continue  # valid command in ENABLED state
                     with self.subTest(bad_command=bad_command):
                         cmd_attr = getattr(harness.remote, f"cmd_{bad_command}")
                         with salobj.test_utils.assertRaisesAckError(
@@ -562,8 +572,8 @@ class CommunicateTestCase(unittest.TestCase):
                 # send disable; new state is DISABLED
                 cmd_attr = getattr(harness.remote, f"cmd_disable")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-                self.assertEqual(id_ack.ack.error, 0)
+                self.assertEqual(id_ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+                self.assertEqual(id_ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
                 self.assertEqual(state.summaryState, salobj.State.DISABLED)
@@ -571,8 +581,8 @@ class CommunicateTestCase(unittest.TestCase):
                 # send standby; new state is STANDBY
                 cmd_attr = getattr(harness.remote, f"cmd_standby")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-                self.assertEqual(id_ack.ack.error, 0)
+                self.assertEqual(id_ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+                self.assertEqual(id_ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
                 self.assertEqual(state.summaryState, salobj.State.STANDBY)
@@ -580,166 +590,181 @@ class CommunicateTestCase(unittest.TestCase):
                 # send exitControl; new state is OFFLINE
                 cmd_attr = getattr(harness.remote, f"cmd_exitControl")
                 id_ack = await cmd_attr.start(cmd_attr.DataType())
-                self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-                self.assertEqual(id_ack.ack.error, 0)
+                self.assertEqual(id_ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+                self.assertEqual(id_ack.error, 0)
                 self.assertEqual(harness.csc.summary_state, salobj.State.OFFLINE)
                 state = await harness.remote.evt_summaryState.next(flush=False, timeout=2)
                 self.assertEqual(state.summaryState, salobj.State.OFFLINE)
 
-                await asyncio.wait_for(harness.csc.done_task, 2)
+                await asyncio.wait_for(harness.csc.done_task, 5)
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    def printAll(self, data):
-        for prop in dir(data):
-            if not prop.startswith('__'):
-                print(prop, getattr(data, prop))
+    def test_detailed_state_transitions(self):
+        """Test that the CSC respects sub state commands."""
+        async def doit():
+            async with Harness(initial_state=salobj.State.ENABLED) as harness:
+                # commands that are only allowed when NOTMOVING should be rejected when MOVING
+                harness.csc.detailed_state = DetailedState.INMOTION
+                harness.remote.cmd_moveToPosition.set(x=0, y=0, z=0, u=0, v=0, w=0)
+                with salobj.assertRaisesAckError(ack=salobj.SalRetCode.CMD_FAILED):
+                    await harness.remote.cmd_moveToPosition.start(timeout=10)
+                harness.remote.cmd_applyPositionLimits.set()
+                harness.remote.cmd_applyPositionLimits.set(xyMax=0, zMin=0, zMax=0, uvMax=0, wMin=0, wMax=0)
+                with salobj.assertRaisesAckError(ack=salobj.SalRetCode.CMD_FAILED):
+                    await harness.remote.cmd_applyPositionLimits.start(timeout=10)
 
-    async def moveOffsetAndValidate(self, harness, offset):
-            # Get current position
-            tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
-            # Not really getting last value, added a second get to clean last value
-            tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
-            tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
-            currentX = tel_data.reportedPosition[0]
-            currentY = tel_data.reportedPosition[1]
-            currentZ = tel_data.reportedPosition[2]
-            currentU = tel_data.reportedPosition[3]
-            currentV = tel_data.reportedPosition[4]
-            currentW = tel_data.reportedPosition[5]
-            print('tel_data:')
+        asyncio.get_event_loop().run_until_complete(doit())
 
-            print('tel_data:')
-            for prop in dir(tel_data):
-                if not prop.startswith('__'):
-                    print(prop, getattr(tel_data, prop))
+    # def printAll(self, data):
+    #     for prop in dir(data):
+    #         if not prop.startswith('__'):
+    #             print(prop, getattr(data, prop))
 
-            calculatedNewcurrentX = offset.x + currentX
-            calculatedNewcurrentY = offset.y + currentY
-            calculatedNewcurrentZ = offset.z + currentZ
-            calculatedNewcurrentU = offset.u + currentU
-            calculatedNewcurrentV = offset.v + currentV
-            calculatedNewcurrentW = offset.w + currentW
+    # async def moveOffsetAndValidate(self, harness, offset):
+    #         # Get current position
+    #         tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
+    #         # Not really getting last value, added a second get to clean last value
+    #         tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
+    #         tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
+    #         currentX = tel_data.reportedPosition[0]
+    #         currentY = tel_data.reportedPosition[1]
+    #         currentZ = tel_data.reportedPosition[2]
+    #         currentU = tel_data.reportedPosition[3]
+    #         currentV = tel_data.reportedPosition[4]
+    #         currentW = tel_data.reportedPosition[5]
+    #         print('tel_data:')
 
-            task = harness.remote.evt_positionUpdate.next(flush=True, timeout=30)
-            # set a long timeout here to allow for hexapod to get to the commanded position
-            await harness.remote.cmd_applyPositionOffset.start(offset, timeout=600)
-            # see if new data was broadcast correctly
-            evt_data = await task
-            # get last position update
-            tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
+    #         print('tel_data:')
+    #         for prop in dir(tel_data):
+    #             if not prop.startswith('__'):
+    #                 print(prop, getattr(tel_data, prop))
 
-            print('cmd_data_offset_sent:')
-            for prop in dir(offset):
-                if not prop.startswith('__'):
-                    print(prop, getattr(offset, prop))
+    #         calculatedNewcurrentX = offset.x + currentX
+    #         calculatedNewcurrentY = offset.y + currentY
+    #         calculatedNewcurrentZ = offset.z + currentZ
+    #         calculatedNewcurrentU = offset.u + currentU
+    #         calculatedNewcurrentV = offset.v + currentV
+    #         calculatedNewcurrentW = offset.w + currentW
 
-            print('evt_data:')
-            for prop in dir(evt_data):
-                if not prop.startswith('__'):
-                    print(prop, getattr(evt_data, prop))
+    #         task = harness.remote.evt_positionUpdate.next(flush=True, timeout=30)
+    #         # set a long timeout here to allow for hexapod to get to the commanded position
+    #         await harness.remote.cmd_applyPositionOffset.start(offset, timeout=600)
+    #         # see if new data was broadcast correctly
+    #         evt_data = await task
+    #         # get last position update
+    #         tel_data = await harness.remote.tel_positionStatus.next(flush=True, timeout=30)
 
-            print('tel_data:')
-            for prop in dir(tel_data):
-                if not prop.startswith('__'):
-                    print(prop, getattr(tel_data, prop))
+    #         print('cmd_data_offset_sent:')
+    #         for prop in dir(offset):
+    #             if not prop.startswith('__'):
+    #                 print(prop, getattr(offset, prop))
 
-            # Check that the commanded position is the same as the target published
-            self.assertAlmostEqual(calculatedNewcurrentX, evt_data.positionX, places=4)
-            self.assertAlmostEqual(calculatedNewcurrentY, evt_data.positionY, places=4)
-            self.assertAlmostEqual(calculatedNewcurrentZ, evt_data.positionZ, places=4)
-            self.assertAlmostEqual(calculatedNewcurrentU, evt_data.positionU, places=4)
-            self.assertAlmostEqual(calculatedNewcurrentV, evt_data.positionV, places=4)
-            self.assertAlmostEqual(calculatedNewcurrentW, evt_data.positionW, places=4)
+    #         print('evt_data:')
+    #         for prop in dir(evt_data):
+    #             if not prop.startswith('__'):
+    #                 print(prop, getattr(evt_data, prop))
 
-            # Check that the real position is the same as the commanded
-            self.assertAlmostEqual(calculatedNewcurrentX, tel_data.reportedPosition[0], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentY, tel_data.reportedPosition[1], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentZ, tel_data.reportedPosition[2], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentU, tel_data.reportedPosition[3], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentV, tel_data.reportedPosition[4], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentW, tel_data.reportedPosition[5], places=4)
+    #         print('tel_data:')
+    #         for prop in dir(tel_data):
+    #             if not prop.startswith('__'):
+    #                 print(prop, getattr(tel_data, prop))
 
-            # Check that the target position is the same as the commanded
-            self.assertAlmostEqual(calculatedNewcurrentX, tel_data.setpointPosition[0], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentY, tel_data.setpointPosition[1], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentZ, tel_data.setpointPosition[2], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentU, tel_data.setpointPosition[3], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentV, tel_data.setpointPosition[4], places=4)
-            self.assertAlmostEqual(calculatedNewcurrentW, tel_data.setpointPosition[5], places=4)
+    #         # Check that the commanded position is the same as the target published
+    #         self.assertAlmostEqual(calculatedNewcurrentX, evt_data.positionX, places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentY, evt_data.positionY, places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentZ, evt_data.positionZ, places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentU, evt_data.positionU, places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentV, evt_data.positionV, places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentW, evt_data.positionW, places=4)
 
-    async def beginningFunc(self):
-            harness = Harness(initial_state=salobj.State.STANDBY)
-            state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-            state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
-            self.assertIsNone(harness.remote.evt_positionUpdate.get())
-            self.assertIsNone(harness.remote.tel_positionStatus.get())
-            # Check summaryState
-            self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
-            self.assertEqual(state.summaryState, salobj.State.STANDBY)
-            # Go to enable
-            await self.goto_Disable_from_Standby(harness)
-            await self.goto_Enable_from_Disable(harness)
+    #         # Check that the real position is the same as the commanded
+    #         self.assertAlmostEqual(calculatedNewcurrentX, tel_data.reportedPosition[0], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentY, tel_data.reportedPosition[1], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentZ, tel_data.reportedPosition[2], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentU, tel_data.reportedPosition[3], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentV, tel_data.reportedPosition[4], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentW, tel_data.reportedPosition[5], places=4)
 
-            return harness
+    #         # Check that the target position is the same as the commanded
+    #         self.assertAlmostEqual(calculatedNewcurrentX, tel_data.setpointPosition[0], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentY, tel_data.setpointPosition[1], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentZ, tel_data.setpointPosition[2], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentU, tel_data.setpointPosition[3], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentV, tel_data.setpointPosition[4], places=4)
+    #         self.assertAlmostEqual(calculatedNewcurrentW, tel_data.setpointPosition[5], places=4)
 
-    async def endFunc(self, harness):
-            # Go to standby
-            await self.goto_Disable_from_Enable(harness)
-            await self.goto_Standby_from_Disable(harness)
+    # async def beginningFunc(self):
+    #         harness = Harness(initial_state=salobj.State.STANDBY)
+    #         state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+    #         state = await harness.remote.evt_summaryState.next(flush=False, timeout=10)
+    #         self.assertIsNone(harness.remote.evt_positionUpdate.get())
+    #         self.assertIsNone(harness.remote.tel_positionStatus.get())
+    #         # Check summaryState
+    #         self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
+    #         self.assertEqual(state.summaryState, salobj.State.STANDBY)
+    #         # Go to enable
+    #         await self.goto_Disable_from_Standby(harness)
+    #         await self.goto_Enable_from_Disable(harness)
 
-    def make_random_cmd_moveToPosition(self, harness):
-        data = harness.remote.cmd_moveToPosition.DataType()
-        fillWithRandom(data, -5.0, 5.0)
-        return data
+    #         return harness
 
-    def make_random_cmd_moveOffset(self, harness):
-        data = harness.remote.cmd_applyPositionOffset.DataType()
-        fillWithRandom(data, -1, 1)
-        return data
+    # async def endFunc(self, harness):
+    #         # Go to standby
+    #         await self.goto_Disable_from_Enable(harness)
+    #         await self.goto_Standby_from_Disable(harness)
 
+    # def make_random_cmd_moveToPosition(self, harness):
+    #     data = harness.remote.cmd_moveToPosition.DataType()
+    #     fillWithRandom(data, -5.0, 5.0)
+    #     return data
 
-    async def goto_Disable_from_Standby(self, harness):
-        # send start; new state is DISABLED
-        cmd_attr = getattr(harness.remote, f"cmd_start")
-        cmd_attr_dataType = cmd_attr.DataType()
-        setattr(cmd_attr_dataType, "settingsToApply", "Default1")
-        id_ack = await cmd_attr.start(cmd_attr_dataType)
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-        self.assertEqual(id_ack.ack.error, 0)
-        self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
-        self.assertEqual(state.summaryState, salobj.State.DISABLED)
+    # def make_random_cmd_moveOffset(self, harness):
+    #     data = harness.remote.cmd_applyPositionOffset.DataType()
+    #     fillWithRandom(data, -1, 1)
+    #     return data
 
-    async def goto_Enable_from_Disable(self, harness):
-        # send enable; new state is ENABLED
-        cmd_attr = getattr(harness.remote, f"cmd_enable")
-        id_ack = await cmd_attr.start(cmd_attr.DataType())
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-        self.assertEqual(id_ack.ack.error, 0)
-        self.assertEqual(harness.csc.summary_state, salobj.State.ENABLED)
-        self.assertEqual(state.summaryState, salobj.State.ENABLED)
+    # async def goto_Disable_from_Standby(self, harness):
+    #     # send start; new state is DISABLED
+    #     cmd_attr = getattr(harness.remote, f"cmd_start")
+    #     cmd_attr_dataType = cmd_attr.DataType()
+    #     setattr(cmd_attr_dataType, "settingsToApply", "Default1")
+    #     id_ack = await cmd_attr.start(cmd_attr_dataType)
+    #     state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
+    #     self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+    #     self.assertEqual(id_ack.ack.error, 0)
+    #     self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
+    #     self.assertEqual(state.summaryState, salobj.State.DISABLED)
 
-    async def goto_Disable_from_Enable(self, harness):
-        # send disable; new state is DISABLED
-        cmd_attr = getattr(harness.remote, f"cmd_disable")
-        id_ack = await cmd_attr.start(cmd_attr.DataType())
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-        self.assertEqual(id_ack.ack.error, 0)
-        self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
-        self.assertEqual(state.summaryState, salobj.State.DISABLED)
+    # async def goto_Enable_from_Disable(self, harness):
+    #     # send enable; new state is ENABLED
+    #     cmd_attr = getattr(harness.remote, f"cmd_enable")
+    #     id_ack = await cmd_attr.start(cmd_attr.DataType())
+    #     state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
+    #     self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+    #     self.assertEqual(id_ack.ack.error, 0)
+    #     self.assertEqual(harness.csc.summary_state, salobj.State.ENABLED)
+    #     self.assertEqual(state.summaryState, salobj.State.ENABLED)
 
-    async def goto_Standby_from_Disable(self, harness):
-        # send standby; new state is STANDBY
-        cmd_attr = getattr(harness.remote, f"cmd_standby")
-        id_ack = await cmd_attr.start(cmd_attr.DataType())
-        state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
-        self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
-        self.assertEqual(id_ack.ack.error, 0)
-        self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
-        self.assertEqual(state.summaryState, salobj.State.STANDBY)
+    # async def goto_Disable_from_Enable(self, harness):
+    #     # send disable; new state is DISABLED
+    #     cmd_attr = getattr(harness.remote, f"cmd_disable")
+    #     id_ack = await cmd_attr.start(cmd_attr.DataType())
+    #     state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
+    #     self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+    #     self.assertEqual(id_ack.ack.error, 0)
+    #     self.assertEqual(harness.csc.summary_state, salobj.State.DISABLED)
+    #     self.assertEqual(state.summaryState, salobj.State.DISABLED)
+
+    # async def goto_Standby_from_Disable(self, harness):
+    #     # send standby; new state is STANDBY
+    #     cmd_attr = getattr(harness.remote, f"cmd_standby")
+    #     id_ack = await cmd_attr.start(cmd_attr.DataType())
+    #     state = await harness.remote.evt_summaryState.next(flush=False, timeout=5)
+    #     self.assertEqual(id_ack.ack.ack, salobj.SalRetCode.CMD_COMPLETE)
+    #     self.assertEqual(id_ack.ack.error, 0)
+    #     self.assertEqual(harness.csc.summary_state, salobj.State.STANDBY)
+    #     self.assertEqual(state.summaryState, salobj.State.STANDBY)
 
 
 if __name__ == "__main__":

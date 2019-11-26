@@ -1,7 +1,9 @@
+"""ATHexapod ascii commands."""
 __all__ = ["ATHexapodCommand"]
 
 
 class ATHexapodCommand:
+    """ATHexapod command class."""
 
     hexapodAxis = ['X', 'Y', 'Z', 'U', 'V', 'W']
 
@@ -9,7 +11,8 @@ class ATHexapodCommand:
         pass
 
     def getRealPosition(self):
-        """
+        """Generate getRealPosition command string.
+
         (p. 138) Get Real Position.
         This command is identical in
         function to POS? (p. 216), but
@@ -31,7 +34,8 @@ class ATHexapodCommand:
         return "\3"
 
     def requestMotionStatus(self):
-        """
+        """Generate requestMotionStatus command string.
+
         (p. 140) Request Motion Status.
         Axes 1 to 8 correspond to the X,
         Y, Z, U, V, W, A and B axes in
@@ -45,7 +49,8 @@ class ATHexapodCommand:
         it is skipped when counting the
         axes.
 
-        return:
+        Return
+        ------
         The answer <uint> is bit-mapped
         and returned as the hexadecimal
         sum of the following codes:
@@ -56,7 +61,8 @@ class ATHexapodCommand:
         return "\5"
 
     def queryForPositionChange(self):
-        """
+        """Generate qieryForPositionChange command string.
+
         Queries wheter the axis positions have changed since the last position query was sent.
         Response:
         The response <uint> is bit-mappet and returned as the hexadecimal sum of the following codes:
@@ -68,7 +74,8 @@ class ATHexapodCommand:
         return "\6"
 
     def requestControllerReadyStatus(self):
-        """
+        """Generate requestControllerReadyStatus command string.
+
         (p. 141) Request Controller
         Ready Status
         Asks controller for ready status
@@ -85,7 +92,8 @@ class ATHexapodCommand:
         return "\7"
 
     def stopAllAxes(self):
-        """
+        """Generate stopAllAxes command string.
+
         (p. 143) Stop All Axes
         To confirm that this worked, #5
         has to be used.
@@ -96,14 +104,24 @@ class ATHexapodCommand:
 
     def setTargetPosition(self, X: float = None, Y: float = None, Z: float = None,
                           U: float = None, V: float = None, W: float = None):
-        """
-        (p. 206) Set Target Position
-        Execute:
+        """Generate setTargetPosition command string.
 
-        Send: MOV X 10 U 5
-        Note: Axis X moves to 10 (target
+        (p. 206) Set Target Position
+
+        :Execute:
+        :Send: MOV X 10 U 5
+        :Note: Axis X moves to 10 (target
         position in mm), axis U moves to
         5 (target position in °)
+
+        Parameters
+        ----------
+        X : `float`
+        Y : `float`
+        Z : `float`
+        U : `float`
+        V : `float`
+        W : `float`
         """
         target = ""
         target += " X " + str(float(X)) if X is not None else ""
@@ -115,7 +133,8 @@ class ATHexapodCommand:
         return "MOV" + target
 
     def getReferencingResult(self):
-        """
+        """Generate getReferencingResult command string.
+
         (p. 175) Get Referencing Result
         Axes X, Y, Z, U, V, W, A and B are considered to be
         "referenced" when a reference move has been successfully
@@ -154,7 +173,8 @@ class ATHexapodCommand:
         return "FRF" + target
 
     def getTargetPosition(self):
-        """
+        """Generate getTargetPosition command string.
+
         (p. 208) Get Target Position
 
         MOV? gets the commanded positions. Use POS? (p. 216) to get the current positions.
@@ -163,7 +183,8 @@ class ATHexapodCommand:
 
     def setLowPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None,
                                 U: float = None, V: float = None, W: float = None):
-        """
+        """Generate setLowPositionSoftLimit command string.
+
         (p. 212) Set Low Position Soft Limit
 
         Limits the low end of the axis travel range in closed-loop operation ("soft limit").
@@ -178,14 +199,16 @@ class ATHexapodCommand:
         return "NLM" + target
 
     def getLowPositionSoftLimit(self):
-        """
+        """Generate getLowPositionSoftLimit command string.
+
         Get the position "soft limit" which determines the low end of
         the axis travel range in closed-loop operation.
         """
         return "NLM? X Y Z U V W"
 
     def getOnTargetState(self):
-        """
+        """Generate getOnTargetState command string.
+
         (p. 213) Get On Target State
 
         Gets on-target state of given axis.
@@ -196,7 +219,8 @@ class ATHexapodCommand:
 
     def setHighPositionSoftLimit(self, X: float = None, Y: float = None, Z: float = None,
                                  U: float = None, V: float = None, W: float = None):
-        """
+        """Generate setHighPositionSoftLimit command string.
+
         (p. 214) Set High Position Soft Limit
 
         Limits the high end of the axis travel range in closed-loop
@@ -212,13 +236,12 @@ class ATHexapodCommand:
         return "PLM" + target
 
     def getHighPositionSoftLimit(self):
-        """
-        Get High Position Soft Limit
-        """
+        """Get High Position Soft Limit."""
         return "PLM? X Y Z U V W"
 
     def getPositionUnit(self):
-        """
+        """Generate getPositionUnit command string.
+
         (p. 217) Get Position Unit
 
         Get the current unit of the position.
@@ -227,7 +250,8 @@ class ATHexapodCommand:
 
     def setTargetRelativeToCurrentPosition(self, X: float = None, Y: float = None, Z: float = None,
                                            U: float = None, V: float = None, W: float = None):
-        """
+        """Generate setTargetRelativeToCurrentPosition command string.
+
         (p. 215) Set Target Relative To Current Position
         Moves given axes relative to the last commanded target position.
         """
@@ -242,7 +266,8 @@ class ATHexapodCommand:
 
     def virtualMove(self, X: float = None, Y: float = None, Z: float = None,
                     U: float = None, V: float = None, W: float = None):
-        """
+        """Generate virtualMove command string.
+
         (p. 253) VMO? (Virtual Move)
 
         Checks whether the moving platform of the Hexapod can approach
@@ -260,7 +285,8 @@ class ATHexapodCommand:
         return "VMO?" + target
 
     def setPivotPoint(self, X: float = None, Y: float = None, Z: float = None):
-        """
+        """Generate setPivotPoint command string.
+
         (p. 227)(Set Pivot Point)
 
         Sets the pivot point coordinates in the volatile memory.
@@ -274,7 +300,8 @@ class ATHexapodCommand:
         return "SPI" + target
 
     def getPivotPoint(self):
-        """
+        """Generate getPivotPoint command string.
+
         (p. 229) (Get Pivot Point)
 
         Gets the pivot point coordinates.
@@ -282,14 +309,16 @@ class ATHexapodCommand:
         return "SPI?"
 
     def getSoftLimitStatus(self):
-        """
+        """Generate getSoftLimitStatus command string.
+
         SSL? (p. 230) Get Soft Limit Status
         """
         return "SSL?"
 
     def setSoftLimit(self, X: bool = None, Y: bool = None, Z: bool = None,
                      U: bool = None, V: bool = None, W: bool = None):
-        """
+        """Generate setSoftLimit command string.
+
         (p. 229) Set Soft Limit
 
         Activates or deactivates the soft limits that are set with NLM (p. 212) and PLM (p. 214).
@@ -307,7 +336,8 @@ class ATHexapodCommand:
 
     def setClosedLoopVelocity(self, X: float = None, Y: float = None, Z: float = None,
                               U: float = None, V: float = None, W: float = None):
-        """
+        """Generate setClosedLoopVelocity command string.
+
         (p. 243) (Set Closed-Loop Velocity)
 
         The velocity can be changed with VEL while the axis is moving.
@@ -322,7 +352,8 @@ class ATHexapodCommand:
         return "VEL" + target
 
     def getClosedLoopVelocity(self):
-        """
+        """Generate getClosedLoopVelocity command string.
+
         (p. 244) (Get Closed-Loop Velocity)
 
         If all arguments are omitted, the value of all axes commanded with VEL is queried.
@@ -330,7 +361,8 @@ class ATHexapodCommand:
         return "VEL?"
 
     def setSystemVelocity(self, velocity):
-        """
+        """Generate setSystemVelocity command string.
+
          (p. 251) (Set System Velocity)
 
         Sets the velocity for the moving platform of the Hexapod
@@ -343,13 +375,15 @@ class ATHexapodCommand:
         return "VLS " + str(velocity)
 
     def getSystemVelocity(self):
-        """
+        """Generate getSystemVelocity command string.
+
         (p. 252) Gets the velocity of the moving platform of the Hexapod that is set with VLS (p. 245).
         """
         return "VLS?"
 
     def getErrorNumber(self):
-        """
+        """Generate getErrorNumber command string.
+
         (p. 163) Get Error Number
 
         Get error code of the last occurred error and reset the error to 0.

@@ -1,3 +1,4 @@
+"""Tests the TCP controller."""
 from lsst.ts.ATHexapod.ATHexapodController import ATHexapodController
 import time
 import unittest
@@ -6,8 +7,10 @@ import asyncio
 
 
 class TestAtHexapod(unittest.TestCase):
+    """TestATHexapod class."""
 
     def setUp(self):
+        """Prepare the test."""
         async def doit():
             print("Test 1.0")
             self.hexController = ATHexapodController()
@@ -24,6 +27,7 @@ class TestAtHexapod(unittest.TestCase):
         asyncio.get_event_loop().run_until_complete(doit())
 
     def tearDown(self):
+        """Disassemble the test."""
         async def doit():
             await self.hexController.disconnect()
         asyncio.get_event_loop().run_until_complete(doit())
@@ -50,9 +54,9 @@ class TestAtHexapod(unittest.TestCase):
 
     @unittest.skip("Takes to long to execute...")
     def testTarget(self):
+        """Check the target."""
         async def doit():
-            """Send target to the hexapod and test if it's the same as
-            the hardware target."""
+            """Send target to the hexapod and test if it's the same as the hardware target."""
             Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd = 0, 0, 0, 0, 0, 0
             await self.hexController.moveToPosition(Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd)
 
@@ -96,9 +100,7 @@ class TestAtHexapod(unittest.TestCase):
 
     @unittest.skip("Takes to long to execute...")
     def testMoveToTarget(self):
-        """Send target to the hexapod and test if it's the same as
-        the hardware target.
-        """
+        """Send target to the hexapod and test if it's the same as the hardware target."""
         async def doit():
             Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd = (randint(0, self.maxPosition) for i in range(6))
             await self.hexController.moveToPosition(Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd)
@@ -119,9 +121,7 @@ class TestAtHexapod(unittest.TestCase):
 
     @unittest.skip("Didn't work on the simulator, not sure if will work on the real controller")
     def testMotionStatus(self):
-        """Send random target and test if the onTarget is True
-        when the Hexapod has reached position.
-        """
+        """Send random target and test if the onTarget is True when the Hexapod has reached position."""
         async def doit():
             Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd = (randint(0, self.maxPosition) for i in range(6))
             await self.hexController.moveToPosition(Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd)
@@ -203,6 +203,7 @@ class TestAtHexapod(unittest.TestCase):
 
     @unittest.skip("Don't run...")
     def testPositionUnit(self):
+        """Test position unit."""
         async def doit():
             xunit, yunit, zunit, uunit, vunit, wunit = await self.hexController.getUnits()
             self.assertEqual(xunit.strip(), "mm")
@@ -327,10 +328,12 @@ class TestAtHexapod(unittest.TestCase):
 
 
 def similarTo(number1, number2, threshold=0.001):
+    """Check two numbers are within threshold."""
     return abs(number1 - number2) < threshold
 
 
 async def inPosition(hexController, Xcmd, Ycmd, Zcmd, Ucmd, Vcmd, Wcmd):
+    """Return in position value."""
     Xtgt, Ytgt, Ztgt, Utgt, Vtgt, Wtgt = await hexController.getRealPositions()
     inPositionValue = (similarTo(Xcmd, Xtgt) and similarTo(Ycmd, Ytgt) and similarTo(Zcmd, Ztgt) and
                        similarTo(Ucmd, Utgt) and similarTo(Vcmd, Vtgt) and similarTo(Wcmd, Wtgt))

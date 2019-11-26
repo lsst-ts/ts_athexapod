@@ -4,7 +4,7 @@ config.log
 *.cfgc
 *.pyc
 ospl-info.log
-bin.src/ospl-error.log
+ospl-error.log
 
 # Built by sconsUtils
 bin/
