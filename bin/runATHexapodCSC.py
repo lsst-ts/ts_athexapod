@@ -18,7 +18,6 @@
 # GNU General Public License for more details.
 #
 
-from lsst.ts.ATHexapod.csc import ATHexapodCsc
-import asyncio
+from lsst.ts.ATHexapod.csc import ATHexapodCSC
 
-asyncio.run(ATHexapodCsc.amain())
+ATHexapodCSC.main(index=None)

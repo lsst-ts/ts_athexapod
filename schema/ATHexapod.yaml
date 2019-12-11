@@ -28,10 +28,26 @@ properties:
     description: The max limit of the W axis. degree
     type: number
     default: 12.5
+  pivot_x:
+    description: Pivot position. mm
+    type: number
+    default: 0.
+  pivot_y:
+    description: Pivot position. mm
+    type: number
+    default: 0.
+  pivot_z:
+    description: Pivot position. mm
+    type: number
+    default: 0.
   speed:
     description: The speed. mm/s
     type: number
     default: 1
+  auto_reference:
+    description: Should the CSC attempt to auto-reference the hexapod when enabling? If True, will check if axis is referenced and perform reference if not.
+    type: boolean
+    default: true
   host:
     description: The ip address or host name of the hexapod controller or simulator.
     type: string
@@ -46,18 +62,14 @@ properties:
     description: The amount of time to wait for timeout of the connection. Seconds.
     type: number
     default: 2
-  read_timeout:
-    description: The amount of time to wait for a response from the connection. Seconds.
+  reference_timeout:
+    description: How long to wait for a reference activity before timing out. Seconds.
     type: number
-    default: 2
-  send_timeout:
-    description: The amount of time to wait for a response to be sent. Seconds.
+    default: 120.
+  movement_timeout:
+    description: How long to wait for a movement command before timing out. Seconds.
     type: number
-    default: 2
-  end_str:
-    description: The string signifiying the end of a message.
-    type: string
-    default: "endl"
+    default: 30.
   max_length:
     description: The maximum number of bytes a message can be. Bytes.
     type: integer
