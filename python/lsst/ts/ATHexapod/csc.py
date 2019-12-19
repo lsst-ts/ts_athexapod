@@ -175,10 +175,10 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         Actions performed by this task are:
 
-        1 - Set soft limits on the hexapod controller.
-        2 - Check that the hexapod axis are referenced.
-        3 - If axis are not referenced and `auto_reference=True`, will
-            reference axis.
+        1. - Set soft limits on the hexapod controller.
+        2. - Check that the hexapod axis are referenced.
+        3. - If axis are not referenced and `auto_reference=True`, will
+             reference axis.
 
         The CSC will reject attempts to move axis that are not referenced.
 
@@ -262,12 +262,12 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         await self.model.set_high_position_soft_limit(xy_max, xy_max, limit_z_max,
                                                       limit_uv_max, limit_uv_max, limit_w_max)
 
-        self.evt_settingsAppliedPositionLimits.set_put(limitXYMax=self.config.limit_xy_max,
-                                                       limitZMin=self.config.limit_z_min,
-                                                       limitZMax=self.config.limit_z_max,
-                                                       limitUVMax=self.config.limit_uv_max,
-                                                       limitWMin=self.config.limit_w_min,
-                                                       limitWMax=self.config.limit_w_max)
+        self.evt_settingsAppliedPositionLimits.set_put(limitXYMax=xy_max,
+                                                       limitZMin=limit_z_min,
+                                                       limitZMax=limit_z_max,
+                                                       limitUVMax=limit_uv_max,
+                                                       limitWMin=limit_w_min,
+                                                       limitWMax=limit_w_max)
 
     async def do_applyPositionLimits(self, data):
         """Apply the position limits.
@@ -279,10 +279,10 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         self.assert_enabled("applyPositionLimits")
         self.assert_substate([ATHexapod.DetailedState.NOTINMOTION], "applyPositionLimits")
 
-        await self.set_limits(self.config.limit_xy_max,
-                              self.config.limit_z_min, self.config.limit_z_max,
-                              self.config.limit_uv_max,
-                              self.config.limit_w_min, self.config.limit_w_max)
+        await self.set_limits(data.xyMax,
+                              data.zMin, data.zMax,
+                              data.uvMax,
+                              data.wMin, data.wMax)
 
     async def do_moveToPosition(self, data):
         """Move the Hexapod to position.
@@ -332,7 +332,11 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         ----------
         data
         """
-        raise NotImplementedError("setMaxSystemSpeeds command not implemented.")
+        self.assert_enabled("setMaxSystemSpeeds")
+        self.assert_substate([ATHexapod.DetailedState.NOTINMOTION], "setMaxSystemSpeeds")
+        await self.model.set_sv(velocity=data.speed)
+        current_sv = await self.model.get_sv()
+        self.evt_settingsAppliedVelocities.set_put(systemSpeed=current_sv)
 
     async def do_applyPositionOffset(self, data):
         """Apply position offset.
@@ -341,8 +345,9 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         ----------
         data
         """
-        raise NotImplementedError("applyPositionOffset command not implemented.")
-        # add model call
+        self.assert_enabled("applyPositionOffset")
+        self.assert_substate([ATHexapod.DetailedState.NOTINMOTION], "applyPositionOffset")
+        await self.model.offset(data.x, data.y, data.z, data.u, data.v, data.w)
 
     async def do_pivot(self, data):
         """Pivot the hexapod.
@@ -351,7 +356,12 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         ----------
         data
         """
-        raise NotImplementedError("pivot command not implemented.")
+        self.assert_enabled("pivot")
+        self.assert_substate([ATHexapod.DetailedState.NOTINMOTION], "pivot")
+        await self.model.set_pivot_point(data.x, data.y, data.z)
+        current_pivot = await self.model.getPivotPoint()
+        self.evt_settingsAppliedPivot.set_put(pivotX=current_pivot[0], pivotY=current_pivot[1],
+                                              pivotZ=current_pivot[2])
 
     async def do_stopAllAxes(self, data):
         """Stop all axes.

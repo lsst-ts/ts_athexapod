@@ -1,21 +1,24 @@
-
-__all__ = ['Model']
-
+import asyncio
 import logging
 
-from .controller import ATHexapodController
 
-
-class Model:
-
+class ATHexapodController:
     def __init__(self, log=None):
+
+        self.host = '127.0.0.1'
+        self.port = 50000
+        self.timeout = 2.
+        self.long_timeout = 30.
+
+        self.reader = None
+        self.writer = None
+
+        self.lock = asyncio.Lock()
 
         self.log = log
 
         if self.log is None:
             self.log = logging.getLogger(__name__)
-
-        self.controller = ATHexapodController(log=log)
 
     def is_connected(self):
         """ Check if connected to the controller.
@@ -25,19 +28,37 @@ class Model:
         connected : bool
 
         """
-        return self.controller.is_connected()
+        return self.reader is not None and self.writer is not None
 
     async def connect(self):
         """ Connect to hexapod controller.
         """
 
-        await self.controller.connect()
+        async with self.lock:
+            if self.is_connected():
+                raise RuntimeError("Reader or Writer not None. Try disconnecting first.")
+
+            connect_task = asyncio.open_connection(host=self.host,
+                                                   port=self.port)
+
+            self.reader, self.writer = await asyncio.wait_for(connect_task,
+                                                              timeout=self.long_timeout)
 
     async def disconnect(self):
         """ Disconnect from hexapod controller.
         """
 
-        await self.controller.disconnect()
+        async with self.lock:
+
+            self.reader = None
+
+            if self.writer is not None:
+                try:
+                    self.writer.write_eof()
+                    await asyncio.wait_for(self.writer.drain(), timeout=self.timeout)
+                finally:
+                    self.writer.close()
+                    self.writer = None
 
     async def write_command(self, cmd, has_response=True, multi_line=True):
         """ Send command to hexapod controller and return response.
@@ -58,7 +79,38 @@ class Model:
 
         """
 
-        return await self.controller.write_command(cmd, has_response, multi_line)
+        async with self.lock:
+
+            if not self.is_connected():
+                raise RuntimeError("Not connected to hexapod controller. "
+                                   "Call `connect` first")
+
+            self.log.debug(f"Writing: {cmd.encode()!r}")
+            self.writer.write(f"{cmd}\n".encode())
+            await self.writer.drain()
+
+            response = b""
+
+            if has_response:
+                try:
+                    keep_going = multi_line
+                    while True:
+                        c = await asyncio.wait_for(self.reader.read(1), timeout=2.)
+                        response += c
+
+                        if c == b'\n' and not keep_going:
+                            break
+                        elif c == b' ':
+                            keep_going = True
+                        elif c == b'\n':
+                            keep_going = False
+                except asyncio.TimeoutError:
+                    self.log.warning("Timed out waiting for response from controller. Result "
+                                     "may be incomplete.")
+
+        self.log.debug(f"Response: {response!r}")
+
+        return response
 
     async def real_position(self):
         """ Get real position command string.
@@ -79,7 +131,9 @@ class Model:
             W (deg) axis.
 
         """
-        return await self.controller.real_position()
+        ret = await self.write_command("\3")
+
+        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def motion_status(self):
         """Generate requestMotionStatus command string.
@@ -96,7 +150,11 @@ class Model:
         is_moving : tuple(bool, bool, bool, bool, bool, bool)
 
         """
-        return await self.controller.motion_status()
+        ret = await self.write_command("\5", multi_line=False)
+
+        code = int(ret.decode())
+
+        return tuple([(code & (1 << i)) > 0 for i in range(6)])
 
     async def position_changed(self):
         """Generate qieryForPositionChange command string.
@@ -114,7 +172,11 @@ class Model:
         pos_changed : tuple(bool, bool, bool, bool, bool, bool)
 
         """
-        return await self.controller.position_changed()
+        ret = await self.write_command("\6", multi_line=False)
+
+        code = int(ret.decode())
+
+        return tuple([(code & (1 << i)) > 0 for i in range(3)])
 
     async def controller_ready(self):
         """Generate requestControllerReadyStatus command string.
@@ -125,14 +187,19 @@ class Model:
         B1h (ASCII character 177) if controller is ready B0h (ASCII character
         176) if controller is not ready (e.g., performing a reference move)
         """
-        return await self.controller.controller_ready()
+        ret = await self.write_command("\7", multi_line=False)
+
+        comp = ret == chr(177)
+        self.log.debug(f"{ret} : {chr(177)} : {comp}")
+
+        return ret == chr(177)
 
     async def stop_all_axes(self):
         """Generate stopAllAxes command string.
 
         (p. 143) Stop All Axes To confirm that this worked, #5 has to be used.
         """
-        return await self.controller.stop_all_axes()
+        return await self.write_command(chr(24), has_response=False)
 
     async def set_position(self, x=None, y=None, z=None,
                            u=None, v=None, w=None):
@@ -161,7 +228,15 @@ class Model:
         w : `float`
             W-axis rotation (in deg).
         """
-        await self.controller.set_position(x, y, z, u, v, w)
+        target = ""
+        target += " X " + str(float(x)) if x is not None else ""
+        target += " Y " + str(float(y)) if y is not None else ""
+        target += " Z " + str(float(z)) if z is not None else ""
+        target += " U " + str(float(u)) if u is not None else ""
+        target += " V " + str(float(v)) if v is not None else ""
+        target += " W " + str(float(w)) if w is not None else ""
+
+        await self.write_command("MOV" + target, has_response=False)
 
     async def referencing_result(self):
         """Generate getReferencingResult command string.
@@ -180,12 +255,14 @@ class Model:
         sensors and do not need a reference move. For this reason,
         FRF? always responds with 1 for these axes.
         """
-        return await self.controller.referencing_result()
+        ret = await self.write_command("FRF?")
+
+        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def reference(self):
         """Perform a reference in all axes.
         """
-        return await self.controller.reference()
+        await self.write_command("FRF X Y Z U V W", has_response=False)
 
     async def target_position(self):
         """Generate getTargetPosition command string.
@@ -195,7 +272,9 @@ class Model:
         MOV? gets the commanded positions. Use POS? (p. 216) to get the
         current positions.
         """
-        return await self.controller.target_position()
+        ret = await self.write_command("MOV? X Y Z U V W")
+
+        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_low_position_soft_Limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Generate setLowPositionSoftLimit command string.
@@ -204,7 +283,15 @@ class Model:
 
         Limits the low end of the axis travel range in closed-loop operation ("soft limit").
         """
-        return await self.controller.set_low_position_soft_Limit(x, y, z, u, v, w)
+        target = ""
+        target += " X " + str(float(x)) if x is not None else ""
+        target += " Y " + str(float(y)) if y is not None else ""
+        target += " Z " + str(float(z)) if z is not None else ""
+        target += " U " + str(float(u)) if u is not None else ""
+        target += " V " + str(float(v)) if v is not None else ""
+        target += " W " + str(float(w)) if w is not None else ""
+
+        await self.write_command("NLM" + target, has_response=False)
 
     async def get_low_position_soft_limit(self):
         """Generate getLowPositionSoftLimit command string.
@@ -212,7 +299,9 @@ class Model:
         Get the position "soft limit" which determines the low end of
         the axis travel range in closed-loop operation.
         """
-        return await self.controller.get_low_position_soft_limit()
+        ret = await self.write_command("NLM? X Y Z U V W")
+
+        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_high_position_soft_limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Generate setHighPositionSoftLimit command string.
@@ -222,11 +311,21 @@ class Model:
         Limits the high end of the axis travel range in closed-loop
         operation ("soft limit").
         """
-        return await self.controller.set_high_position_soft_limit(x, y, z, u, v, w)
+        target = ""
+        target += " X " + str(float(x)) if x is not None else ""
+        target += " Y " + str(float(y)) if y is not None else ""
+        target += " Z " + str(float(z)) if z is not None else ""
+        target += " U " + str(float(u)) if u is not None else ""
+        target += " V " + str(float(v)) if v is not None else ""
+        target += " W " + str(float(w)) if w is not None else ""
+
+        await self.write_command("PLM" + target, has_response=False)
 
     async def get_high_position_soft_limit(self):
         """Get High Position Soft Limit."""
-        return await self.controller.get_high_position_soft_limit()
+        ret = await self.write_command("PLM? X Y Z U V W")
+
+        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def on_target(self):
         """Generate getOnTargetState command string.
@@ -237,7 +336,9 @@ class Model:
 
         if all arguments are omitted, gets state of all axes.
         """
-        return await self.controller.on_target()
+        ret = await self.write_command("ONT?")
+
+        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def get_position_unit(self):
         """Generate getPositionUnit command string.
@@ -246,7 +347,9 @@ class Model:
 
         Get the current unit of the position.
         """
-        return await self.controller.get_position_unit()
+        ret = await self.write_command("PUN? X Y Z U V W")
+
+        return [val.split("=")[1] for val in ret.decode().replace("\n", "").split(" ")]
 
     async def offset(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Generate setTargetRelativeToCurrentPosition command string.
@@ -254,7 +357,15 @@ class Model:
         (p. 215) Set Target Relative To Current Position
         Moves given axes relative to the last commanded target position.
         """
-        await self.controller.offset(x, y, z, u, v, w)
+        target = ""
+        target += " X " + str(float(x)) if x is not None else ""
+        target += " Y " + str(float(y)) if y is not None else ""
+        target += " Z " + str(float(z)) if z is not None else ""
+        target += " U " + str(float(u)) if u is not None else ""
+        target += " V " + str(float(v)) if v is not None else ""
+        target += " W " + str(float(w)) if w is not None else ""
+
+        await self.write_command("MVR" + target)
 
     async def check_offset(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Generate virtualMove command string.
@@ -266,7 +377,17 @@ class Model:
 
         Used to validate if MVR command is possible.
         """
-        return await self.controller.check_offset(x, y, z, u, v, w)
+        target = ""
+        target += " X " + str(float(x)) if x is not None else ""
+        target += " Y " + str(float(y)) if y is not None else ""
+        target += " Z " + str(float(z)) if z is not None else ""
+        target += " U " + str(float(u)) if u is not None else ""
+        target += " V " + str(float(v)) if v is not None else ""
+        target += " W " + str(float(w)) if w is not None else ""
+
+        ret = await self.write_command("VMO?" + target)
+
+        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_pivot_point(self, x=None, y=None, z=None):
         """Generate setPivotPoint command string.
@@ -277,7 +398,12 @@ class Model:
         Can only be set when the following holds true for the rotation
         coordinates of the moving platform: U = V = W = 0
         """
-        await self.controller.set_pivot_point(x, y, z)
+        target = ""
+        target += " X " + str(float(x)) if x is not None else ""
+        target += " Y " + str(float(y)) if y is not None else ""
+        target += " Z " + str(float(z)) if z is not None else ""
+
+        await self.write_command("SPI" + target, has_response=False)
 
     async def getPivotPoint(self):
         """Generate getPivotPoint command string.
@@ -286,14 +412,18 @@ class Model:
 
         Gets the pivot point coordinates.
         """
-        return await self.controller.getPivotPoint()
+        ret = await self.write_command("SPI?")
+
+        return [val.split("=")[1] for val in ret.decode().replace("\n", "").split(" ")]
 
     async def check_active_soft_limit(self):
         """Generate getSoftLimitStatus command string.
 
         SSL? (p. 230) Get Soft Limit Status
         """
-        return await self.controller.check_active_soft_limit()
+        ret = await self.write_command("SSL?")
+
+        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def activate_soft_limit(self, x=True, y=True, z=True, u=True, v=True, w=True):
         """Generate setSoftLimit command string.
@@ -304,7 +434,15 @@ class Model:
 
         Soft limits can only be activated/deactivated when the axis is not moving (query with #5 (p. 140)).
         """
-        await self.controller.activate_soft_limit(x, y, z, u, v, w)
+        target = ""
+        target += " X " + ("1" if x else "0")
+        target += " Y " + ("1" if y else "0")
+        target += " Z " + ("1" if z else "0")
+        target += " U " + ("1" if u else "0")
+        target += " V " + ("1" if v else "0")
+        target += " W " + ("1" if w else "0")
+
+        await self.write_command("SSL" + target, has_response=False)
 
     async def set_clv(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Generate setClosedLoopVelocity command string.
@@ -313,7 +451,15 @@ class Model:
 
         The velocity can be changed with VEL while the axis is moving.
         """
-        await self.controller.set_clv(x, y, z, u, v, w)
+        target = ""
+        target += " X " + str(float(x)) if x is not None else ""
+        target += " Y " + str(float(y)) if y is not None else ""
+        target += " Z " + str(float(z)) if z is not None else ""
+        target += " U " + str(float(u)) if u is not None else ""
+        target += " V " + str(float(v)) if v is not None else ""
+        target += " W " + str(float(w)) if w is not None else ""
+
+        await self.write_command("VEL" + target, has_response=False)
 
     async def get_clv(self):
         """Generate getClosedLoopVelocity command string.
@@ -322,12 +468,14 @@ class Model:
 
         If all arguments are omitted, the value of all axes commanded with VEL is queried.
         """
-        return await self.controller.get_clv()
+        ret = await self.write_command("VEL?")
+
+        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_sv(self, velocity):
         """Generate setSystemVelocity command string.
 
-         (p. 251) (Set System Velocity)
+        (p. 251) (Set System Velocity)
 
         Sets the velocity for the moving platform of the Hexapod
 
@@ -335,14 +483,14 @@ class Model:
         is not moving (axes X, Y, Z, U, V, W; query with #5 (p. 140)).
         For axes A and B, the velocity can be set with VEL (p. 243).
         """
-        await self.controller.set_sv(velocity)
+        await self.write_command(f"VLS {velocity}", has_response=False)
 
     async def get_sv(self):
         """Generate getSystemVelocity command string.
 
         (p. 252) Gets the velocity of the moving platform of the Hexapod that is set with VLS (p. 245).
         """
-        return await self.controller.get_sv()
+        return float(await self.write_command("VLS?"))
 
     async def get_error(self):
         """Generate getErrorNumber command string.
@@ -351,4 +499,4 @@ class Model:
 
         Get error code of the last occurred error and reset the error to 0.
         """
-        return await self.controller.get_error()
+        return int(await self.write_command("ERR?", multi_line=False))
