@@ -30,13 +30,13 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
     def __init__(self, config_dir=None,
                  initial_state=salobj.State.STANDBY,
-                 initial_simulation_mode=0):
+                 simulation_mode=0):
 
         schema_path = pathlib.Path(__file__).resolve().parents[4].joinpath("schema", "ATHexapod.yaml")
 
         super().__init__(name="ATHexapod", index=0, config_dir=config_dir,
                          initial_state=initial_state,
-                         initial_simulation_mode=initial_simulation_mode,
+                         simulation_mode=simulation_mode,
                          schema_path=schema_path)
 
         self._detailed_state = ATHexapod.DetailedState.NOTINMOTION
