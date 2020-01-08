@@ -191,12 +191,12 @@ class MockServer:
         self.minimum_limit_w = w.decode()
 
     async def get_low_position_soft_limit(self):
-        return (f"""X={self.minimum_limit_x}
-                Y={self.minimum_limit_y}
-                Z={self.minimum_limit_z}
-                U={self.minimum_limit_u}
-                V={self.minimum_limit_v}
-                W={self.minimum_limit_w}\n""".encode())
+        return (f"X={self.minimum_limit_x} " 
+                f"Y={self.minimum_limit_y} "
+                f"Z={self.minimum_limit_z} "
+                f"U={self.minimum_limit_u} "
+                f"V={self.minimum_limit_v} "
+                f"W={self.minimum_limit_w}\n".encode())
 
     async def set_high_position_soft_limit(self, x, y, z, u, v, w):
         self.maximum_limit_x = x.decode()
