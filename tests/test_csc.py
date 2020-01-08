@@ -5,23 +5,26 @@ import logging
 from lsst.ts import salobj
 from lsst.ts import ATHexapod
 
-STD_TIMEOUT = 45
+STD_TIMEOUT = 15
+SHORT_TIMEOUT = 5
 
 
 class Harness:
     def __init__(self, initial_state):
         salobj.test_utils.set_random_lsst_dds_domain()
         self.csc = ATHexapod.ATHexapodCSC(initial_state=initial_state)
-        self.csc.model.controller = ATHexapod.MockController(log=None)
         self.remote = salobj.Remote(domain=self.csc.domain, name="ATHexapod", index=0)
+        self.server = ATHexapod.MockServer()
         self.log = logging.getLogger(__name__)
 
     async def __aenter__(self):
+        await self.server.start()
         await self.csc.start_task
         return self
 
     async def __aexit__(self, *args):
         await self.csc.close()
+        await self.server.stop()
 
 
 class CscTestCase(unittest.TestCase):
@@ -58,7 +61,10 @@ class CscTestCase(unittest.TestCase):
 
     def test_apply_position_limits(self):
         async def doit():
-            async with Harness(initial_state=salobj.State.ENABLED) as harness:
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                await harness.remote.cmd_start.start(timeout=STD_TIMEOUT)
+                await harness.remote.cmd_enable.start(timeout=STD_TIMEOUT)
+                harness.remote.evt_settingsAppliedPositionLimits.flush()
                 await harness.remote.cmd_applyPositionLimits.set_start(timeout=STD_TIMEOUT, xyMax=12, zMin=-6,
                                                                        zMax=12, uvMax=8, wMin=-6, wMax=6)
                 event = await harness.remote.evt_settingsAppliedPositionLimits.next(flush=False,
@@ -72,18 +78,19 @@ class CscTestCase(unittest.TestCase):
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Shenanigans")
     def test_move_to_position(self):
         async def doit():
-            async with Harness(initial_state=salobj.State.DISABLED) as harness:
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                await harness.remote.cmd_start.start(timeout=STD_TIMEOUT)
                 await harness.remote.cmd_enable.start(timeout=STD_TIMEOUT)
                 await harness.remote.cmd_moveToPosition.set_start(timeout=STD_TIMEOUT, x=4, y=6, z=3, u=4,
                                                                   v=3, w=6)
+                await asyncio.sleep(SHORT_TIMEOUT)
                 event = await harness.remote.evt_inPosition.next(flush=False, timeout=STD_TIMEOUT)
                 self.assertEqual(False, event.inPosition)
                 event = await harness.remote.evt_inPosition.next(flush=False, timeout=STD_TIMEOUT)
                 self.assertEqual(True, event.inPosition)
-                event = await harness.remote.evt_positionUpdate.next(flush=True, timeout=STD_TIMEOUT)
+                event = await harness.remote.evt_positionUpdate.aget(timeout=STD_TIMEOUT)
                 self.assertEqual(4, event.positionX)
                 self.assertEqual(6, event.positionY)
                 self.assertEqual(3, event.positionZ)
@@ -95,7 +102,8 @@ class CscTestCase(unittest.TestCase):
 
     def test_set_max_system_speeds(self):
         async def doit():
-            async with Harness(initial_state=salobj.State.DISABLED) as harness:
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                await harness.remote.cmd_start.start(timeout=STD_TIMEOUT)
                 await harness.remote.cmd_enable.start(timeout=STD_TIMEOUT)
                 await harness.remote.cmd_setMaxSystemSpeeds.set_start(timeout=STD_TIMEOUT, speed=1)
                 event = await harness.remote.evt_settingsAppliedVelocities.next(flush=False,
@@ -106,22 +114,23 @@ class CscTestCase(unittest.TestCase):
 
     def test_apply_position_offset(self):
         async def doit():
-            async with Harness(initial_state=salobj.State.DISABLED) as harness:
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                await harness.remote.cmd_start.start(timeout=STD_TIMEOUT)
                 await harness.remote.cmd_enable.start(timeout=STD_TIMEOUT)
                 await harness.remote.cmd_applyPositionOffset.set_start(timeout=STD_TIMEOUT, x=1, y=1, z=1,
                                                                        u=1, v=1, w=1)
 
         asyncio.get_event_loop().run_until_complete(doit())
 
-    @unittest.skip("Shenanigans")
     def test_pivot(self):
         async def doit():
-            async with Harness(initial_state=salobj.State.DISABLED) as harness:
+            async with Harness(initial_state=salobj.State.STANDBY) as harness:
+                await harness.remote.cmd_start.start(timeout=STD_TIMEOUT)
                 await harness.remote.cmd_enable.start(timeout=STD_TIMEOUT)
-                await harness.remote.cmd_pivot.set_start(timeout=STD_TIMEOUT, x=1, y=1, z=1)
-                event = await harness.remote.evt_settingsAppliedPivot.next(flush=True, timeout=STD_TIMEOUT)
-                self.assertEqual(1, event.pivotX)
-                self.assertEqual(1, event.pivotY)
-                self.assertEqual(1, event.pivotZ)
+                await harness.remote.cmd_pivot.set_start(timeout=STD_TIMEOUT, x=0.5, y=0.5, z=0.5)
+                event = await harness.remote.evt_settingsAppliedPivot.aget(timeout=STD_TIMEOUT)
+                self.assertEqual(0.5, event.pivotX)
+                self.assertEqual(0.5, event.pivotY)
+                self.assertEqual(0.5, event.pivotZ)
 
         asyncio.get_event_loop().run_until_complete(doit())

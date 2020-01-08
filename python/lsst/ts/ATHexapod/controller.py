@@ -414,7 +414,7 @@ class ATHexapodController:
         """
         ret = await self.write_command("SPI?")
 
-        return [val.split("=")[1] for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def check_active_soft_limit(self):
         """Generate getSoftLimitStatus command string.
