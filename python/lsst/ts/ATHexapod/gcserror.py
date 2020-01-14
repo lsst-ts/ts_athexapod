@@ -3,7 +3,7 @@
 """Provide GCSError definitions and GCSError exception class."""
 # Too many lines in module pylint: disable=C0302
 
-from logging import debug
+import logging
 
 __signature__ = 0x1d86c75890c9cfded5cd50105c096649
 
@@ -1403,7 +1403,7 @@ class GCSError(Exception):
         self.msg = translate_error(value)
         if message:
             self.msg += ': %r' % message
-        debug('GCSError: %s', self.msg)
+        logging.debug('GCSError: %s', self.msg)
 
     def __str__(self):
         """Handle string representation."""

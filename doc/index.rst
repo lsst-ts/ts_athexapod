@@ -11,6 +11,4 @@ ts_ATHexapod
 .. automodapi:: lsst.ts.ATHexapod
     :no-main-docstr:
     :no-inheritance-diagram:
-
-.. automodapi:: lsst.ts.ATHexapod.csc
     

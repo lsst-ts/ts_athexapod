@@ -51,7 +51,7 @@ properties:
   host:
     description: The ip address or host name of the hexapod controller or simulator.
     type: string
-    default: "192.168.1.11"
+    default: "127.0.0.1"
   port:
     description: The port of the tcp connection to the controller or simulator.
     type: integer

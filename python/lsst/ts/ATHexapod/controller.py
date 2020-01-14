@@ -3,6 +3,20 @@ import logging
 
 
 class ATHexapodController:
+    """Implements wrapper around ATHexapod controller.
+
+    Attributes
+    ----------
+    host
+    port
+    timeout
+    long_timeout
+    reader
+    writer
+    lock
+    log
+
+    """
     def __init__(self, log=None):
 
         self.host = '127.0.0.1'
@@ -20,6 +34,7 @@ class ATHexapodController:
         if self.log is None:
             self.log = logging.getLogger(__name__)
 
+    @property
     def is_connected(self):
         """ Check if connected to the controller.
 
@@ -35,7 +50,7 @@ class ATHexapodController:
         """
 
         async with self.lock:
-            if self.is_connected():
+            if self.is_connected:
                 raise RuntimeError("Reader or Writer not None. Try disconnecting first.")
 
             connect_task = asyncio.open_connection(host=self.host,
@@ -81,7 +96,7 @@ class ATHexapodController:
 
         async with self.lock:
 
-            if not self.is_connected():
+            if not self.is_connected:
                 raise RuntimeError("Not connected to hexapod controller. "
                                    "Call `connect` first")
 
@@ -113,7 +128,7 @@ class ATHexapodController:
         return response
 
     async def real_position(self):
-        """ Get real position command string.
+        """Return parsed real position string
 
         (p. 138) Get Real Position. This command is identical in function to
         POS? (p. 216), but only one character has to be sent via the
@@ -136,7 +151,7 @@ class ATHexapodController:
         return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def motion_status(self):
-        """Generate requestMotionStatus command string.
+        """Return parsed motion status string.
 
         (p. 140) Request Motion Status. Axes 1 to 8 correspond to the X, Y, Z,
         U, V, W, A and B axes in this order. Exception: When the "NOSTAGE"
@@ -157,15 +172,19 @@ class ATHexapodController:
         return tuple([(code & (1 << i)) > 0 for i in range(6)])
 
     async def position_changed(self):
-        """Generate qieryForPositionChange command string.
+        """Return parsed position changed response.
 
-        Queries wheter the axis positions have changed since the last position query was sent.
+        Queries whether the axis positions have changed since the last
+        position query was sent.
         Response:
-        The response <uint> is bit-mappet and returned as the hexadecimal sum of the following codes:
+        The response <uint> is a bit mask and returned as the hexadecimal
+        sum of the following codes:
         1 = Position of the first axis has changed
         2 = Position of the second axis has changed
         4 = Posiiton of the third axis has changed
         ...
+
+        Reads response from server and returns a parsed response.
 
         Return
         ------
@@ -179,7 +198,7 @@ class ATHexapodController:
         return tuple([(code & (1 << i)) > 0 for i in range(3)])
 
     async def controller_ready(self):
-        """Generate requestControllerReadyStatus command string.
+        """Return parsed controller ready response.
 
         (p. 141) Request Controller Ready Status Asks controller for ready
         status (tests if controller is ready to perform a new command)
@@ -192,10 +211,10 @@ class ATHexapodController:
         comp = ret == chr(177)
         self.log.debug(f"{ret} : {chr(177)} : {comp}")
 
-        return ret == chr(177)
+        return comp
 
     async def stop_all_axes(self):
-        """Generate stopAllAxes command string.
+        """Stop all axes.
 
         (p. 143) Stop All Axes To confirm that this worked, #5 has to be used.
         """
@@ -203,7 +222,7 @@ class ATHexapodController:
 
     async def set_position(self, x=None, y=None, z=None,
                            u=None, v=None, w=None):
-        """Generate setTargetPosition command string.
+        """Set position of Hexapod.
 
         (p. 206) Set Target Position
 
@@ -239,7 +258,7 @@ class ATHexapodController:
         await self.write_command("MOV" + target, has_response=False)
 
     async def referencing_result(self):
-        """Generate getReferencingResult command string.
+        """Return parsed referencing result response.
 
         (p. 175) Get Referencing Result
         Axes X, Y, Z, U, V, W, A and B are considered to be
@@ -265,7 +284,7 @@ class ATHexapodController:
         await self.write_command("FRF X Y Z U V W", has_response=False)
 
     async def target_position(self):
-        """Generate getTargetPosition command string.
+        """Return parsed target position response.
 
         (p. 208) Get Target Position
 
@@ -277,11 +296,12 @@ class ATHexapodController:
         return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_low_position_soft_Limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
-        """Generate setLowPositionSoftLimit command string.
+        """Set lower position software limit.
 
         (p. 212) Set Low Position Soft Limit
 
-        Limits the low end of the axis travel range in closed-loop operation ("soft limit").
+        Limits the low end of the axis travel range in closed-loop operation
+        ("soft limit").
         """
         target = ""
         target += " X " + str(float(x)) if x is not None else ""
@@ -294,7 +314,7 @@ class ATHexapodController:
         await self.write_command("NLM" + target, has_response=False)
 
     async def get_low_position_soft_limit(self):
-        """Generate getLowPositionSoftLimit command string.
+        """Return parsed lower position software limit response.
 
         Get the position "soft limit" which determines the low end of
         the axis travel range in closed-loop operation.
@@ -304,7 +324,7 @@ class ATHexapodController:
         return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_high_position_soft_limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
-        """Generate setHighPositionSoftLimit command string.
+        """Set the higher position software limit.
 
         (p. 214) Set High Position Soft Limit
 
@@ -322,13 +342,13 @@ class ATHexapodController:
         await self.write_command("PLM" + target, has_response=False)
 
     async def get_high_position_soft_limit(self):
-        """Get High Position Soft Limit."""
+        """Return parsed higher position software limit response."""
         ret = await self.write_command("PLM? X Y Z U V W")
 
         return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def on_target(self):
-        """Generate getOnTargetState command string.
+        """Return parsed on target response
 
         (p. 213) Get On Target State
 
@@ -341,7 +361,7 @@ class ATHexapodController:
         return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def get_position_unit(self):
-        """Generate getPositionUnit command string.
+        """Return parsed position unit response.
 
         (p. 217) Get Position Unit
 
@@ -352,7 +372,7 @@ class ATHexapodController:
         return [val.split("=")[1] for val in ret.decode().replace("\n", "").split(" ")]
 
     async def offset(self, x=None, y=None, z=None, u=None, v=None, w=None):
-        """Generate setTargetRelativeToCurrentPosition command string.
+        """Set the offset of the Hexapod.
 
         (p. 215) Set Target Relative To Current Position
         Moves given axes relative to the last commanded target position.
@@ -368,7 +388,7 @@ class ATHexapodController:
         await self.write_command("MVR" + target)
 
     async def check_offset(self, x=None, y=None, z=None, u=None, v=None, w=None):
-        """Generate virtualMove command string.
+        """Return parsed check offset response.
 
         (p. 253) VMO? (Virtual Move)
 
@@ -390,7 +410,7 @@ class ATHexapodController:
         return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_pivot_point(self, x=None, y=None, z=None):
-        """Generate setPivotPoint command string.
+        """Set the pivot point of the Hexapod.
 
         (p. 227)(Set Pivot Point)
 
@@ -406,7 +426,7 @@ class ATHexapodController:
         await self.write_command("SPI" + target, has_response=False)
 
     async def getPivotPoint(self):
-        """Generate getPivotPoint command string.
+        """Return parsed pivot point response.
 
         (p. 229) (Get Pivot Point)
 
@@ -417,7 +437,7 @@ class ATHexapodController:
         return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
 
     async def check_active_soft_limit(self):
-        """Generate getSoftLimitStatus command string.
+        """Return parsed response for checking if software limit is active.
 
         SSL? (p. 230) Get Soft Limit Status
         """
@@ -426,13 +446,15 @@ class ATHexapodController:
         return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def activate_soft_limit(self, x=True, y=True, z=True, u=True, v=True, w=True):
-        """Generate setSoftLimit command string.
+        """Set the software limits as active or not.
 
         (p. 229) Set Soft Limit
 
-        Activates or deactivates the soft limits that are set with NLM (p. 212) and PLM (p. 214).
+        Activates or deactivates the soft limits that are set with NLM
+        (p. 212) and PLM (p. 214).
 
-        Soft limits can only be activated/deactivated when the axis is not moving (query with #5 (p. 140)).
+        Soft limits can only be activated/deactivated when the axis is not
+        moving (query with #5 (p. 140)).
         """
         target = ""
         target += " X " + ("1" if x else "0")
@@ -445,7 +467,7 @@ class ATHexapodController:
         await self.write_command("SSL" + target, has_response=False)
 
     async def set_clv(self, x=None, y=None, z=None, u=None, v=None, w=None):
-        """Generate setClosedLoopVelocity command string.
+        """Set the closed loop velocity.
 
         (p. 243) (Set Closed-Loop Velocity)
 
@@ -462,18 +484,19 @@ class ATHexapodController:
         await self.write_command("VEL" + target, has_response=False)
 
     async def get_clv(self):
-        """Generate getClosedLoopVelocity command string.
+        """Return parsed response for closed loop velocity.
 
         (p. 244) (Get Closed-Loop Velocity)
 
-        If all arguments are omitted, the value of all axes commanded with VEL is queried.
+        If all arguments are omitted, the value of all axes commanded with
+        VEL is queried.
         """
         ret = await self.write_command("VEL?")
 
         return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
 
     async def set_sv(self, velocity):
-        """Generate setSystemVelocity command string.
+        """Set the system velocity.
 
         (p. 251) (Set System Velocity)
 
@@ -486,14 +509,15 @@ class ATHexapodController:
         await self.write_command(f"VLS {velocity}", has_response=False)
 
     async def get_sv(self):
-        """Generate getSystemVelocity command string.
+        """Return parsed response for system velocity.
 
-        (p. 252) Gets the velocity of the moving platform of the Hexapod that is set with VLS (p. 245).
+        (p. 252) Gets the velocity of the moving platform of the Hexapod
+        that is set with VLS (p. 245).
         """
         return float(await self.write_command("VLS?"))
 
     async def get_error(self):
-        """Generate getErrorNumber command string.
+        """Return get error response.
 
         (p. 163) Get Error Number
 
