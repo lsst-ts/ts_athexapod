@@ -1,8 +1,0 @@
-limitXYMax : 22.5
-limitZMin : -12.5
-limitZMax : 12.5
-limitUVMax : 7.5
-limitWMin : -12.5
-limitWMax : 12.5
-speed : 1
-simulator: 1
