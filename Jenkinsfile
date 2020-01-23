@@ -8,7 +8,7 @@ pipeline {
         // It is recommended by SQUARE team do not add the label to let the
         // sytem decide.
         docker {
-            image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0'
+            image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0_b27'
             args '-u root --entrypoint /home/saluser/.setup.sh'
         }
     }
@@ -22,8 +22,6 @@ pipeline {
         DEV_TOOL="/opt/rh/devtoolset-8/enable"
         // Position of LSST stack directory
         LSST_STACK="/opt/lsst/software/stack"
-        // Pipeline Sims Version
-        SIMS_VERSION="sims_w_2019_50"
         // XML report path
         XML_REPORT="jenkinsReport/report.xml"
         // Module name used in the pytest coverage analysis
@@ -57,6 +55,7 @@ pipeline {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
                         source ${env.LSST_STACK}/loadLSST.bash
+                        source /home/saluser/.setup.sh
                         setup -k -r .
                         pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT} tests/
                     """
