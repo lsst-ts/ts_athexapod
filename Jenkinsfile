@@ -9,7 +9,7 @@ pipeline {
         // sytem decide.
         docker {
             image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0'
-            args ''
+            args '-u root --entrypoint /home/saluser/.setup.sh'
         }
     }
 
@@ -40,9 +40,8 @@ pipeline {
                     sh """
                         source ${env.LSST_STACK}/loadLSST.bash
                         source /home/saluser/.setup.sh
+                        cd /home/saluser/repos/ts_idl && git fetch && git checkout v1.1.0 && cd /home/saluser/repos/ts_config_attcs && git fetch && git checkout v0.2.0 && cd /home/saluser/repos/ts_salobj && git fetch && git checkout v5.2.0
                         make_idl_files.py ATHexapod
-                        setup -k -r .
-                        scons
                     """
                 }
             }
