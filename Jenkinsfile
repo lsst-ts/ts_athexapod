@@ -5,16 +5,11 @@ pipeline {
     agent {
         // Use the docker to assign the Python version.
         // Use the label to assign the node to run the test.
-        // It is recommended by SQUARE team do not add the label to let the
-        // sytem decide.
+        // It is recommended by SQUARE to not add the label
         docker {
             image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0_b27'
-            args '-u root --entrypoint /home/saluser/.setup.sh'
+            args '-u root'
         }
-    }
-
-    triggers {
-        pollSCM('H * * * *')
     }
 
     environment {
@@ -36,7 +31,6 @@ pipeline {
                 // to install the packages.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source ${env.LSST_STACK}/loadLSST.bash
                         source /home/saluser/.setup.sh
                         cd /home/saluser/repos/ts_idl && git fetch && git checkout v1.1.0 && cd /home/saluser/repos/ts_config_attcs && git fetch && git checkout v0.2.0 && cd /home/saluser/repos/ts_salobj && git fetch && git checkout v5.2.0
                         make_idl_files.py ATHexapod
@@ -54,7 +48,6 @@ pipeline {
                 // Pytest needs to export the junit report.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source ${env.LSST_STACK}/loadLSST.bash
                         source /home/saluser/.setup.sh
                         setup -k -r .
                         pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT} tests/
