@@ -7,8 +7,8 @@ pipeline {
         // Use the label to assign the node to run the test.
         // It is recommended by SQUARE to not add the label
         docker {
-            image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0_b27'
-            args '-u root'
+            image 'lsstts/develop-env:salobj4_b55_5'
+            args "-u root --entrypoint=''"
         }
     }
 
@@ -50,7 +50,7 @@ pipeline {
                     sh """
                         source /home/saluser/.setup.sh
                         setup -k -r .
-                        pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT} tests/
+                        pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT}
                     """
                 }
             }
