@@ -7,7 +7,7 @@ pipeline {
         // Use the label to assign the node to run the test.
         // It is recommended by SQUARE to not add the label
         docker {
-            image 'lsstts/develop-env:salobj4_b55_5'
+            image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0_b27'
             args "-u root --entrypoint=''"
         }
     }
