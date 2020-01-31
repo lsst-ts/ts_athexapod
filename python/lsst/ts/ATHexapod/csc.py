@@ -24,24 +24,24 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
     Parameters
     ----------
-    config_dir: `Path`
+    config_dir : `pathlib.Path`
         The directory where the configurations for the ATHexapod reside.
         Found in ts_config_attcs under ATHexapod directory.
-    initial_state: `salobj.State`
+    initial_state : `salobj.State`
         The inital state that the CSC starts in.
-    simulation_mode: `int`
+    simulation_mode : `int`
         Whether the csc starts in simulation mode or not.
 
     Attributes
     ----------
     controller : `None`
         The controller that the CSC interacts with.
-    config: `dict`
+    config : `dict`
         A dictionary of parsed yaml that provides configuration information
         for the CSC.
-    run_telemetry_task: `bool`
+    run_telemetry_task : `bool`
         Whether the telemetry should run or not.
-    telemetry_task: `asyncio.Task`
+    telemetry_task : `asyncio.Task`
         The task that handles telemetry.
     """
 
@@ -73,12 +73,12 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         Parameters
         ----------
-        ready: `bool`
+        ready : `bool`
             If true, publishes that the Hexapod is ready. If false, publishes
             that the Hexapod is not ready.
 
         Returns:
-            ready: `bool`
+            ready : `bool`
                 If true, the Hexapod is ready or if false, the Hexapod is not
                 ready.
 
@@ -183,7 +183,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
     async def end_standby(self, data):
         """ Executes after transition from DISABLE to STANDBY.
 
-        If will stop the telemetry loop and disconnect from the hexapod
+        It will stop the telemetry loop and disconnect from the hexapod
         controller.
         """
 
@@ -277,12 +277,12 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         Parameters
         ----------
-        xy_max: `float`
-        limit_z_min: `float`
-        limit_z_max: `float`
-        limit_uv_max: `float`
-        limit_w_min: `float`
-        limit_w_max: `float`
+        xy_max : `float`
+        limit_z_min : `float`
+        limit_z_max : `float`
+        limit_uv_max : `float`
+        limit_w_min : `float`
+        limit_w_max : `float`
 
         Returns
         -------

@@ -3,18 +3,31 @@ import logging
 
 
 class ATHexapodController:
-    """Implements wrapper around ATHexapod controller.
+    """Implements wrapper around ATHexapod server.
 
     Attributes
     ----------
-    host
-    port
-    timeout
-    long_timeout
-    reader
-    writer
-    lock
-    log
+    host : `str`
+        The address of the host.
+    port : `int`
+        The port to connect to.
+    timeout : `float`
+        The regular timeout.
+    long_timeout : `float`
+        The longer timeout for actions which move the hexapod.
+    reader : `asyncio.StreamReader`
+        The asynchronous reader.
+    writer : `asyncio.StreamWriter`
+        The asynchronous writer.
+    lock : `asyncio.Lock`
+        The lock on the connection.
+    log : `logging.Logger`
+        The log for this class.
+
+    Parameters
+    ----------
+    log : `logging.Logger` or `None`
+        Provide preconfigured log or None to create a default one.
 
     """
     def __init__(self, log=None):
@@ -40,7 +53,7 @@ class ATHexapodController:
 
         Returns
         -------
-        connected : bool
+        connected : `bool`
 
         """
         return self.reader is not None and self.writer is not None
@@ -80,16 +93,16 @@ class ATHexapodController:
 
         Parameters
         ----------
-        cmd : str
-            Command to send to hexapod. A '\n' character will be appended.
-        has_response : bool
+        cmd : `str`
+            Command to send to hexapod. A 'newline' character will be appended.
+        has_response : `bool`
             Does the command have a response?
-        multi_line : bool
+        multi_line : `bool`
             Is the response received in multiple lines?
 
         Returns
         -------
-        reponse : str
+        reponse : `str`
             String with the response from the command.
 
         """
@@ -141,7 +154,8 @@ class ATHexapodController:
 
         Returns
         -------
-        real_pos : tuple(float, float, float, float, float, float)
+        real_pos : `tuple` of (`float`, `float`, `float`, `float`, `float`,
+                    `float`)
             Positions for the X (mm), Y (mm), Z (mm), U (deg), V (deg),
             W (deg) axis.
 
@@ -160,9 +174,9 @@ class ATHexapodController:
         bitmapped answer. In this case, it is skipped when counting the
         axes.
 
-        Return
-        ------
-        is_moving : tuple(bool, bool, bool, bool, bool, bool)
+        Returns
+        -------
+        is_moving : `tuple` of (`bool`, `bool`, `bool`, `bool`, `bool`, `bool`)
 
         """
         ret = await self.write_command("\5", multi_line=False)
@@ -179,6 +193,7 @@ class ATHexapodController:
         Response:
         The response <uint> is a bit mask and returned as the hexadecimal
         sum of the following codes:
+
         1 = Position of the first axis has changed
         2 = Position of the second axis has changed
         4 = Posiiton of the third axis has changed
@@ -186,9 +201,11 @@ class ATHexapodController:
 
         Reads response from server and returns a parsed response.
 
-        Return
-        ------
-        pos_changed : tuple(bool, bool, bool, bool, bool, bool)
+        Returns
+        -------
+        pos_changed : `tuple` of (`bool`, `bool`, `bool`, `bool`, `bool`,
+                      `bool`)
+            The value of each axis changed or not.
 
         """
         ret = await self.write_command("\6", multi_line=False)
@@ -205,11 +222,16 @@ class ATHexapodController:
 
         B1h (ASCII character 177) if controller is ready B0h (ASCII character
         176) if controller is not ready (e.g., performing a reference move)
+
+        Returns
+        -------
+        comp : `str`
+            A character indicating the controller is ready or not ready.
         """
         ret = await self.write_command("\7", multi_line=False)
 
         comp = ret == chr(177)
-        self.log.debug(f"{ret} : {chr(177)} : {comp}")
+        self.log.debug(f"ret={ret} : {chr(177)} : comp={comp}")
 
         return comp
 
@@ -234,17 +256,17 @@ class ATHexapodController:
 
         Parameters
         ----------
-        x : `float`
+        x : `None` or `float`
             X-axis position (in mm).
-        y : `float`
+        y : `None` or `float`
             Y-axis position (in mm).
-        z : `float`
+        z : `None` or `float`
             Z-axis position (in mm).
-        u : `float`
+        u : `None` or `float`
             U-axis rotation (in deg).
-        v : `float`
+        v : `None` or `float`
             V-axis rotation (in deg).
-        w : `float`
+        w : `None` or `float`
             W-axis rotation (in deg).
         """
         target = ""
@@ -273,6 +295,12 @@ class ATHexapodController:
         Axes K, L and M are equipped with absolute-measuring
         sensors and do not need a reference move. For this reason,
         FRF? always responds with 1 for these axes.
+        This controller only responds with X Y Z U V W axes.
+
+        Returns
+        -------
+        response : `list` of `float`
+            The current status of axii referenced or not referenced.
         """
         ret = await self.write_command("FRF?")
 
@@ -290,6 +318,11 @@ class ATHexapodController:
 
         MOV? gets the commanded positions. Use POS? (p. 216) to get the
         current positions.
+
+        Returns
+        -------
+        response : `list` of `float`
+            The current target position.
         """
         ret = await self.write_command("MOV? X Y Z U V W")
 
@@ -302,6 +335,21 @@ class ATHexapodController:
 
         Limits the low end of the axis travel range in closed-loop operation
         ("soft limit").
+
+        Parameters
+        ----------
+        x : `None` or `float`
+            The X axis lower limit.
+        y : `None` or `float`
+            The Y axis lower limit.
+        z : `None` or `float`
+            The Z axis lower limit.
+        u : `None` or `float`
+            The U axis lower limit.
+        v : `None` or `float`
+            The V axis lower limit.
+        w : `None` or `float`
+            The W axis lower limit.
         """
         target = ""
         target += " X " + str(float(x)) if x is not None else ""
@@ -318,6 +366,11 @@ class ATHexapodController:
 
         Get the position "soft limit" which determines the low end of
         the axis travel range in closed-loop operation.
+
+        Returns
+        -------
+        response : `list` of `float`
+            The current lower limit values.
         """
         ret = await self.write_command("NLM? X Y Z U V W")
 
@@ -330,6 +383,21 @@ class ATHexapodController:
 
         Limits the high end of the axis travel range in closed-loop
         operation ("soft limit").
+
+        Parameters
+        ----------
+        x : `None` or `float`
+            The X axis higher limit.
+        y : `None` or `float`
+            The Y axis higher limit.
+        z : `None` or `float`
+            The Z axis higher limit.
+        u : `None` or `float`
+            The U axis higher limit.
+        v : `None` or `float`
+            The V axis higher limit.
+        w : `None` or `float`
+            The W axis higher limit.
         """
         target = ""
         target += " X " + str(float(x)) if x is not None else ""
@@ -342,7 +410,13 @@ class ATHexapodController:
         await self.write_command("PLM" + target, has_response=False)
 
     async def get_high_position_soft_limit(self):
-        """Return parsed higher position software limit response."""
+        """Return parsed higher position software limit response.
+
+        Returns
+        -------
+        response : `list` of `float`
+            The current higher limit values.
+        """
         ret = await self.write_command("PLM? X Y Z U V W")
 
         return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
@@ -355,6 +429,11 @@ class ATHexapodController:
         Gets on-target state of given axis.
 
         if all arguments are omitted, gets state of all axes.
+
+        Returns
+        -------
+        response : `list` of `float`
+            Current on target status of all axii.
         """
         ret = await self.write_command("ONT?")
 
@@ -366,6 +445,11 @@ class ATHexapodController:
         (p. 217) Get Position Unit
 
         Get the current unit of the position.
+
+        Returns
+        -------
+        response : `list` of `str`
+            The current units of the axii.
         """
         ret = await self.write_command("PUN? X Y Z U V W")
 
@@ -376,6 +460,21 @@ class ATHexapodController:
 
         (p. 215) Set Target Relative To Current Position
         Moves given axes relative to the last commanded target position.
+
+        Parameters
+        ----------
+        x : `None` or `float`
+            The position to move X axis to.
+        y : `None` or `float`
+            The position to move Y axis to.
+        z : `None` or `float`
+            The position to move Z axis to.
+        u : `None` or `float`
+            The position to move U axis to.
+        v : `None` or `float`
+            The position to move V axis to.
+        w : `None` or `float`
+            The position to move W axis to.
         """
         target = ""
         target += " X " + str(float(x)) if x is not None else ""
@@ -396,6 +495,26 @@ class ATHexapodController:
         a specified position from the current position.
 
         Used to validate if MVR command is possible.
+
+        Parameters
+        ----------
+        x : `None` or `float`
+            The position to check.
+        y : `None` or `float`
+            The position to check.
+        z : `None` or `float`
+            The position to check.
+        u : `None` or `float`
+            The position to check.
+        v : `None` or `float`
+            The position to check.
+        w : `None` or `float`
+            The position to check.
+
+        Returns
+        -------
+        response : `list` of `float`
+            Whether each axis can make the move.
         """
         target = ""
         target += " X " + str(float(x)) if x is not None else ""
@@ -417,6 +536,15 @@ class ATHexapodController:
         Sets the pivot point coordinates in the volatile memory.
         Can only be set when the following holds true for the rotation
         coordinates of the moving platform: U = V = W = 0
+
+        Returns
+        -------
+        x : `None` or `float`
+            The pivot point of the X axis.
+        y : `None` or `float`
+            The pivot point of the Y axis.
+        z : `None` or `float`
+            The pivot point of the Z axis.
         """
         target = ""
         target += " X " + str(float(x)) if x is not None else ""
@@ -431,6 +559,11 @@ class ATHexapodController:
         (p. 229) (Get Pivot Point)
 
         Gets the pivot point coordinates.
+
+        Returns
+        -------
+        response : `list` of `float`
+            The current pivot points of the Hexapod.
         """
         ret = await self.write_command("SPI?")
 
@@ -440,6 +573,11 @@ class ATHexapodController:
         """Return parsed response for checking if software limit is active.
 
         SSL? (p. 230) Get Soft Limit Status
+
+        Returns
+        -------
+        response : `list` of `float`
+            The current status of the software limits for each axis.
         """
         ret = await self.write_command("SSL?")
 
@@ -455,6 +593,21 @@ class ATHexapodController:
 
         Soft limits can only be activated/deactivated when the axis is not
         moving (query with #5 (p. 140)).
+
+        Parameters
+        ----------
+        x : `bool`
+            activate software limit for X axis.
+        y : `bool`
+            activate software limit for Y axis.
+        z : `bool`
+            activate software limit for Z axis.
+        u : `bool`
+            activate software limit for U axis.
+        v : `bool`
+            activate software limit for V axis.
+        w : `bool`
+            activate software limit for W axis.
         """
         target = ""
         target += " X " + ("1" if x else "0")
@@ -472,6 +625,21 @@ class ATHexapodController:
         (p. 243) (Set Closed-Loop Velocity)
 
         The velocity can be changed with VEL while the axis is moving.
+
+        Parameters
+        ----------
+        x : `None` or `float`
+            The velocity of the X axis.
+        y : `None` or `float`
+            The velocity of the y axis.
+        z : `None` or `float`
+            The velocity of the z axis.
+        u : `None` or `float`
+            The velocity of the U axis.
+        v : `None` or `float`
+            The velocity of the V axis.
+        w : `None` or `float`
+            The velocity of the W axis.
         """
         target = ""
         target += " X " + str(float(x)) if x is not None else ""
@@ -490,6 +658,11 @@ class ATHexapodController:
 
         If all arguments are omitted, the value of all axes commanded with
         VEL is queried.
+
+        Returns
+        -------
+        response : `list` of `float`
+            The current closed loop velocity for each axis.
         """
         ret = await self.write_command("VEL?")
 
@@ -505,6 +678,11 @@ class ATHexapodController:
         The velocity can only be set with VLS when the Hexapod
         is not moving (axes X, Y, Z, U, V, W; query with #5 (p. 140)).
         For axes A and B, the velocity can be set with VEL (p. 243).
+
+        Parameters
+        ----------
+        velocity : `float`
+            The platform velocity.
         """
         await self.write_command(f"VLS {velocity}", has_response=False)
 
@@ -513,6 +691,11 @@ class ATHexapodController:
 
         (p. 252) Gets the velocity of the moving platform of the Hexapod
         that is set with VLS (p. 245).
+
+        Returns
+        -------
+        response : `float`
+            The current system velocity.
         """
         return float(await self.write_command("VLS?"))
 
@@ -522,5 +705,10 @@ class ATHexapodController:
         (p. 163) Get Error Number
 
         Get error code of the last occurred error and reset the error to 0.
+
+        Returns
+        -------
+        response : `int`
+            The latest error code.
         """
         return int(await self.write_command("ERR?", multi_line=False))

@@ -12,27 +12,30 @@ class MockServer:
 
     Parameters
     ----------
-    log: `logging.Logger`
+    log : `logging.Logger`
         A log either created or passed into the constructor.
 
     Attributes
     ----------
-    host
-    port
-    timeout
-    long_timeout
-    connected
-    ready
-    x
-    y
-    z
-    u
-    v
-    w
-    target
-    reference
-    sv
-    pivot
+    host : `str`
+    port : `int`
+    timeout : `int`
+    long_timeout : `int`
+    connected : `bool`
+    ready : `bool`
+    x : `int`
+    y : `int`
+    z : `int`
+    u : `int`
+    v : `int`
+    w : `int`
+    target : `types.SimpleNamespace`
+    referenced : `types.SimpleNamespace`
+    sv : `int`
+    pivot : `types.SimpleNamespace`
+    command_calls : `dict`
+    commands : `list`
+    log : `logging.Logger`
     """
     def __init__(self, log=None):
         self.host = '127.0.0.1'
