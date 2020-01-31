@@ -212,7 +212,7 @@ class ATHexapodController:
 
         code = int(ret.decode())
 
-        return tuple([(code & (1 << i)) > 0 for i in range(3)])
+        return tuple([(code & (1 << i)) > 0 for i in range(6)])
 
     async def controller_ready(self):
         """Return parsed controller ready response.
