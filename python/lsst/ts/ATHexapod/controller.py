@@ -46,6 +46,7 @@ class ATHexapodController:
 
         if self.log is None:
             self.log = logging.getLogger(__name__)
+        self.log.debug("Controller created")
 
     @property
     def is_connected(self):
@@ -88,7 +89,7 @@ class ATHexapodController:
                     self.writer.close()
                     self.writer = None
 
-    async def write_command(self, cmd, has_response=True, multi_line=True):
+    async def write_command(self, cmd, has_response=True, num_line=1):
         """ Send command to hexapod controller and return response.
 
         Parameters
@@ -97,13 +98,13 @@ class ATHexapodController:
             Command to send to hexapod. A 'newline' character will be appended.
         has_response : `bool`
             Does the command have a response?
-        multi_line : `bool`
-            Is the response received in multiple lines?
+        num_line : `int`
+            The number of expected lines.
 
         Returns
         -------
-        reponse : `str`
-            String with the response from the command.
+        reponse : `list`
+            List with the response(s) from the command.
 
         """
 
@@ -121,22 +122,24 @@ class ATHexapodController:
 
             if has_response:
                 try:
-                    keep_going = multi_line
+                    keep_going = False if num_line == 0 else True
                     while True:
-                        c = await asyncio.wait_for(self.reader.read(1), timeout=2.)
-                        response += c
+                        line = await self.reader.readuntil(b'\n')
+                        response += line
+                        num_line -= 1
+                        self.log.debug(f"Response: {response}\n num_line: {num_line}")
 
-                        if c == b'\n' and not keep_going:
+                        keep_going = False if num_line == 0 else True
+                        if not keep_going:
                             break
-                        elif c == b' ':
-                            keep_going = True
-                        elif c == b'\n':
-                            keep_going = False
                 except asyncio.TimeoutError:
                     self.log.warning("Timed out waiting for response from controller. Result "
                                      "may be incomplete.")
 
         self.log.debug(f"Response: {response!r}")
+        response = response.decode("ISO-8859-1")
+        response = response.replace("\n", "")
+        response = response.split(" ")
 
         return response
 
@@ -160,9 +163,9 @@ class ATHexapodController:
             W (deg) axis.
 
         """
-        ret = await self.write_command("\3")
+        ret = await self.write_command("\3", num_line=6)
 
-        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) for val in ret]
 
     async def motion_status(self):
         """Return parsed motion status string.
@@ -179,9 +182,9 @@ class ATHexapodController:
         is_moving : `tuple` of (`bool`, `bool`, `bool`, `bool`, `bool`, `bool`)
 
         """
-        ret = await self.write_command("\5", multi_line=False)
+        ret = await self.write_command("\5", num_line=1)
 
-        code = int(ret.decode())
+        code = int(ret[0])
 
         return tuple([(code & (1 << i)) > 0 for i in range(6)])
 
@@ -208,9 +211,9 @@ class ATHexapodController:
             The value of each axis changed or not.
 
         """
-        ret = await self.write_command("\6", multi_line=False)
+        ret = await self.write_command("\6", num_line=1)
 
-        code = int(ret.decode())
+        code = int(ret)
 
         return tuple([(code & (1 << i)) > 0 for i in range(6)])
 
@@ -228,7 +231,7 @@ class ATHexapodController:
         comp : `str`
             A character indicating the controller is ready or not ready.
         """
-        ret = await self.write_command("\7", multi_line=False)
+        ret = await self.write_command("\7", num_line=1)
 
         comp = ret == chr(177)
         self.log.debug(f"ret={ret} : {chr(177)} : comp={comp}")
@@ -302,9 +305,9 @@ class ATHexapodController:
         response : `list` of `float`
             The current status of axii referenced or not referenced.
         """
-        ret = await self.write_command("FRF?")
+        ret = await self.write_command("FRF?", num_line=6)
 
-        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) == 1 for val in ret]
 
     async def reference(self):
         """Perform a reference in all axes.
@@ -324,9 +327,9 @@ class ATHexapodController:
         response : `list` of `float`
             The current target position.
         """
-        ret = await self.write_command("MOV? X Y Z U V W")
+        ret = await self.write_command("MOV? X Y Z U V W", num_line=6)
 
-        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) for val in ret]
 
     async def set_low_position_soft_Limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Set lower position software limit.
@@ -372,9 +375,9 @@ class ATHexapodController:
         response : `list` of `float`
             The current lower limit values.
         """
-        ret = await self.write_command("NLM? X Y Z U V W")
+        ret = await self.write_command("NLM? X Y Z U V W", num_line=6)
 
-        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) for val in ret.replace("\n", "").split(" ")]
 
     async def set_high_position_soft_limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Set the higher position software limit.
@@ -417,9 +420,9 @@ class ATHexapodController:
         response : `list` of `float`
             The current higher limit values.
         """
-        ret = await self.write_command("PLM? X Y Z U V W")
+        ret = await self.write_command("PLM? X Y Z U V W", num_line=6)
 
-        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) for val in ret]
 
     async def on_target(self):
         """Return parsed on target response
@@ -435,9 +438,9 @@ class ATHexapodController:
         response : `list` of `float`
             Current on target status of all axii.
         """
-        ret = await self.write_command("ONT?")
+        ret = await self.write_command("ONT?", num_line=6)
 
-        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) == 1 for val in ret]
 
     async def get_position_unit(self):
         """Return parsed position unit response.
@@ -451,9 +454,9 @@ class ATHexapodController:
         response : `list` of `str`
             The current units of the axii.
         """
-        ret = await self.write_command("PUN? X Y Z U V W")
+        ret = await self.write_command("PUN? X Y Z U V W", num_line=6)
 
-        return [val.split("=")[1] for val in ret.decode().replace("\n", "").split(" ")]
+        return [val.split("=")[1] for val in ret]
 
     async def offset(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Set the offset of the Hexapod.
@@ -484,7 +487,7 @@ class ATHexapodController:
         target += " V " + str(float(v)) if v is not None else ""
         target += " W " + str(float(w)) if w is not None else ""
 
-        await self.write_command("MVR" + target)
+        await self.write_command("MVR" + target, has_response=False)
 
     async def check_offset(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Return parsed check offset response.
@@ -524,9 +527,9 @@ class ATHexapodController:
         target += " V " + str(float(v)) if v is not None else ""
         target += " W " + str(float(w)) if w is not None else ""
 
-        ret = await self.write_command("VMO?" + target)
+        ret = await self.write_command("VMO?" + target, num_line=6)
 
-        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) == 1 for val in ret]
 
     async def set_pivot_point(self, x=None, y=None, z=None):
         """Set the pivot point of the Hexapod.
@@ -565,9 +568,9 @@ class ATHexapodController:
         response : `list` of `float`
             The current pivot points of the Hexapod.
         """
-        ret = await self.write_command("SPI?")
+        ret = await self.write_command("SPI?", num_line=3)
 
-        return [float(val.split("=")[1]) for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) for val in ret]
 
     async def check_active_soft_limit(self):
         """Return parsed response for checking if software limit is active.
@@ -579,9 +582,9 @@ class ATHexapodController:
         response : `list` of `float`
             The current status of the software limits for each axis.
         """
-        ret = await self.write_command("SSL?")
+        ret = await self.write_command("SSL?", num_line=6)
 
-        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) == 1 for val in ret]
 
     async def activate_soft_limit(self, x=True, y=True, z=True, u=True, v=True, w=True):
         """Set the software limits as active or not.
@@ -664,9 +667,9 @@ class ATHexapodController:
         response : `list` of `float`
             The current closed loop velocity for each axis.
         """
-        ret = await self.write_command("VEL?")
+        ret = await self.write_command("VEL?", num_line=6)
 
-        return [float(val.split("=")[1]) == 1 for val in ret.decode().replace("\n", "").split(" ")]
+        return [float(val.split("=")[1]) == 1 for val in ret]
 
     async def set_sv(self, velocity):
         """Set the system velocity.
@@ -697,7 +700,8 @@ class ATHexapodController:
         response : `float`
             The current system velocity.
         """
-        return float(await self.write_command("VLS?"))
+        ret = await self.write_command("VLS?")
+        return float(ret[0])
 
     async def get_error(self):
         """Return get error response.
@@ -711,4 +715,5 @@ class ATHexapodController:
         response : `int`
             The latest error code.
         """
-        return int(await self.write_command("ERR?", multi_line=False))
+        ret = await self.write_command("ERR?", num_line=1)
+        return int(ret[0])

@@ -58,7 +58,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         self._detailed_state = ATHexapod.DetailedState.NOTINMOTION
         self.config = None
-        self.controller = ATHexapodController(log=self.log)
+        self.controller = ATHexapodController(log=None)
 
         self.run_telemetry_task = False
         self.telemetry_task = None
