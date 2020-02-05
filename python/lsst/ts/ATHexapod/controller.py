@@ -1,3 +1,26 @@
+'''
+This file is part of ts_ATHexapod
+
+Developed for the LSST Telescope and Site Systems.
+This product includes software developed by the LSST Project
+(https://www.lsst.org).
+See the COPYRIGHT file at the top-level directory of this distribution
+For details of code ownership.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABLITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have recieved a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+'''
+
 import asyncio
 import logging
 
@@ -99,11 +122,11 @@ class ATHexapodController:
         has_response : `bool`
             Does the command have a response?
         num_line : `int`
-            The number of expected lines.
+            The number of expected lines/replies.
 
         Returns
         -------
-        reponse : `list`
+        replies : `list`
             List with the response(s) from the command.
 
         """
@@ -118,30 +141,20 @@ class ATHexapodController:
             self.writer.write(f"{cmd}\n".encode())
             await self.writer.drain()
 
-            response = b""
-
             if has_response:
                 try:
-                    keep_going = False if num_line == 0 else True
-                    while True:
-                        line = await self.reader.readuntil(b'\n')
-                        response += line
-                        num_line -= 1
-                        self.log.debug(f"Response: {response}\n num_line: {num_line}")
-
-                        keep_going = False if num_line == 0 else True
-                        if not keep_going:
-                            break
+                    replies = []
+                    for i in range(num_line):
+                        raw_line = await self.reader.readuntil(b'\n')
+                        line = raw_line.decode("ISO-8859-1").strip()
+                        self.log.debug(f"Read {i+1} of {num_line} lines: {line}")
+                        replies.append(line)
                 except asyncio.TimeoutError:
                     self.log.warning("Timed out waiting for response from controller. Result "
                                      "may be incomplete.")
+                    raise
 
-        self.log.debug(f"Response: {response!r}")
-        response = response.decode("ISO-8859-1")
-        response = response.replace("\n", "")
-        response = response.split(" ")
-
-        return response
+                return replies
 
     async def real_position(self):
         """Return parsed real position string
@@ -213,7 +226,7 @@ class ATHexapodController:
         """
         ret = await self.write_command("\6", num_line=1)
 
-        code = int(ret)
+        code = int(ret[0])
 
         return tuple([(code & (1 << i)) > 0 for i in range(6)])
 
