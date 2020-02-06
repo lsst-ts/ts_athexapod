@@ -1,3 +1,26 @@
+'''
+This file is part of ts_ATHexapod
+
+Developed for the LSST Telescope and Site Systems.
+This product includes software developed by the LSST Project
+(https://www.lsst.org).
+See the COPYRIGHT file at the top-level directory of this distribution
+For details of code ownership.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABLITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have recieved a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+'''
+
 import asyncio
 import re
 import logging
@@ -162,7 +185,7 @@ class MockServer:
 
     async def format_real_position(self):
         """Return formatted position response."""
-        return f"X={self.x} Y={self.y} Z={self.z} U={self.u} V={self.v} W={self.w}\n"
+        return f"X={self.x}\n Y={self.y}\n Z={self.z}\n U={self.u}\n V={self.v}\n W={self.w}\n"
 
     async def format_motion_status(self):
         """Return formatted motion status response."""
@@ -198,11 +221,11 @@ class MockServer:
 
     async def format_referencing_result(self):
         """Return formatted reference result."""
-        return (f"X={self.referenced.x} "
-                f"Y={self.referenced.y} "
-                f"Z={self.referenced.z} "
-                f"U={self.referenced.u} "
-                f"V={self.referenced.v} "
+        return (f"X={self.referenced.x}\n "
+                f"Y={self.referenced.y}\n "
+                f"Z={self.referenced.z}\n "
+                f"U={self.referenced.u}\n "
+                f"V={self.referenced.v}\n "
                 f"W={self.referenced.w}\n")
 
     async def reference(self):
@@ -216,11 +239,11 @@ class MockServer:
 
     async def format_target_position(self):
         """Return formatted string for target position"""
-        return (f"X={self.target.x} "
-                f"Y={self.target.y} "
-                f"Z={self.target.z} "
-                f"U={self.target.u} "
-                f"V={self.target.v} "
+        return (f"X={self.target.x}\n "
+                f"Y={self.target.y}\n "
+                f"Z={self.target.z}\n "
+                f"U={self.target.u}\n "
+                f"V={self.target.v}\n "
                 f"W={self.target.w}\n")
 
     async def set_low_position_soft_Limit(self, x, y, z, u, v, w):
@@ -234,11 +257,11 @@ class MockServer:
 
     async def format_low_position_soft_limit(self):
         """Return formatted lower position software limit string."""
-        return (f"X={self.minimum_limit_x} "
-                f"Y={self.minimum_limit_y} "
-                f"Z={self.minimum_limit_z} "
-                f"U={self.minimum_limit_u} "
-                f"V={self.minimum_limit_v} "
+        return (f"X={self.minimum_limit_x}\n "
+                f"Y={self.minimum_limit_y}\n "
+                f"Z={self.minimum_limit_z}\n "
+                f"U={self.minimum_limit_u}\n "
+                f"V={self.minimum_limit_v}\n "
                 f"W={self.minimum_limit_w}\n")
 
     async def set_high_position_soft_limit(self, x, y, z, u, v, w):
@@ -252,11 +275,11 @@ class MockServer:
 
     async def format_high_position_soft_limit(self):
         """Return formatted higher position software limit string."""
-        return (f"X={self.maximum_limit_x} "
-                f"Y={self.maximum_limit_y} "
-                f"Z={self.maximum_limit_z} "
-                f"U={self.maximum_limit_u} "
-                f"V={self.maximum_limit_v} "
+        return (f"X={self.maximum_limit_x}\n "
+                f"Y={self.maximum_limit_y}\n "
+                f"Z={self.maximum_limit_z}\n "
+                f"U={self.maximum_limit_u}\n "
+                f"V={self.maximum_limit_v}\n "
                 f"W={self.maximum_limit_w}\n")
 
     async def format_on_target(self):
@@ -278,7 +301,7 @@ class MockServer:
 
     async def check_offset(self, x, y, z, u, v, w):
         """Check that the hexapod can move."""
-        return (f"X=1 Y=1 Z=1 U=1 V=1 W=1\n")
+        return (f"X=1\n Y=1\n Z=1\n U=1\n V=1\n W=1\n")
 
     async def set_pivot_point(self, x, y, z):
         """Set the pivot point."""
@@ -288,7 +311,7 @@ class MockServer:
 
     async def format_pivot_point(self):
         """Return formatted get pivot point string"""
-        return f"R={self.pivot.x} S={self.pivot.y} T={self.pivot.z}\n"
+        return f"R={self.pivot.x}\n S={self.pivot.y}\n T={self.pivot.z}\n"
 
     async def format_check_active_soft_limit(self):
         """Check that the software limits are active."""
