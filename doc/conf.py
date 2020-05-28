@@ -11,7 +11,7 @@ _g = globals()
 _g.update(build_package_configs(
     project_name='ts_ATHexapod',
     version=lsst.ts.ATHexapod.version.__version__))
-extensions.append("sphinxcontrib.plantuml")
+# extensions.append("sphinxcontrib.plantuml")
 # extensions.append("releases")
 # releases_issue_uri = "https://jira.lsstcorp.org/browse/%s"
 # comment out releases_release_uri until feature for prefix and unreleased develop url is merged
