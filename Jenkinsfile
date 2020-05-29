@@ -7,7 +7,7 @@ pipeline {
         // Use the label to assign the node to run the test.
         // It is recommended by SQUARE to not add the label
         docker {
-            image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0_b27'
+            image 'lsstts/develop-env:b76'
             args "-u root --entrypoint=''"
         }
     }
@@ -32,7 +32,6 @@ pipeline {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
                         source /home/saluser/.setup.sh
-                        cd /home/saluser/repos/ts_idl && git fetch && git checkout v1.1.0 && cd /home/saluser/repos/ts_config_attcs && git fetch && git checkout v0.2.0 && cd /home/saluser/repos/ts_salobj && git fetch && git checkout v5.2.0
                         make_idl_files.py ATHexapod
                     """
                 }
@@ -51,6 +50,19 @@ pipeline {
                         source /home/saluser/.setup.sh
                         setup -k -r .
                         pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT}
+                    """
+                }
+            }
+        }
+        stage('Build and Upload Documentation') {
+            steps {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
+                    sh """
+                    source /home/saluser/.setup.sh
+                    pip install .
+                    pip install sphinx-jsonschema
+                    package-docs build
+                    ltd upload --product ts-athexapod --git-ref ${GIT_BRANCH} --dir doc/_build/html
                     """
                 }
             }

@@ -2,6 +2,10 @@
 ts_ATHexapod
 ============
 
+How to follow this documentation.
+The first section gives a general overview of the software.
+
+
 General Overview
 ================
 
@@ -18,13 +22,40 @@ ts_ATHexapod is a python package that implements the CSC for the ATHexapod.
 It is written using the `ts_salobj <https://ts-salobj.lsst.io>`_ library.
 It can be installed as an EUPS package or as a PIP package.
 
-Software Documentation
-======================
+Developer Documentation
+=======================
 Pull the develop-env docker image.
 Mount the repo directory as a volume.
 The architecture of the Hexapod control software is a tcp/ip connection with a particular messaging format.
-You can find in the manual where it describes this format.
+You can find in the `manual <https://docushare.lsst.org/docushare/dsweb/Get/Document-21614>`_
+where it describes this format. 
 The CSC is implemented using the salobj library for integration with the middleware layer.
+There is a vendor provided simulator that can be started as a docker container.
+
+.. prompt:: bash
+    
+    docker run --net host -it couger01/hexapod_simulator
+
+Starting the CSC is done by using the following command.
+
+.. prompt:: bash
+    
+    python bin/runATHexapodCSC.py
+
+Stopping the CSC is done by SIG-INTing the process, usually by :kbd:`ctrl` + :kbd:`c`
+
+Building the documentation is done by the following commands.
+
+.. prompt:: bash
+    
+    docker run -it -v {repo_location}:/home/saluser/develop lsstts/develop-env:b76
+    cd develop/ts_athexapod
+    setup -kr .
+    scons
+    package-docs build
+
+Updating the firmware can be found in the ATHexapod manual linked above in chapter 10.
+As an aside, upgrading the firmware is difficult, so only upgrade if the vendor is recommending this.
 
 Dependencies
 ------------
@@ -55,7 +86,7 @@ Its very likely that you will use a jupyter notebook of some kind to interact wi
 
     ipython
 
-.. code::
+.. code:: python
 
     from lsst.ts import salobj
     athexapod = salobj.Remote("ATHexapod", salobj.Domain())
@@ -65,4 +96,10 @@ Its very likely that you will use a jupyter notebook of some kind to interact wi
 Sending commands, you follow the same format as shown above `await athexapod.cmd_{nameOfCommand}.set_start(parameters, timeout)`
 Receiving events, you follow this format `await athexapod.evt_{nameOfEvent}.aget()`
 Receiving telemetry, you follow this format `await athexapod.tel_{nameOfTelemetry}.aget()`
+
+Configuration is handled using yaml files located in a git repository.
+The repository is called ts_config_attcs.
+What follows is the current schema that these configuration files can have.
+
+.. jsonschema:: ../schema/ATHexapod.yaml
 
