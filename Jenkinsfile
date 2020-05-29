@@ -21,6 +21,9 @@ pipeline {
         XML_REPORT="jenkinsReport/report.xml"
         // Module name used in the pytest coverage analysis
         MODULE_NAME="lsst.ts.ATHexapod"
+        user_ci = credentials('lsst-io')
+        LTD_USERNAME=${user_ci_USR}
+        LTD_PASSWORD=${user_ci_PSW}
     }
 
     stages {
