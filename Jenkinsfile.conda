@@ -55,11 +55,13 @@ pipeline {
                     buildingTag()
                 }
             }
-            script {
+            steps {
+                script {
                     sh """
-                    docker exec ${container_name} sh -c 'cd ~/source/conda && source ~/miniconda3/bin/activate && source "\$OSPL_HOME/release.com" && conda build -c lsstts/label/dev --prefix-length 100 .'
+                        docker exec ${container_name} sh -c 'cd ~/source/conda && source ~/miniconda3/bin/activate && source "\$OSPL_HOME/release.com" && conda build -c lsstts/label/dev --prefix-length 100 .'
                     """
-                    }
+                }
+            }
         }
 
         stage("Push ATHexapod Conda Release package") {
