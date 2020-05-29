@@ -2,9 +2,8 @@
 ts_ATHexapod
 ============
 
-How to follow this documentation.
-The first section gives a general overview of the software.
-
+The badges below are for finding the GitHub repo, Jenkins CI jobs, Jira issues and commands, events and
+telemetry for the software.
 
 General Overview
 ================
@@ -26,11 +25,31 @@ Developer Documentation
 =======================
 Pull the develop-env docker image.
 Mount the repo directory as a volume.
+Building the documentation is done by the following commands.
+Incidentally, also starts the CSC environment for you.
+
+.. prompt:: bash
+    
+    docker run -it -v {repo_location}:/home/saluser/develop lsstts/develop-env:b76
+    cd develop/ts_athexapod
+    setup -kr . # or pip install .
+    scons # this step is optional if using pip
+    pip install -r doc/requirements.txt
+    package-docs build
+
 The architecture of the Hexapod control software is a tcp/ip connection with a particular messaging format.
 You can find in the `manual <https://docushare.lsst.org/docushare/dsweb/Get/Document-21614>`_
 where it describes this format. 
 The CSC is implemented using the salobj library for integration with the middleware layer.
 There is a vendor provided simulator that can be started as a docker container.
+Since this is proprietary, the image is private and so to get access, send a request on slack to couger01 with your username on DockerHub.
+Then use docker to sign into your dockerhub credentials with the following command.
+
+.. prompt:: bash
+    docker login
+    # give username and password
+
+Then pulling and running the image will work.
 
 .. prompt:: bash
     
@@ -44,15 +63,10 @@ Starting the CSC is done by using the following command.
 
 Stopping the CSC is done by SIG-INTing the process, usually by :kbd:`ctrl` + :kbd:`c`
 
-Building the documentation is done by the following commands.
+Running the unit tests can be done by invoking
 
 .. prompt:: bash
-    
-    docker run -it -v {repo_location}:/home/saluser/develop lsstts/develop-env:b76
-    cd develop/ts_athexapod
-    setup -kr .
-    scons
-    package-docs build
+    pytest
 
 Updating the firmware can be found in the ATHexapod manual linked above in chapter 10.
 As an aside, upgrading the firmware is difficult, so only upgrade if the vendor is recommending this.
@@ -93,10 +107,23 @@ Its very likely that you will use a jupyter notebook of some kind to interact wi
     await salobj.set_summary_state(athexapod, salobj.State.ENABLED)
     await athexapod.cmd_moveToPosition.set_start(x=1, y=1, z=1, u=1, v=1, w=1, timeout=5)
 
-Sending commands, you follow the same format as shown above `await athexapod.cmd_{nameOfCommand}.set_start(parameters, timeout)`
-Receiving events, you follow this format `await athexapod.evt_{nameOfEvent}.aget()`
-Receiving telemetry, you follow this format `await athexapod.tel_{nameOfTelemetry}.aget()`
+Sending commands, you follow the same format as shown above 
+.. code:: python
+    
+    await athexapod.cmd_{nameOfCommand}.set_start(parameters, timeout)
 
+Receiving events, you follow this format 
+.. code:: python
+
+    await athexapod.evt_{nameOfEvent}.aget()
+
+Receiving telemetry, you follow this format 
+.. code:: python
+
+    await athexapod.tel_{nameOfTelemetry}.aget()
+
+Configuration
+=============
 Configuration is handled using yaml files located in a git repository.
 The repository is called ts_config_attcs.
 What follows is the current schema that these configuration files can have.
