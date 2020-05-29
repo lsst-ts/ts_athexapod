@@ -3,7 +3,7 @@ pipeline {
     environment {
         package_name = "athexapod"
         dockerImageName = "lsstts/conda_package_builder:latest"
-        container_name = "salobj_${BUILD_ID}_${JENKINS_NODE_COOKIE}"
+        container_name = "athexapod_conda_${BUILD_ID}_${JENKINS_NODE_COOKIE}"
     }
 
     stages {
@@ -37,7 +37,10 @@ pipeline {
                 }
             }
         }
-        stage("Create ATDome Conda package") {
+        stage("Create ATHexapod Conda package") {
+            when {
+                buildingTag()
+            }
             steps {
                 script {
                     sh """
@@ -46,7 +49,23 @@ pipeline {
                 }
             }
         }
-        stage("Push ATDome Conda package") {
+        stage("Create ATHexapod Conda Dev package") {
+            when {
+                not {
+                    buildingTag()
+                }
+            }
+            script {
+                    sh """
+                    docker exec ${container_name} sh -c 'cd ~/source/conda && source ~/miniconda3/bin/activate && source "\$OSPL_HOME/release.com" && conda build -c lsstts/label/dev --prefix-length 100 .'
+                    """
+                    }
+        }
+
+        stage("Push ATHexapod Conda Release package") {
+            when {
+                buildingTag()
+            }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'CondaForge', passwordVariable: 'anaconda_pass', usernameVariable: 'anaconda_user')]) {
                     script {

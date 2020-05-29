@@ -189,7 +189,7 @@ class MockServer:
 
     async def format_motion_status(self):
         """Return formatted motion status response."""
-        return f"0\n"
+        return "0\n"
 
     async def format_controller_ready(self):
         """Return formatted controller ready response."""
@@ -301,7 +301,7 @@ class MockServer:
 
     async def check_offset(self, x, y, z, u, v, w):
         """Check that the hexapod can move."""
-        return (f"X=1\n Y=1\n Z=1\n U=1\n V=1\n W=1\n")
+        return ("X=1\n Y=1\n Z=1\n U=1\n V=1\n W=1\n")
 
     async def set_pivot_point(self, x, y, z):
         """Set the pivot point."""
