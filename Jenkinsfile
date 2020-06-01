@@ -63,7 +63,7 @@ pipeline {
                     sh """
                     source /home/saluser/.setup.sh
                     pip install .
-                    pip install sphinx-jsonschema
+                    pip install -r doc/requirements.txt
                     package-docs build
                     ltd upload --product ts-athexapod --git-ref ${GIT_BRANCH} --dir doc/_build/html
                     """

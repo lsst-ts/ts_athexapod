@@ -46,6 +46,7 @@ Since this is proprietary, the image is private and so to get access, send a req
 Then use docker to sign into your dockerhub credentials with the following command.
 
 .. prompt:: bash
+    
     docker login
     # give username and password
 
@@ -108,16 +109,19 @@ Its very likely that you will use a jupyter notebook of some kind to interact wi
     await athexapod.cmd_moveToPosition.set_start(x=1, y=1, z=1, u=1, v=1, w=1, timeout=5)
 
 Sending commands, you follow the same format as shown above 
+
 .. code:: python
     
     await athexapod.cmd_{nameOfCommand}.set_start(parameters, timeout)
 
 Receiving events, you follow this format 
+
 .. code:: python
 
     await athexapod.evt_{nameOfEvent}.aget()
 
 Receiving telemetry, you follow this format 
+
 .. code:: python
 
     await athexapod.tel_{nameOfTelemetry}.aget()
