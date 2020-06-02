@@ -15,7 +15,7 @@ ATHexapod Developer Guide
 
 The CSC is implemented using the salobj library for integration with the middleware layer.
 
-The architecture of the Hexapod control software is a tcp/ip connection with a particular messaging format.
+The architecture of the Hexapod control software is a TCP/IP connection with a particular messaging format.
 You can find in the `PI-824 manual <https://docushare.lsst.org/docushare/dsweb/Get/Document-21614>`__
 where it describes this format.
 
@@ -60,13 +60,17 @@ This package has the following requirements:
 * Docker
 * ts_Dockerfiles - lsstts/develop-env:b76(stable) or lsstts/develop-env:develop(bleeding edge)
 
-Building
+.. We should link to a description of the development container once there is a place for it.
 
-1) docker run -it -v {repos_location}:/home/saluser/develop lsstts/develop-env:b76
-2) make_idl_files.py ATHexapod
-#) cd develop/ts_athexapod
-#) setup -kr .
-#) scons
+Build the CSC as follows:
+
+.. code-block:: bash
+
+    docker run -it -v {repos_location}:/home/saluser/develop lsstts/develop-env:b76
+    make_idl_files.py ATHexapod
+    cd develop/ts_athexapod
+    setup -kr .
+    scons
 
 
 
@@ -88,6 +92,7 @@ Running the unit tests can be done from the top-level directory of the repositor
 .. prompt:: bash
     
     pytest
+
 
 .. _Simulator:
 

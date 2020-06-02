@@ -66,11 +66,10 @@ Overview
 The ATHexapod is a python package that implements the CSC that controls a
 `PI H-824 hexapod <https://www.pi-usa.us/en/products/6-axis-hexapods-parallel-positioners/h-824-6-axis-hexapod-700815/>`__ that holds the secondary mirror on the Auxiliary Telescope.
 The hexapod allows precise positioning of the mirror, which is key to performing optical collimation of the telescope as well as focus adjustments.
-It is written using the `ts_salobj <https://ts-salobj.lsst.io>`_ library.
-It can be installed as an EUPS package or as a PIP package.
 
 Under normal operations, it is expected that the CSC will be largely controlled from commands received from the ATAOS and essentially no direct user interaction is required.
 The ATHexapod is also part of the `ATCS high-level control package <https://obs-controls.lsst.io/System-Architecture/Control-Packages/index.html>`__.
+The CSC is written using the `ts_salobj <https://ts-salobj.lsst.io>`_ library and can be installed as an EUPS or PIP package.
 
 The badges above navigate to the GitHub repository for the CSC code, Jenkins CI jobs, Jira issues and communications interface for the software.
 
@@ -127,5 +126,5 @@ Contact Personnel
 
 For questions not covered in the documentation, emails should be addressed to |CSC_developer| and |CSC_product_owner|.
 
-This procedure was last modified |today|.
+This page was last modified |today|.
 
