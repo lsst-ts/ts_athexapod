@@ -1,12 +1,49 @@
-============
-ts_ATHexapod
-============
+..
+  This is a template for documentation that will accompany each CSC.
+  It consists of a user guide and development guide, however, cross linking between the guides is expected.
+  This template is provided to ensure that the documentation remains similar in look, feel, and contents to users.
+  The headings below are expected to be present for all CSCs, but for many CSCs, additional fields will be required.
 
-The badges below are for finding the GitHub repo, Jenkins CI jobs, Jira issues and commands, events and
-telemetry for the software.
+  ** All text in square brackets [] must be re-populated accordingly **
 
-General Overview
-================
+  See https://developer.lsst.io/restructuredtext/style.html
+  for a guide to reStructuredText writing.
+
+  Use the following syntax for sections:
+
+  Sections
+  ========
+
+  and
+
+  Subsections
+  -----------
+
+  and
+
+  Subsubsections
+  ^^^^^^^^^^^^^^
+
+  To add images, add the image file (png, svg or jpeg preferred) to the
+  images/ directory. The reST syntax for adding the image is
+
+  .. figure:: /images/filename.ext
+  :name: fig-label
+
+  Caption text.
+
+  Feel free to delete this instructional comment.
+
+.. Fill out data so contacts section below is auto-populated
+.. add name and email between the *'s below e.g. *Marie Smith <msmith@lsst.org>*
+.. |CSC_developer| replace::  *Eric Coughlin <ecoughlin@lsst.org>*
+.. |CSC_product_owner| replace:: *Patrick Ingraham <pingraham@lsst.org>*
+
+.. Note that the ts_ prefix is omitted from the title
+
+#########
+ATHexapod
+#########
 
 .. image:: https://img.shields.io/badge/GitHub-ts_athexapod-green.svg
     :target: https://github.com/lsst-ts/ts_athexapod
@@ -17,120 +54,76 @@ General Overview
 .. image:: https://img.shields.io/badge/ts_xml-ATHexapod-green.svg
     :target: https://ts-xml.lsst.io/sal_interfaces/ATHexapod.html
 
-ts_ATHexapod is a python package that implements the CSC for the ATHexapod.
-It is written using the `ts_salobj <https://ts-salobj.lsst.io>`_ library.
-It can be installed as an EUPS package or as a PIP package.
+.. _Overview:
 
-Developer Documentation
-=======================
-Pull the develop-env docker image.
-Mount the repo directory as a volume.
-Building the documentation is done by the following commands.
-Incidentally, also starts the CSC environment for you.
+Overview
+========
 
-.. prompt:: bash
-    
-    docker run -it -v {repo_location}:/home/saluser/develop lsstts/develop-env:b76
-    cd develop/ts_athexapod
-    setup -kr . # or pip install .
-    scons # this step is optional if using pip
-    pip install -r doc/requirements.txt
-    package-docs build
+.. This section is to present an overview of the CSC.
+.. This should include a top-level description of the primary use-case(s) as well as any pertinent information.
+.. Example information may be link(s) to the higher-level classes which may be used to operate it, or mention of other CSCs (with links) that it operates in concert with.
 
-The architecture of the Hexapod control software is a tcp/ip connection with a particular messaging format.
-You can find in the `manual <https://docushare.lsst.org/docushare/dsweb/Get/Document-21614>`_
-where it describes this format. 
-The CSC is implemented using the salobj library for integration with the middleware layer.
-There is a vendor provided simulator that can be started as a docker container.
-Since this is proprietary, the image is private and so to get access, send a request on slack to couger01 with your username on DockerHub.
-Then use docker to sign into your dockerhub credentials with the following command.
+The ATHexapod is a python package that implements the CSC that controls a `PI H-824 hexapod <https://www.pi-usa.us/en/products/6-axis-hexapods-parallel-positioners/h-824-6-axis-hexapod-700815/>`__ that holds the secondary mirror on the Auxiliary Telescope.
+The hexapod allows precise positioning of the mirror, which is key to performing optical collimation of the telescope as well as focus adjustments.
+It is written using the `ts_salobj <https://ts-salobj.lsst.io>`_ library. It can be installed as an EUPS package or as a PIP package.
 
-.. prompt:: bash
-    
-    docker login
-    # give username and password
+Under normal operations, it is expected that the CSC will be largely controlled from commands received from the ATAOS and essentially no direct user interaction is required.
+The ATHexapod is also part of the `ATCS high-level control package <https://obs-controls.lsst.io/System-Architecture/Control-Packages/index.html>`__.
 
-Then pulling and running the image will work.
+The badges above navigate to the GitHub repository for the CSC code, Jenkins CI jobs, Jira issues and communications interface for the software.
 
-.. prompt:: bash
-    
-    docker run --net host -it couger01/hexapod_simulator
-
-Starting the CSC is done by using the following command.
-
-.. prompt:: bash
-    
-    python bin/runATHexapodCSC.py
-
-Stopping the CSC is done by SIG-INTing the process, usually by :kbd:`ctrl` + :kbd:`c`
-
-Running the unit tests can be done by invoking
-
-.. prompt:: bash
-    pytest
-
-Updating the firmware can be found in the ATHexapod manual linked above in chapter 10.
-As an aside, upgrading the firmware is difficult, so only upgrade if the vendor is recommending this.
-
-Dependencies
-------------
-* `SAL <https://ts-sal.lsst.io>`_ - v4.0.0
-* ts_salobj - v5.2.0
-* python - 3.7.x
-* lsstts/develop-env:b76
-
-.. toctree::
-    :maxdepth: 1
-
-    changelog
-
-
-.. .. uml:: state-diagram.plantuml
-
-.. automodapi:: lsst.ts.ATHexapod
-    :no-main-docstr:
-    :no-inheritance-diagram:
+.. _User_Documentation:
 
 User Documentation
 ==================
-First open a remote using salobj.
-There are multiple ways to do this.
-Its very likely that you will use a jupyter notebook of some kind to interact with an individual CSC.
+User-level documentation, found at the link below, is aimed at personnel looking to perform the standard use-cases/operations with the ATHexapod.
 
-.. prompt:: bash
+.. toctree::
+    user-guide/user-guide
+    :maxdepth: 2
 
-    ipython
+.. _Configuration:
 
-.. code:: python
+Configuring the ATHexapod
+=========================
+.. For CSCs where configuration is not required, this section can contain a single sentence stating so.
+   More introductory information can also be added here (e.g. CSC XYZ requires both a configuration file containing parameters as well as several look-up tables to be operational).
 
-    from lsst.ts import salobj
-    athexapod = salobj.Remote("ATHexapod", salobj.Domain())
-    await salobj.set_summary_state(athexapod, salobj.State.ENABLED)
-    await athexapod.cmd_moveToPosition.set_start(x=1, y=1, z=1, u=1, v=1, w=1, timeout=5)
+The configuration for the ATHexapod is described at the following link.
 
-Sending commands, you follow the same format as shown above 
+.. toctree::
+    configuration/configuration
+    :maxdepth: 1
 
-.. code:: python
-    
-    await athexapod.cmd_{nameOfCommand}.set_start(parameters, timeout)
+.. _Development_Documentation:
 
-Receiving events, you follow this format 
+Development Documentation
+=========================
+This area of documentation focuses on the classes used, API's, and how to participate to the development of the ATHexapod software packages.
 
-.. code:: python
+.. toctree::
+    developer-guide/developer-guide
+    :maxdepth: 1
 
-    await athexapod.evt_{nameOfEvent}.aget()
 
-Receiving telemetry, you follow this format 
+.. _Version_History:
 
-.. code:: python
+Version History
+===============
+The version history of the ATHexapod CSC is found at the following link.
 
-    await athexapod.tel_{nameOfTelemetry}.aget()
+.. toctree::
+    changelog
+    :maxdepth: 1
 
-Configuration
-=============
-Configuration is handled using yaml files located in a git repository.
-The repository is called ts_config_attcs.
-What follows is the current schema that these configuration files can have.
+`Release notes <https://github.com/lsst-ts/ts_athexapod/releases>`__ have not yet been published for this package, but will be in the future.
 
-.. jsonschema:: ../schema/ATHexapod.yaml
+.. _Contact_Personnel:
+
+Contact Personnel
+=================
+
+For questions not covered in the documentation, emails should be addressed to |CSC_developer| and |CSC_product_owner|.
+
+This procedure was last modified |today|.
 
