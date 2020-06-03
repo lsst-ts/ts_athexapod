@@ -28,7 +28,7 @@ pipeline {
     }
 
     stages {
-        stage ('Install Requirements') {
+        stage ('Install Requirements And Update Branches') {
             steps {
                 // When using the docker container, we need to change
                 // the HOME path to WORKSPACE to have the authority
@@ -37,6 +37,15 @@ pipeline {
                     sh """
                         source /home/saluser/.setup.sh
                         cd /home/saluser/repos/ts_xml
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_salobj
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_sal
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_idl
                         /home/saluser/.checkout_repo.sh ${work_branches}
                         git pull
                         make_idl_files.py ATHexapod
