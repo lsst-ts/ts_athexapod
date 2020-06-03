@@ -7,7 +7,7 @@ pipeline {
         // Use the label to assign the node to run the test.
         // It is recommended by SQUARE to not add the label
         docker {
-            image 'lsstts/develop-env:b76'
+            image 'lsstts/develop-env:develop'
             args "-u root --entrypoint=''"
         }
     }
@@ -24,6 +24,7 @@ pipeline {
         user_ci = credentials('lsst-io')
         LTD_USERNAME="${user_ci_USR}"
         LTD_PASSWORD="${user_ci_PSW}"
+        work_branches = "${GIT_BRANCH} ${CHANGE_BRANCH} develop"
     }
 
     stages {
@@ -35,6 +36,9 @@ pipeline {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
                         source /home/saluser/.setup.sh
+                        cd /home/saluser/repos/ts_xml
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
                         make_idl_files.py ATHexapod
                     """
                 }
