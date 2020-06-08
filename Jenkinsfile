@@ -7,6 +7,7 @@ pipeline {
         // Use the label to assign the node to run the test.
         // It is recommended by SQUARE to not add the label
         docker {
+            alwaysPull true
             image 'lsstts/develop-env:develop'
             args "-u root --entrypoint=''"
         }
