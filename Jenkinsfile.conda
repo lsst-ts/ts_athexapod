@@ -3,7 +3,7 @@ pipeline {
     environment {
         package_name = "athexapod"
         dockerImageName = "lsstts/conda_package_builder:latest"
-        container_name = "athexapod_conda_${BUILD_ID}_${JENKINS_NODE_COOKIE}"
+        container_name = "conda_${BUILD_ID}_${JENKINS_NODE_COOKIE}"
     }
 
     stages {
@@ -37,7 +37,7 @@ pipeline {
                 }
             }
         }
-        stage("Create ATHexapod Conda package") {
+        stage("Create Conda package") {
             when {
                 buildingTag()
             }
@@ -49,7 +49,7 @@ pipeline {
                 }
             }
         }
-        stage("Create ATHexapod Conda Dev package") {
+        stage("Create Conda Dev package") {
             when {
                 not {
                     buildingTag()
@@ -64,7 +64,7 @@ pipeline {
             }
         }
 
-        stage("Push ATHexapod Conda Release package") {
+        stage("Push Conda Release package") {
             when {
                 buildingTag()
             }
