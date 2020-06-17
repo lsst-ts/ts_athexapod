@@ -36,7 +36,7 @@ pipeline {
                 // to install the packages.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup.sh
+                        source /home/saluser/.setup_dev.sh
                         cd /home/saluser/repos/ts_xml
                         /home/saluser/.checkout_repo.sh ${work_branches}
                         git pull
@@ -64,7 +64,7 @@ pipeline {
                 // Pytest needs to export the junit report.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup.sh
+                        source /home/saluser/.setup_dev.sh
                         setup -k -r .
                         pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT}
                     """
@@ -75,7 +75,7 @@ pipeline {
             steps {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                    source /home/saluser/.setup.sh
+                    source /home/saluser/.setup_dev.sh
                     pip install .
                     pip install -r doc/requirements.txt
                     package-docs build
