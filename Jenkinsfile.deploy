@@ -18,7 +18,7 @@ pipeline {
         booleanParam defaultValue: false, description: "Option to push the build image to the Nexus3 / Docker Hub registries.", name: 'push_tag'
         string defaultValue: "salobj_5.15.2", description: "Build number for the lsstts/deploy-env docker image.", name: 'deploy_env_tag', trim: true
         string defaultValue: "1.2.2_4.1.1_6.0.0", description: "IDL version.", name: 'idl_v', trim: true
-        string defaultValue: "v0.4.1rc1", description: "ATHexapod version.", name: 'athexapod_csc_v', trim: true
+        string defaultValue: "0.4.1rc1", description: "ATHexapod version.", name: 'athexapod_csc_v', trim: true
         string defaultValue: "master", description: "ATTCS configuration version.", name: 'attcs_config_v', trim: true
     }
     stages {
