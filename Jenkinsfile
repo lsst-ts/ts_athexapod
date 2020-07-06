@@ -7,7 +7,8 @@ pipeline {
         // Use the label to assign the node to run the test.
         // It is recommended by SQUARE to not add the label
         docker {
-            image 'lsstts/develop-env:b76'
+            alwaysPull true
+            image 'lsstts/develop-env:develop'
             args "-u root --entrypoint=''"
         }
     }
@@ -24,17 +25,30 @@ pipeline {
         user_ci = credentials('lsst-io')
         LTD_USERNAME="${user_ci_USR}"
         LTD_PASSWORD="${user_ci_PSW}"
+        work_branches = "${GIT_BRANCH} ${CHANGE_BRANCH} develop"
     }
 
     stages {
-        stage ('Install Requirements') {
+        stage ('Install Requirements And Update Branches') {
             steps {
                 // When using the docker container, we need to change
                 // the HOME path to WORKSPACE to have the authority
                 // to install the packages.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup.sh
+                        source /home/saluser/.setup_dev.sh
+                        cd /home/saluser/repos/ts_xml
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_salobj
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_sal
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_idl
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
                         make_idl_files.py ATHexapod
                     """
                 }
@@ -50,7 +64,7 @@ pipeline {
                 // Pytest needs to export the junit report.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup.sh
+                        source /home/saluser/.setup_dev.sh
                         setup -k -r .
                         pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT}
                     """
@@ -61,7 +75,7 @@ pipeline {
             steps {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                    source /home/saluser/.setup.sh
+                    source /home/saluser/.setup_dev.sh
                     pip install .
                     pip install -r doc/requirements.txt
                     package-docs build
