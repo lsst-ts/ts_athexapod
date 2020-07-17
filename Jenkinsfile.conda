@@ -1,38 +1,23 @@
 pipeline {
-    agent any
+    agent{ 
+        docker {
+            image 'lsstts/conda_package_builder:latest'
+            alwaysPull 'true'
+            args "--env TS_CONFIG_ATTCS_DIR=/home/saluser/ts_config_attcs --env LSST_DDS_DOMAIN=citest -u root --entrypoint=''"
+        }
+    }
     environment {
         package_name = "athexapod"
-        dockerImageName = "lsstts/conda_package_builder:latest"
-        container_name = "conda_${BUILD_ID}_${JENKINS_NODE_COOKIE}"
+        OSPL_HOME="/opt/OpenSpliceDDS/V6.9.0/HDE/x86_64.linux"
     }
 
     stages {
-        stage("Pull Docker Image") {
-            steps {
-                script {
-                sh """
-                docker pull ${dockerImageName}
-                """
-                }
-            }
-        }
-        stage("Start builder"){
-            steps {
-                script {
-                    sh """
-                    docker run --name ${container_name} -di --rm \
-                        --env TS_CONFIG_ATTCS_DIR=/home/saluser/ts_config_attcs \
-                        --env LSST_DDS_DOMAIN=citest \
-                        -v ${WORKSPACE}:/home/saluser/source ${dockerImageName}
-                    """
-                }
-            }
-        }
         stage("Clone ts_config_attcs"){
             steps {
-                script {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                    docker exec ${container_name} sh -c "git clone https://github.com/lsst-ts/ts_config_attcs.git"
+                    cd /home/saluser
+                    git clone https://github.com/lsst-ts/ts_config_attcs.git
                     """
                 }
             }
@@ -42,9 +27,14 @@ pipeline {
                 buildingTag()
             }
             steps {
-                script {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                    docker exec ${container_name} sh -c 'cd ~/source/conda && source ~/miniconda3/bin/activate && source "\$OSPL_HOME/release.com" && conda build --prefix-length 100 .'
+                    cd ${HOME}/conda 
+                    source /home/saluser/miniconda3/bin/activate
+                    conda config --add channels conda-forge
+                    conda config --add channels lsstts
+                    source ${OSPL_HOME}/release.com
+                    conda build --prefix-length 100 .
                     """
                 }
             }
@@ -56,9 +46,14 @@ pipeline {
                 }
             }
             steps {
-                script {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        docker exec ${container_name} sh -c 'cd ~/source/conda && source ~/miniconda3/bin/activate && source "\$OSPL_HOME/release.com" && conda build -c lsstts/label/dev --prefix-length 100 .'
+                        cd ${HOME}/conda
+                        source /home/saluser/miniconda3/bin/activate
+                        conda config --add channels conda-forge
+                        conda config --add channels lsstts
+                        source ${OSPL_HOME}/release.com
+                        conda build -c lsstts/label/dev --prefix-length 100 .
                     """
                 }
             }
@@ -70,12 +65,11 @@ pipeline {
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'CondaForge', passwordVariable: 'anaconda_pass', usernameVariable: 'anaconda_user')]) {
-                    script {
+                    withEnv(["HOME=${env.WORKSPACE}"]) {
                         sh """
-                        docker exec ${container_name} sh -c "source ~/miniconda3/bin/activate && \
-                            anaconda login --user ${anaconda_user} --password ${anaconda_pass} && \
-                            anaconda upload -u lsstts --force \
-                            ~/miniconda3/conda-bld/linux-64/ts-${package_name}*.tar.bz2"
+                        source /home/saluser/miniconda3/bin/activate
+                        anaconda login --user ${anaconda_user} --password ${anaconda_pass}
+                        anaconda upload -u lsstts --force ~/miniconda3/conda-bld/linux-64/ts-${package_name}*.tar.bz2
                         """
                     }
                 }
@@ -83,10 +77,10 @@ pipeline {
         }
     }
     post {
-        cleanup {
-            sh """
-            docker stop ${container_name}
-            """
+        always {
+            withEnv(["HOME=${env.WORKSPACE}"]) {
+                sh 'chown -R 1003:1003 ${HOME}/'
+            }
         }
     }
 }
