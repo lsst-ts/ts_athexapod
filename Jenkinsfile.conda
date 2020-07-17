@@ -82,8 +82,5 @@ pipeline {
                 sh 'chown -R 1003:1003 ${HOME}/'
             }
         }
-        cleanup {
-            deleteDir()
-        }
     }
 }
