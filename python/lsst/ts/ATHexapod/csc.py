@@ -188,12 +188,9 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         """
         try:
             await self.controller.connect()
+            # TODO Add make_ackcmd call when it is released.
         except Exception as e:
             self.log.exception(e)
-            self.fault(code=CONNECTION_FAILED,
-                       report=f'Could not connect to hexapod controller with IP/Port: '
-                              f'{self.controller.host}/{self.controller.port}.',
-                       traceback=traceback.format_exc())
             raise e
 
         self.run_telemetry_task = True
@@ -210,15 +207,13 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         try:
             await self.close_telemetry_task()
-        except Exception as e:
-            self.log.error("Exception closing telemetry task.")
-            self.log.exception(e)
+        except Exception:
+            self.log.exception("Exception closing telemetry task.")
 
         try:
             await self.controller.disconnect()
-        except Exception as e:
-            self.log.error("Exception disconnecting from hexapod controller.")
-            self.log.exception(e)
+        except Exception:
+            self.log.exception("Exception disconnecting from hexapod controller.")
 
         await super().end_standby(data)
 
@@ -252,9 +247,8 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         try:
             await self.assert_ready("enable")
-        except salobj.base.ExpectedError as e:
-            self.log.error("Hexapod controller not ready.")
-            self.log.exception(e)
+        except salobj.base.ExpectedError:
+            self.log.exception("Hexapod controller not ready.")
             self.fault(code=CONTROLLER_NOT_READY,
                        report="Hexapod controller not ready.",
                        traceback=traceback.format_exc())
@@ -362,7 +356,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             await asyncio.wait_for(self.wait_movement_done(),
                                    timeout=self.config.movement_timeout)
         except Exception as e:
-            self.log.error("Error executing moveToPosition command")
+            self.log.exception("Error executing moveToPosition command")
             raise e
         else:
             self.evt_inPosition.set_put(inPosition=True,
@@ -494,10 +488,9 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             self.log.warning("Timed out waiting for telemetry task to finish. "
                              "Closing task instead.")
             force_close = True
-        except Exception as e:
-            self.log.error("Unexpected exception stopping telemetry task. "
-                           "Closing task instead.")
-            self.log.exception(e)
+        except Exception:
+            self.log.exception("Unexpected exception stopping telemetry task. "
+                               "Closing task instead.")
             force_close = True
 
         if force_close:
