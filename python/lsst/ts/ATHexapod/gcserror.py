@@ -1,6 +1,6 @@
 #!/usr/bin python
 # -*- coding: utf-8 -*-
-'''
+"""
 This file is part of ts_ATHexapod
 
 Developed for the LSST Telescope and Site Systems.
@@ -21,16 +21,17 @@ GNU General Public License for more details.
 
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 # Too many lines in module pylint: disable=C0302
 import logging
 import enum
 
-__signature__ = 0x1d86c75890c9cfded5cd50105c096649
+__signature__ = 0x1D86C75890C9CFDED5CD50105C096649
 
 
 class PIError(enum.Enum):
     """Provide enum for PI Errors."""
+
     E_1_COM_ERROR = -1
     E_2_SEND_ERROR = -2
     E_3_REC_ERROR = -3
@@ -1413,7 +1414,7 @@ def translate_error(value):
     @return Error message as string.
     """
     try:
-        msg = '%s (%d)' % (__ERRMSG[value], value)
+        msg = "%s (%d)" % (__ERRMSG[value], value)
     except KeyError:
         msg = str(value)
     return msg
@@ -1422,13 +1423,13 @@ def translate_error(value):
 class GCSError(Exception):
     """GCSError exception."""
 
-    def __init__(self, value, message=''):
+    def __init__(self, value, message=""):
         Exception.__init__(self)
         self.val = value
         self.msg = translate_error(value)
         if message:
-            self.msg += ': %r' % message
-        logging.debug('GCSError: %s', self.msg)
+            self.msg += ": %r" % message
+        logging.debug("GCSError: %s", self.msg)
 
     def __str__(self):
         """Handle string representation."""

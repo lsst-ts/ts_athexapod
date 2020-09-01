@@ -1,4 +1,4 @@
-'''
+"""
 This file is part of ts_ATHexapod
 
 Developed for the LSST Telescope and Site Systems.
@@ -19,7 +19,7 @@ GNU General Public License for more details.
 
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 
 import asyncio
 import logging
@@ -53,12 +53,13 @@ class ATHexapodController:
         Provide preconfigured log or None to create a default one.
 
     """
+
     def __init__(self, log=None):
 
-        self.host = '127.0.0.1'
+        self.host = "127.0.0.1"
         self.port = 50000
-        self.timeout = 2.
-        self.long_timeout = 30.
+        self.timeout = 2.0
+        self.long_timeout = 30.0
 
         self.reader = None
         self.writer = None
@@ -88,13 +89,15 @@ class ATHexapodController:
 
         async with self.lock:
             if self.is_connected:
-                raise RuntimeError("Reader or Writer not None. Try disconnecting first.")
+                raise RuntimeError(
+                    "Reader or Writer not None. Try disconnecting first."
+                )
 
-            connect_task = asyncio.open_connection(host=self.host,
-                                                   port=self.port)
+            connect_task = asyncio.open_connection(host=self.host, port=self.port)
 
-            self.reader, self.writer = await asyncio.wait_for(connect_task,
-                                                              timeout=self.long_timeout)
+            self.reader, self.writer = await asyncio.wait_for(
+                connect_task, timeout=self.long_timeout
+            )
 
     async def disconnect(self):
         """ Disconnect from hexapod controller.
@@ -134,8 +137,9 @@ class ATHexapodController:
         async with self.lock:
 
             if not self.is_connected:
-                raise RuntimeError("Not connected to hexapod controller. "
-                                   "Call `connect` first")
+                raise RuntimeError(
+                    "Not connected to hexapod controller. " "Call `connect` first"
+                )
 
             self.log.debug(f"Writing: {cmd.encode()!r}")
             self.writer.write(f"{cmd}\n".encode())
@@ -145,13 +149,15 @@ class ATHexapodController:
                 try:
                     replies = []
                     for i in range(num_line):
-                        raw_line = await self.reader.readuntil(b'\n')
+                        raw_line = await self.reader.readuntil(b"\n")
                         line = raw_line.decode("ISO-8859-1").strip()
                         self.log.debug(f"Read {i+1} of {num_line} lines: {line}")
                         replies.append(line)
                 except asyncio.TimeoutError:
-                    self.log.warning("Timed out waiting for response from controller. Result "
-                                     "may be incomplete.")
+                    self.log.warning(
+                        "Timed out waiting for response from controller. Result "
+                        "may be incomplete."
+                    )
                     raise
 
                 return replies
@@ -258,8 +264,7 @@ class ATHexapodController:
         """
         return await self.write_command(chr(24), has_response=False)
 
-    async def set_position(self, x=None, y=None, z=None,
-                           u=None, v=None, w=None):
+    async def set_position(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Set position of Hexapod.
 
         (p. 206) Set Target Position
@@ -344,7 +349,9 @@ class ATHexapodController:
 
         return [float(val.split("=")[1]) for val in ret]
 
-    async def set_low_position_soft_Limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
+    async def set_low_position_soft_Limit(
+        self, x=None, y=None, z=None, u=None, v=None, w=None
+    ):
         """Set lower position software limit.
 
         (p. 212) Set Low Position Soft Limit
@@ -392,7 +399,9 @@ class ATHexapodController:
 
         return [float(val.split("=")[1]) for val in ret.replace("\n", "").split(" ")]
 
-    async def set_high_position_soft_limit(self, x=None, y=None, z=None, u=None, v=None, w=None):
+    async def set_high_position_soft_limit(
+        self, x=None, y=None, z=None, u=None, v=None, w=None
+    ):
         """Set the higher position software limit.
 
         (p. 214) Set High Position Soft Limit

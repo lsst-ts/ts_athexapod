@@ -1,0 +1,17 @@
+limit_xy_max: 22.5
+limit_z_min: -12.5
+limit_z_max: 12.5
+limit_uv_max: 7.5
+limit_w_min: -12.5
+limit_w_max: 12.5
+pivot_x: 0.
+pivot_y: 0.
+pivot_z: 0.
+speed: 2
+auto_reference: true
+host: 127.0.0.1
+port: 50000
+connection_timeout: 2
+reference_timeout: 120.
+movement_timeout: 30.
+max_length: 1024
