@@ -1,4 +1,4 @@
-'''
+"""
 This file is part of ts_ATHexapod
 
 Developed for the LSST Telescope and Site Systems.
@@ -19,7 +19,7 @@ GNU General Public License for more details.
 
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 
 import asyncio
 import re
@@ -60,8 +60,9 @@ class MockServer:
     commands : `list`
     log : `logging.Logger`
     """
+
     def __init__(self, log=None):
-        self.host = '127.0.0.1'
+        self.host = "127.0.0.1"
         self.port = 50000
         self.timeout = 2
         self.long_timeout = 30
@@ -94,45 +95,67 @@ class MockServer:
             "SPI?": self.format_pivot_point,
             "VLS": self.set_sv,
             "VLS?": self.format_sv,
-            "MVR": self.format_offset}
+            "MVR": self.format_offset,
+        }
         self.commands = [
             re.compile("^(?P<cmd>\3)$"),
             re.compile("^(?P<cmd>\5)$"),
             re.compile("^(?P<cmd>\6)$"),
             re.compile("^(?P<cmd>\7)$"),
-            re.compile((r"^(?P<cmd>MOV) (?P<x>X) (?P<x_value>\d+.\d+) "
-                        r"(?P<y>Y) (?P<y_value>\d+.\d+) (?P<z>Z) (?P<z_value>\d+.\d+) "
-                        r"(?P<u>U) (?P<u_value>\d+.\d+) (?P<v>V) (?P<v_value>\d+.\d+) "
-                        r"(?P<w>W) (?P<w_value>\d+.\d+)$")),
+            re.compile(
+                (
+                    r"^(?P<cmd>MOV) (?P<x>X) (?P<x_value>\d+.\d+) "
+                    r"(?P<y>Y) (?P<y_value>\d+.\d+) (?P<z>Z) (?P<z_value>\d+.\d+) "
+                    r"(?P<u>U) (?P<u_value>\d+.\d+) (?P<v>V) (?P<v_value>\d+.\d+) "
+                    r"(?P<w>W) (?P<w_value>\d+.\d+)$"
+                )
+            ),
             re.compile(r"^(?P<cmd>FRF\?)$"),
             re.compile(r"^(?P<cmd>FRF) X Y Z U V W$"),
             re.compile(r"^(?P<cmd>MOV\?) X Y Z U V W$"),
             re.compile(r"^(?P<cmd>ERR\?)$"),
-            re.compile((r"^(?P<cmd>NLM) (?P<x>X) (?P<x_value>-\d+.\d+) (?P<y>Y) (?P<y_value>-\d+.\d+) "
-                        r"(?P<z>Z) (?P<z_value>-\d+.\d+) (?P<u>U) (?P<u_value>-\d+.\d+) "
-                        r"(?P<v>V) (?P<v_value>-\d+.\d+) (?P<w>W) (?P<w_value>-\d+.\d+)$")),
+            re.compile(
+                (
+                    r"^(?P<cmd>NLM) (?P<x>X) (?P<x_value>-\d+.\d+) (?P<y>Y) (?P<y_value>-\d+.\d+) "
+                    r"(?P<z>Z) (?P<z_value>-\d+.\d+) (?P<u>U) (?P<u_value>-\d+.\d+) "
+                    r"(?P<v>V) (?P<v_value>-\d+.\d+) (?P<w>W) (?P<w_value>-\d+.\d+)$"
+                )
+            ),
             re.compile(r"^(?P<cmd>NLM\?) X Y Z U V W$"),
-            re.compile((r"^(?P<cmd>PLM) (?P<x>X) (?P<x_value>\d+.\d+) (?P<y>Y) (?P<y_value>\d+.\d+) "
-                        r"(?P<z>Z) (?P<z_value>\d+.\d+) (?P<u>U) (?P<u_value>\d+.\d+) "
-                        r"(?P<v>V) (?P<v_value>\d+.\d+) (?P<w>W) (?P<w_value>\d+.\d+)$")),
+            re.compile(
+                (
+                    r"^(?P<cmd>PLM) (?P<x>X) (?P<x_value>\d+.\d+) (?P<y>Y) (?P<y_value>\d+.\d+) "
+                    r"(?P<z>Z) (?P<z_value>\d+.\d+) (?P<u>U) (?P<u_value>\d+.\d+) "
+                    r"(?P<v>V) (?P<v_value>\d+.\d+) (?P<w>W) (?P<w_value>\d+.\d+)$"
+                )
+            ),
             re.compile(r"^(?P<cmd>PLM\?) X Y Z U V W$"),
-            re.compile((r"^(?P<cmd>SPI) (?P<x>X) (?P<x_value>\d+.\d+) "
-                        r"(?P<y>Y) (?P<y_value>\d+.\d+) (?P<z>Z) (?P<z_value>\d+.\d+)$")),
+            re.compile(
+                (
+                    r"^(?P<cmd>SPI) (?P<x>X) (?P<x_value>\d+.\d+) "
+                    r"(?P<y>Y) (?P<y_value>\d+.\d+) (?P<z>Z) (?P<z_value>\d+.\d+)$"
+                )
+            ),
             re.compile(r"^(?P<cmd>SPI\?)$"),
             re.compile(r"^(?P<cmd>VLS) (?P<velocity>\d+.\d+)$"),
             re.compile(r"^(?P<cmd>VLS\?)$"),
-            re.compile((r"^(?P<cmd>MVR) (?P<x>X) (?P<x_value>\d+.\d+) "
-                        r"(?P<y>Y) (?P<y_value>\d+.\d+) (?P<z>Z) (?P<z_value>\d+.\d+) "
-                        r"(?P<u>U) (?P<u_value>\d+.\d+) (?P<v>V) (?P<v_value>\d+.\d+) "
-                        r"(?P<w>W) (?P<w_value>\d+.\d+)$"))]
+            re.compile(
+                (
+                    r"^(?P<cmd>MVR) (?P<x>X) (?P<x_value>\d+.\d+) "
+                    r"(?P<y>Y) (?P<y_value>\d+.\d+) (?P<z>Z) (?P<z_value>\d+.\d+) "
+                    r"(?P<u>U) (?P<u_value>\d+.\d+) (?P<v>V) (?P<v_value>\d+.\d+) "
+                    r"(?P<w>W) (?P<w_value>\d+.\d+)$"
+                )
+            ),
+        ]
         self.log = logging.getLogger(__name__)
 
     async def start(self):
         """Start the server."""
         self.log.debug("Starting Server")
-        self.server = await asyncio.start_server(client_connected_cb=self.cmd_loop,
-                                                 host=self.host,
-                                                 port=self.port)
+        self.server = await asyncio.start_server(
+            client_connected_cb=self.cmd_loop, host=self.host, port=self.port
+        )
         self.log.debug("Server started")
 
     async def stop(self):
@@ -156,26 +179,32 @@ class MockServer:
                 matched_command = command.match(line)
                 if matched_command:
                     self.log.debug(f"Matched command {line}")
-                    command_group = matched_command.group('cmd')
+                    command_group = matched_command.group("cmd")
                     if command_group in self.command_calls:
                         called_command = self.command_calls[command_group]
                         self.log.debug(f"cmd group:{command_group}")
-                        if command_group in ['NLM', 'MOV', 'PLM', "MVR"]:
+                        if command_group in ["NLM", "MOV", "PLM", "MVR"]:
                             self.log.debug(f"Grabbing command {command_group}")
-                            await called_command(x=matched_command.group('x_value'),
-                                                 y=matched_command.group('y_value'),
-                                                 z=matched_command.group('z_value'),
-                                                 u=matched_command.group('u_value'),
-                                                 v=matched_command.group('v_value'),
-                                                 w=matched_command.group('w_value'))
-                        elif command_group in ['SPI']:
+                            await called_command(
+                                x=matched_command.group("x_value"),
+                                y=matched_command.group("y_value"),
+                                z=matched_command.group("z_value"),
+                                u=matched_command.group("u_value"),
+                                v=matched_command.group("v_value"),
+                                w=matched_command.group("w_value"),
+                            )
+                        elif command_group in ["SPI"]:
                             self.log.debug(f"Grabbing command {command_group}")
-                            await called_command(x=matched_command.group('x_value'),
-                                                 y=matched_command.group('y_value'),
-                                                 z=matched_command.group('z_value'))
-                        elif command_group in ['VLS']:
+                            await called_command(
+                                x=matched_command.group("x_value"),
+                                y=matched_command.group("y_value"),
+                                z=matched_command.group("z_value"),
+                            )
+                        elif command_group in ["VLS"]:
                             self.log.debug(f"Grabbing command {command_group}")
-                            await called_command(velocity=matched_command.group('velocity'))
+                            await called_command(
+                                velocity=matched_command.group("velocity")
+                            )
                         elif await called_command() is not None:
                             self.log.debug(f"Sent {await called_command()}")
                             writer.write((await called_command()).encode())
@@ -189,7 +218,7 @@ class MockServer:
 
     async def format_motion_status(self):
         """Return formatted motion status response."""
-        return f"0\n"
+        return "0\n"
 
     async def format_controller_ready(self):
         """Return formatted controller ready response."""
@@ -221,12 +250,14 @@ class MockServer:
 
     async def format_referencing_result(self):
         """Return formatted reference result."""
-        return (f"X={self.referenced.x}\n "
-                f"Y={self.referenced.y}\n "
-                f"Z={self.referenced.z}\n "
-                f"U={self.referenced.u}\n "
-                f"V={self.referenced.v}\n "
-                f"W={self.referenced.w}\n")
+        return (
+            f"X={self.referenced.x}\n "
+            f"Y={self.referenced.y}\n "
+            f"Z={self.referenced.z}\n "
+            f"U={self.referenced.u}\n "
+            f"V={self.referenced.v}\n "
+            f"W={self.referenced.w}\n"
+        )
 
     async def reference(self):
         """Reference the hexapod."""
@@ -239,12 +270,14 @@ class MockServer:
 
     async def format_target_position(self):
         """Return formatted string for target position"""
-        return (f"X={self.target.x}\n "
-                f"Y={self.target.y}\n "
-                f"Z={self.target.z}\n "
-                f"U={self.target.u}\n "
-                f"V={self.target.v}\n "
-                f"W={self.target.w}\n")
+        return (
+            f"X={self.target.x}\n "
+            f"Y={self.target.y}\n "
+            f"Z={self.target.z}\n "
+            f"U={self.target.u}\n "
+            f"V={self.target.v}\n "
+            f"W={self.target.w}\n"
+        )
 
     async def set_low_position_soft_Limit(self, x, y, z, u, v, w):
         """Set the lower position software limit."""
@@ -257,12 +290,14 @@ class MockServer:
 
     async def format_low_position_soft_limit(self):
         """Return formatted lower position software limit string."""
-        return (f"X={self.minimum_limit_x}\n "
-                f"Y={self.minimum_limit_y}\n "
-                f"Z={self.minimum_limit_z}\n "
-                f"U={self.minimum_limit_u}\n "
-                f"V={self.minimum_limit_v}\n "
-                f"W={self.minimum_limit_w}\n")
+        return (
+            f"X={self.minimum_limit_x}\n "
+            f"Y={self.minimum_limit_y}\n "
+            f"Z={self.minimum_limit_z}\n "
+            f"U={self.minimum_limit_u}\n "
+            f"V={self.minimum_limit_v}\n "
+            f"W={self.minimum_limit_w}\n"
+        )
 
     async def set_high_position_soft_limit(self, x, y, z, u, v, w):
         """Set higher position software limit."""
@@ -275,12 +310,14 @@ class MockServer:
 
     async def format_high_position_soft_limit(self):
         """Return formatted higher position software limit string."""
-        return (f"X={self.maximum_limit_x}\n "
-                f"Y={self.maximum_limit_y}\n "
-                f"Z={self.maximum_limit_z}\n "
-                f"U={self.maximum_limit_u}\n "
-                f"V={self.maximum_limit_v}\n "
-                f"W={self.maximum_limit_w}\n")
+        return (
+            f"X={self.maximum_limit_x}\n "
+            f"Y={self.maximum_limit_y}\n "
+            f"Z={self.maximum_limit_z}\n "
+            f"U={self.maximum_limit_u}\n "
+            f"V={self.maximum_limit_v}\n "
+            f"W={self.maximum_limit_w}\n"
+        )
 
     async def format_on_target(self):
         """Return formatted on target string.
@@ -296,12 +333,18 @@ class MockServer:
     async def format_offset(self, x, y, z, u, v, w):
         """Set offset for hexapod."""
         self.log.debug("Setting offset.")
-        await self.set_position(x=self.x+float(x), y=self.y+float(y), z=self.z+float(z),
-                                u=self.u+float(u), v=self.v+float(v), w=self.w+float(w))
+        await self.set_position(
+            x=self.x + float(x),
+            y=self.y + float(y),
+            z=self.z + float(z),
+            u=self.u + float(u),
+            v=self.v + float(v),
+            w=self.w + float(w),
+        )
 
     async def check_offset(self, x, y, z, u, v, w):
         """Check that the hexapod can move."""
-        return (f"X=1\n Y=1\n Z=1\n U=1\n V=1\n W=1\n")
+        return "X=1\n Y=1\n Z=1\n U=1\n V=1\n W=1\n"
 
     async def set_pivot_point(self, x, y, z):
         """Set the pivot point."""

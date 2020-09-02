@@ -1,6 +1,6 @@
 #!/usr/bin python
 # -*- coding: utf-8 -*-
-'''
+"""
 This file is part of ts_ATHexapod
 
 Developed for the LSST Telescope and Site Systems.
@@ -21,464 +21,241 @@ GNU General Public License for more details.
 
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
-'''
+"""
 # Too many lines in module pylint: disable=C0302
 import logging
 import enum
 
-__signature__ = 0x1d86c75890c9cfded5cd50105c096649
+__signature__ = 0x1D86C75890C9CFDED5CD50105C096649
 
 
 class PIError(enum.Enum):
     """Provide enum for PI Errors."""
+
     E_1_COM_ERROR = -1
-    """Error during com operation (could not be specified)"""
     E_2_SEND_ERROR = -2
-    """Error while sending data"""
     E_3_REC_ERROR = -3
-    """Error while receiving data"""
     E_4_NOT_CONNECTED_ERROR = -4
-    """Not connected (no port with given ID open)"""
     E_5_COM_BUFFER_OVERFLOW = -5
-    """Buffer overflow"""
     E_6_CONNECTION_FAILED = -6
-    """Error while opening port"""
     E_7_COM_TIMEOUT = -7
-    """Timeout error"""
     E_8_COM_MULTILINE_RESPONSE = -8
-    """There are more lines waiting in the buffer"""
     E_9_COM_INVALID_ID = -9
-    """There is no interface or DLL handle with the given ID"""
     E_10_COM_NOTIFY_EVENT_ERROR = -10
-    """Event/message for notification could not be opened"""
     E_11_COM_NOT_IMPLEMENTED = -11
-    """Function not supported by this inteface type"""
     E_12_COM_ECHO_ERROR = -12
-    """Error while sending "echoed" data"""
     E_13_COM_GPIB_EDVR = -13
-    """IEEE488: System error"""
     E_14_COM_GPIB_ECIC = -14
-    """IEEE488: Function requires GPIB board to be CIC"""
     E_15_COM_GPIB_ENOL = -15
-    """IEEE488: Write function detected no listeners"""
     E_16_COM_GPIB_EADR = -16
-    """IEEE488: Interface board not addressed correctly"""
     E_17_COM_GPIB_EARG = -17
-    """IEEE488: Invalid argument to function call"""
     E_18_COM_GPIB_ESAC = -18
-    """IEEE488: Function requires GPIB board to be SAC"""
     E_19_COM_GPIB_EABO = -19
-    """IEEE488: I/O operation aborted"""
     E_20_COM_GPIB_ENEB = -20
-    """IEEE488: Interface board not found"""
     E_21_COM_GPIB_EDMA = -21
-    """IEEE488: Error performing DMA"""
     E_22_COM_GPIB_EOIP = -22
-    """IEEE488: I/O operation started before previous operation was completed"""  # noqa: W505
     E_23_COM_GPIB_ECAP = -23
-    """IEEE488: NO capablity for intended operation"""
     E_24_COM_GPIB_EFSO = -24
-    """IEEE488: File system operation error"""
     E_25_COM_GPIB_EBUS = -25
-    """IEEE488: Command error during device call"""
     E_26_COM_GPIB_ESTB = -26
-    """IEEE488: Serial poll-status byte lost"""
     E_27_COM_GPIB_ESRQ = -27
-    """IEEE488: SRQ remains asserted"""
     E_28_COM_GPIB_ETAB = -28
-    """IEEE488: Return buffer full"""
     E_29_COM_GPIB_ELCK = -29
-    """IEEE488: Address or board locked"""
     E_30_COM_RS_INVALID_DATA_BITS = -30
-    """RS-232: 5 data bits with 2 stop bits is an invalid combination, as is 6, 7, or 8 data bits with 1.5 stop bits"""  # noqa: E501 W505
     E_31_COM_ERROR_RS_SETTINGS = -31
-    """RS-232: Error configuring the COM port"""
     E_32_COM_INTERNAL_RESOURCES_ERROR = -32
-    """Error dealing with internal system resources (events, threads, ...)"""
     E_33_COM_DLL_FUNC_ERROR = -33
-    """A DLL or one of the required functions could not be loaded"""
     E_34_COM_FTDIUSB_INVALID_HANDLE = -34
-    """FTDIUSB: invalid handle"""
     E_35_COM_FTDIUSB_DEVICE_NOT_FOUND = -35
-    """FTDIUSB: device not found"""
     E_36_COM_FTDIUSB_DEVICE_NOT_OPENED = -36
-    """FTDIUSB: device not opened"""
     E_37_COM_FTDIUSB_IO_ERROR = -37
-    """FTDIUSB: IO error"""
     E_38_COM_FTDIUSB_INSUFFICIENT_RESOURCES = -38
-    """FTDIUSB: insufficient resources"""
     E_39_COM_FTDIUSB_INVALID_PARAMETER = -39
-    """FTDIUSB: invalid parameter"""
     E_40_COM_FTDIUSB_INVALID_BAUD_RATE = -40
-    """FTDIUSB: invalid baud rate"""
     E_41_COM_FTDIUSB_DEVICE_NOT_OPENED_FOR_ERASE = -41
-    """FTDIUSB: device not opened for erase"""
     E_42_COM_FTDIUSB_DEVICE_NOT_OPENED_FOR_WRITE = -42
-    """FTDIUSB: device not opened for write"""
     E_43_COM_FTDIUSB_FAILED_TO_WRITE_DEVICE = -43
-    """FTDIUSB: failed to write device"""
     E_44_COM_FTDIUSB_EEPROM_READ_FAILED = -44
-    """FTDIUSB: EEPROM read failed"""
     E_45_COM_FTDIUSB_EEPROM_WRITE_FAILED = -45
-    """FTDIUSB: EEPROM write failed"""
     E_46_COM_FTDIUSB_EEPROM_ERASE_FAILED = -46
-    """FTDIUSB: EEPROM erase failed"""
     E_47_COM_FTDIUSB_EEPROM_NOT_PRESENT = -47
-    """FTDIUSB: EEPROM not present"""
     E_48_COM_FTDIUSB_EEPROM_NOT_PROGRAMMED = -48
-    """FTDIUSB: EEPROM not programmed"""
     E_49_COM_FTDIUSB_INVALID_ARGS = -49
-    """FTDIUSB: invalid arguments"""
     E_50_COM_FTDIUSB_NOT_SUPPORTED = -50
-    """FTDIUSB: not supported"""
     E_51_COM_FTDIUSB_OTHER_ERROR = -51
-    """FTDIUSB: other error"""
     E_52_COM_PORT_ALREADY_OPEN = -52
-    """Error while opening the COM port: was already open"""
     E_53_COM_PORT_CHECKSUM_ERROR = -53
-    """Checksum error in received data from COM port"""
     E_54_COM_SOCKET_NOT_READY = -54
-    """Socket not ready, you should call the function again"""
     E_55_COM_SOCKET_PORT_IN_USE = -55
-    """Port is used by another socket"""
     E_56_COM_SOCKET_NOT_CONNECTED = -56
-    """Socket not connected (or not valid)"""
     E_57_COM_SOCKET_TERMINATED = -57
-    """Connection terminated (by peer)"""
     E_58_COM_SOCKET_NO_RESPONSE = -58
-    """Can't connect to peer"""
     E_59_COM_SOCKET_INTERRUPTED = -59
-    """Operation was interrupted by nonblocked signal"""
     E_60_COM_PCI_INVALID_ID = -60
-    """No device with this ID is present"""
     E_61_COM_PCI_ACCESS_DENIED = -61
-    """Driver  could not be opened (on Vista: run as administrator!)"""
     E_62_COM_SOCKET_HOST_NOT_FOUND = -62
-    """Host not found"""
     E_63_COM_DEVICE_CONNECTED = -63
-    """Device already connected"""
     E_1001_PI_UNKNOWN_AXIS_IDENTIFIER = -1001
-    """Unknown axis identifier"""
     E_1002_PI_NR_NAV_OUT_OF_RANGE = -1002
-    """Number for NAV out of range--must be in [1,10000]"""
     E_1003_PI_INVALID_SGA = -1003
-    """Invalid value for SGA--must be one of 1, 10, 100, 1000"""
     E_1004_PI_UNEXPECTED_RESPONSE = -1004
-    """Controller sent unexpected response"""
     E_1005_PI_NO_MANUAL_PAD = -1005
-    """No manual control pad installed, calls to SMA and related commands are not allowed"""  # noqa: W505
     E_1006_PI_INVALID_MANUAL_PAD_KNOB = -1006
-    """Invalid number for manual control pad knob"""
     E_1007_PI_INVALID_MANUAL_PAD_AXIS = -1007
-    """Axis not currently controlled by a manual control pad"""
     E_1008_PI_CONTROLLER_BUSY = -1008
-    """Controller is busy with some lengthy operation (e.g., reference move, fast scan algorithm)"""  # noqa: W505, E501
     E_1009_PI_THREAD_ERROR = -1009
-    """Internal error--could not start thread"""
     E_1010_PI_IN_MACRO_MODE = -1010
-    """Controller is (already) in macro mode--command not valid in macro mode"""  # noqa: W505
     E_1011_PI_NOT_IN_MACRO_MODE = -1011
-    """Controller is (already) in macro mode--command not valid in macro mode"""  # noqa: W505
     E_1012_PI_MACRO_FILE_ERROR = -1012
-    """Could not open file to write or read macro"""
     E_1013_PI_NO_MACRO_OR_EMPTY = -1013
-    """No macro with given name on controller, or macro is empty"""
     E_1014_PI_MACRO_EDITOR_ERROR = -1014
-    """Internal error in macro editor"""
     E_1015_PI_INVALID_ARGUMENT = -1015
-    """One or more arguments given to function is invalid (empty string, index out of range)"""  # noqa: W505
     E_1016_PI_AXIS_ALREADY_EXISTS = -1016
-    """Axis identifier is already in use by a connected stage"""
     E_1017_PI_INVALID_AXIS_IDENTIFIER = -1017
-    """Invalid axis identifier"""
     E_1018_PI_COM_ARRAY_ERROR = -1018
-    """Could not access array data in COM server"""
     E_1019_PI_COM_ARRAY_RANGE_ERROR = -1019
-    """Range of array does not fit the number of parameters"""
     E_1020_PI_INVALID_SPA_CMD_ID = -1020
-    """Invalid parameter ID given to SPA or SPA?"""
     E_1021_PI_NR_AVG_OUT_OF_RANGE = -1021
-    """Number for AVG out of range--must be>0"""
     E_1022_PI_WAV_SAMPLES_OUT_OF_RANGE = -1022
-    """Incorrect number of samples given to WAV"""
     E_1023_PI_WAV_FAILED = -1023
-    """Generation of wave failed"""
     E_1024_PI_MOTION_ERROR = -1024
-    """Motion error: position error too large, servo is switched off automatically"""  # noqa: W505
     E_1025_PI_RUNNING_MACRO = -1025
-    """Controller is (already) running a macro"""
     E_1026_PI_PZT_CONFIG_FAILED = -1026
-    """Configuration of PZT stage or amplifier failed"""
     E_1027_PI_PZT_CONFIG_INVALID_PARAMS = -1027
-    """Current settings are not valid for desired configuration"""
     E_1028_PI_UNKNOWN_CHANNEL_IDENTIFIER = -1028
-    """Unknown channel identifier"""
     E_1029_PI_WAVE_PARAM_FILE_ERROR = -1029
-    """Error while reading/writing wave generator parameter file"""
     E_1030_PI_UNKNOWN_WAVE_SET = -1030
-    """Could not find description of wave form. Maybe WG.ini is missing?"""
     E_1031_PI_WAVE_EDITOR_FUNC_NOT_LOADED = -1031
-    """The WGWaveEditor DLL function was not found at startup"""
     E_1032_PI_USER_CANCELLED = -1032
-    """The user cancelled a dialog"""
     E_1033_PI_C844_ERROR = -1033
-    """Error from C-844 controller"""
     E_1034_PI_DLL_NOT_LOADED = -1034
-    """DLL necessary to call function not loaded, or function not found in DLL"""  # noqa: W505
     E_1035_PI_PARAMETER_FILE_PROTECTED = -1035
-    """The open parameter file is protected and cannot be edited"""
     E_1036_PI_NO_PARAMETER_FILE_OPENED = -1036
-    """There is no parameter file open"""
     E_1037_PI_STAGE_DOES_NOT_EXIST = -1037
-    """Selected stage does not exist"""
     E_1038_PI_PARAMETER_FILE_ALREADY_OPENED = -1038
-    """There is already a parameter file open. Close it before opening a new file"""  # noqa: W505
     E_1039_PI_PARAMETER_FILE_OPEN_ERROR = -1039
-    """Could not open parameter file"""
     E_1040_PI_INVALID_CONTROLLER_VERSION = -1040
-    """The version of the connected controller is invalid"""
     E_1041_PI_PARAM_SET_ERROR = -1041
-    """Parameter could not be set with SPA--parameter not defined for this controller!"""  # noqa: W505
     E_1042_PI_NUMBER_OF_POSSIBLE_WAVES_EXCEEDED = -1042
-    """The maximum number of wave definitions has been exceeded"""
     E_1043_PI_NUMBER_OF_POSSIBLE_GENERATORS_EXCEEDED = -1043
-    """The maximum number of wave generators has been exceeded"""
     E_1044_PI_NO_WAVE_FOR_AXIS_DEFINED = -1044
-    """No wave defined for specified axis"""
     E_1045_PI_CANT_STOP_OR_START_WAV = -1045
-    """Wave output to axis already stopped/started"""
     E_1046_PI_REFERENCE_ERROR = -1046
-    """Not all axes could be referenced"""
     E_1047_PI_REQUIRED_WAVE_NOT_FOUND = -1047
-    """Could not find parameter set required by frequency relation"""
     E_1048_PI_INVALID_SPP_CMD_ID = -1048
-    """Command ID given to SPP or SPP? is not valid"""
     E_1049_PI_STAGE_NAME_ISNT_UNIQUE = -1049
-    """A stage name given to CST is not unique"""
     E_1050_PI_FILE_TRANSFER_BEGIN_MISSING = -1050
-    """A uuencoded file transferred did not start with "begin" followed by the proper filename"""  # noqa: W505, E501
     E_1051_PI_FILE_TRANSFER_ERROR_TEMP_FILE = -1051
-    """Could not create/read file on host PC"""
     E_1052_PI_FILE_TRANSFER_CRC_ERROR = -1052
-    """Checksum error when transferring a file to/from the controller"""
     E_1053_PI_COULDNT_FIND_PISTAGES_DAT = -1053
-    """The PiStages.dat database could not be found. This file is required to connect a stage with the CST command"""  # noqa: E501
     E_1054_PI_NO_WAVE_RUNNING = -1054
-    """No wave being output to specified axis"""
     E_1055_PI_INVALID_PASSWORD = -1055
-    """Invalid password"""
     E_1056_PI_OPM_COM_ERROR = -1056
-    """Error during communication with OPM(Optical Power Meter), maybe no OPM connected"""  # noqa: W505
     E_1057_PI_WAVE_EDITOR_WRONG_PARAMNUM = -1057
-    """WaveEditor: Error during wave creation, incorrect number of parameters"""  # noqa: W505
     E_1058_PI_WAVE_EDITOR_FREQUENCY_OUT_OF_RANGE = -1058
-    """WaveEditor: Frequency out of range"""
     E_1059_PI_WAVE_EDITOR_WRONG_IP_VALUE = -1059
-    """WaveEditor: Error during wave creation, incorrect index for integer parameter"""  # noqa: W505
     E_1060_PI_WAVE_EDITOR_WRONG_DP_VALUE = -1060
-    """WaveEditor: Error during wave creation, incorrect index for floating point parameter"""  # noqa: W505
     E_1061_PI_WAVE_EDITOR_WRONG_ITEM_VALUE = -1061
-    """WaveEditor: Error during wave creation, could not calculate value"""
     E_1062_PI_WAVE_EDITOR_MISSING_GRAPH_COMPONENT = -1062
-    """WaveEditor: Graph display component not installed"""
     E_1063_PI_EXT_PROFILE_UNALLOWED_CMD = -1063
-    """User Profile Mode: Command is not allowed, check for required preparatory commands"""  # noqa: W505
     E_1064_PI_EXT_PROFILE_EXPECTING_MOTION_ERROR = -1064
-    """User Profile Mode: First target position in User Profile is too far from current position"""  # noqa: W505, E501
     E_1065_PI_EXT_PROFILE_ACTIVE = -1065
-    """Controller is (already) in User Profile Mode"""
     E_1066_PI_EXT_PROFILE_INDEX_OUT_OF_RANGE = -1066
-    """User Profile Mode: Block or Data Set Index out of allowed range"""
     E_1067_PI_PROFILE_GENERATOR_NO_PROFILE = -1067
-    """ProfileGenerator: No profile has been created yet"""
     E_1068_PI_PROFILE_GENERATOR_OUT_OF_LIMITS = -1068
-    """ProfileGenerator: Generated profile exceeds limits of one or both axes"""  # noqa: W505
     E_1069_PI_PROFILE_GENERATOR_UNKNOWN_PARAMETER = -1069
-    """ProfileGenerator: Unknown parameter ID in Set/Get Parameter command"""
     E_1070_PI_PROFILE_GENERATOR_PAR_OUT_OF_RANGE = -1070
-    """ProfileGenerator: Parameter out of allowed range"""
     E_1071_PI_EXT_PROFILE_OUT_OF_MEMORY = -1071
-    """User Profile Mode: Out of memory"""
     E_1072_PI_EXT_PROFILE_WRONG_CLUSTER = -1072
-    """User Profile Mode: Cluster is not assigned to this axis"""
     E_1073_PI_EXT_PROFILE_UNKNOWN_CLUSTER_IDENTIFIER = -1073
-    """Unknown cluster identifier"""
     E_1074_PI_INVALID_DEVICE_DRIVER_VERSION = -1074
-    """The installed device driver doesn't match the required version. Please see the documentation to determine the required device driver version."""  # noqa: E501
     E_1075_PI_INVALID_LIBRARY_VERSION = -1075
-    """The library used doesn't match the required version. Please see the documentation to determine the required library version."""  # noqa: E501
     E_1076_PI_INTERFACE_LOCKED = -1076
-    """The interface is currently not locked by another function. Please try again later."""  # noqa: W505
     E_1077_PI_PARAM_DAT_FILE_INVALID_VERSION = -1077
-    """Version of parameter DAT file does not match the required version. Current files are available at www.pi.ws."""  # noqa: E501
     E_1078_PI_CANNOT_WRITE_TO_PARAM_DAT_FILE = -1078
-    """Cannot write to parameter DAT file to store user defined stage type"""
     E_1079_PI_CANNOT_CREATE_PARAM_DAT_FILE = -1079
-    """Cannot create parameter DAT file to store user defined stage type"""
     E_1080_PI_PARAM_DAT_FILE_INVALID_REVISION = -1080
-    """Parameter DAT file does not have correct revision"""
     E_1081_PI_USERSTAGES_DAT_FILE_INVALID_REVISION = -1081
-    """User stages DAT file does not have correct revision"""
     E_1082_PI_SOFTWARE_TIMEOUT = -1082
-    """Timeout Error. Some lengthy operation did not finish within expected time."""  # noqa: W505
     E_1083_PI_WRONG_DATA_TYPE = -1083
-    """A function argument has an expected data type."""
     E_1084_PI_DIFFERENT_ARRAY_SIZES = -1084
-    """Length of data arrays is different."""
     E_1085_PI_PARAM_NOT_FOUND_IN_PARAM_DAT_FILE = -1085
-    """Parameter value not found in parameter DAT file"""
     E_1086_PI_MACRO_RECORDING_NOT_ALLOWED_IN_THIS_MODE = -1086
-    """Macro recording is not allowed in this mode of operation"""
     E_1087_PI_USER_CANCELLED_COMMAND = -1087
-    """Command cancelled by user input"""
     E_1088_PI_TOO_FEW_GCS_DATA = -1088
-    """Controller sent too few GCS data sets"""
     E_1089_PI_TOO_MANY_GCS_DATA = -1089
-    """Controller sent too many GCS data sets"""
     E_1090_PI_GCS_DATA_READ_ERROR = -1090
-    """Communication error while reading GCS data"""
     E_1091_PI_WRONG_NUMBER_OF_INPUT_ARGUMENTS = -1091
-    """Wrong number of input arguments"""
     E_1092_PI_FAILED_TO_CHANGE_CCL_LEVEL = -1092
-    """Change of command level has failed"""
     E_1093_PI_FAILED_TO_SWITCH_OFF_SERVO = -1093
-    """Switching off the servo mode has failed"""
     E_1094_PI_FAILED_TO_SET_SINGLE_PARAMETER_WHILE_PERFORMING_CST = -1094
-    """A parameter could not be set while performing CST: CST was not performed (parameters remain unchanged)"""  # noqa: E501
     E_1095_PI_ERROR_CONTROLLER_REBOOT = -1095
-    """Connection could not be reestablished after reboot"""
     E_1096_PI_ERROR_AT_QHPA = -1096
-    """Sending HPA? or receiving the response has failed."""
     E_1097_PI_QHPA_NONCOMPLIANT_WITH_GCS = -1097
-    """HPA? response does not comply with GCS2 syntax."""
     E_1098_PI_FAILED_TO_READ_QSPA = -1098
-    """Response to SPA? could not be received."""
     E_1099_PI_PAM_FILE_WRONG_VERSION = -1099
-    """Version of PAM file cannot be handled (too old or too new)"""
     E_1100_PI_PAM_FILE_INVALID_FORMAT = -1100
-    """PAM file does not contain required data in PAM file format"""
     E_1101_PI_INCOMPLETE_INFORMATION = -1101
-    """Information does not contain all required data"""
     E_1102_PI_NO_VALUE_AVAILABLE = -1102
-    """No value for parameter available"""
     E_1103_PI_NO_PAM_FILE_OPEN = -1103
-    """No PAM file is open"""
     E_1104_PI_INVALID_VALUE = -1104
-    """Invalid value"""
     E_1105_PI_UNKNOWN_PARAMETER = -1105
-    """Unknown parameter"""
     E_1106_PI_RESPONSE_TO_QSEP_FAILED = -1106
-    """Response to SEP? could not be received."""
     E_1107_PI_RESPONSE_TO_QSPA_FAILED = -1107
-    """Response to SPA? could not be received."""
     E_1108_PI_ERROR_IN_CST_VALIDATION = -1108
-    """Error while performing CST: One or more parameters were not set correctly."""  # noqa: W505
     E_1109_PI_ERROR_PAM_FILE_HAS_DUPLICATE_ENTRY_WITH_DIFFERENT_VALUES = -1109
-    """PAM file has duplicate entry with different values."""
     E_1110_PI_ERROR_FILE_NO_SIGNATURE = -1110
-    """File has not signature"""
     E_1111_PI_ERROR_FILE_INVALID_SIGNATURE = -1111
-    """File has invalid signature"""
     E_10000_PI_PARAMETER_DB_INVALID_STAGE_TYPE_FORMAT = -10000
-    """PI stage database: String containing stage type and description has invalid format."""  # noqa: W505
     E_10001_PI_PARAMETER_DB_SYSTEM_NOT_AVAILABLE = -10001
-    """PI stage database: Database does not contain the selected stage type for the connected controller."""  # noqa: W505, E501
     E_10002_PI_PARAMETER_DB_FAILED_TO_ESTABLISH_CONNECTION = -10002
-    """PI stage database: Establishing the connection has failed."""
     E_10003_PI_PARAMETER_DB_COMMUNICATION_ERROR = -10003
-    """PI stage database: Communication was interrupted (e.g. because database was deleted)."""  # noqa: W505
     E_10004_PI_PARAMETER_DB_ERROR_WHILE_QUERYING_PARAMETERS = -10004
-    """PI stage database: Querying data failed."""
     E_10005_PI_PARAMETER_DB_SYSTEM_ALREADY_EXISTS = -10005
-    """PI stage database: System already exists. Rename stage and try again."""
     E_10006_PI_PARAMETER_DB_QHPA_CONTANS_UNKNOWN_PAM_IDS = -10006
-    """PI stage database: Response to HPA? contains unknown parameter IDs."""
     E_10007_PI_PARAMETER_DB_AND_QHPA_ARE_INCONSISTENT = -10007
-    """PI stage database: Inconsistency between database and response to HPA?"""  # noqa: W505
     E_10008_PI_PARAMETER_DB_SYSTEM_COULD_NOT_BE_ADDED = -10008
-    """PI stage database: Stage has not been added."""
     E_10009_PI_PARAMETER_DB_SYSTEM_COULD_NOT_BE_REMOVED = -10009
-    """PI stage database: Stage has not been removed."""
     E_10010_PI_PARAMETER_DB_CONTROLLER_DB_PARAMETERS_MISMATCH = -10010
-    """Controller does not support all stage parameters stored in PI stage database. NO parameters were set."""  # noqa: E501
     E_10011_PI_PARAMETER_DB_DATABASE_IS_OUTDATED = -10011
-    """The version of PISTAGEs3.DB stage database is out of date. Please update via PIUpdateFinder. No parameters were set."""  # noqa: E501
     E_10012_PI_PARAMETER_DB_AND_HPA_MISMATCH_STRICT = -10012
-    """Mismatch between number of parameters present in stage database and available in controller interface. NO parameters were set."""  # noqa: E501
     E_10013_PI_PARAMETER_DB_AND_HPA_MISMATCH_LOOSE = -10013
-    """Mismatch between number of parameters present in stage database and available in controller interface. Some parameters were ignored."""  # noqa: E501
     E_10014_PI_PARAMETER_DB_FAILED_TO_SET_PARAMETERS_CORRECTLY = -10014
-    """One or more parameters could not be set correctly on the controller."""
     E_10015_PI_PARAMETER_DB_MISSING_PARAMETER_DEFINITIONS_IN_DATABASE = -10015
-    """One or more parameter definitions are not present in stage database. Please update PISTAGES3.DB via PIUpdateFinder. Missing parameters were ignored."""  # noqa: E501
     E0_PI_CNTR_NO_ERROR = 0
-    """No error"""
     E1_PI_CNTR_PARAM_SYNTAX = 1
-    """Parameter syntax error"""
     E2_PI_CNTR_UNKNOWN_COMMAND = 2
-    """Unknown command"""
     E3_PI_CNTR_COMMAND_TOO_LONG = 3
-    """Command length out of limits or command buffer overrun"""
     E4_PI_CNTR_SCAN_ERROR = 4
-    """Error while scanning"""
     E5_PI_CNTR_MOVE_WITHOUT_REF_OR_NO_SERVO = 5
-    """Unallowable move attempted on unreferenced axis, or move attempted with servo off"""  # noqa: W505
     E6_PI_CNTR_INVALID_SGA_PARAM = 6
-    """Parameter for SGA not valid"""
     E7_PI_CNTR_POS_OUT_OF_LIMITS = 7
-    """Position out of limits"""
     E8_PI_CNTR_VEL_OUT_OF_LIMITS = 8
-    """Velocity out of limits"""
     E9_PI_CNTR_SET_PIVOT_NOT_POSSIBLE = 9
-    """Attempt to set pivot point while U,V and W not all 0"""
     E10_PI_CNTR_STOP = 10
-    """Controller was stopped by command"""
     E11_PI_CNTR_SST_OR_SCAN_RANGE = 11
-    """Parameter for SST or for one of the embedded scan algorithms out of range"""  # noqa: W505
     E12_PI_CNTR_INVALID_SCAN_AXES = 12
-    """Invalid axis combination for fast scan"""
     E13_PI_CNTR_INVALID_NAV_PARAM = 13
-    """Parameter for NAV out of range"""
     E14_PI_CNTR_INVALID_ANALOG_INPUT = 14
-    """Invalid analog channel"""
     E15_PI_CNTR_INVALID_AXIS_IDENTIFIER = 15
-    """Invalid axis identifier"""
     E16_PI_CNTR_INVALID_STAGE_NAME = 16
-    """Unknown stage name"""
     E17_PI_CNTR_PARAM_OUT_OF_RANGE = 17
-    """Parameter out of range"""
     E18_PI_CNTR_INVALID_MACRO_NAME = 18
-    """Invalid macro name"""
     E19_PI_CNTR_MACRO_RECORD = 19
-    """Error while recording macro"""
     E20_PI_CNTR_MACRO_NOT_FOUND = 20
-    """Macro not found"""
     E21_PI_CNTR_AXIS_HAS_NO_BRAKE = 21
-    """Axis has no brake"""
     E22_PI_CNTR_DOUBLE_AXIS = 22
-    """Axis identifier specified more than once"""
     E23_PI_CNTR_ILLEGAL_AXIS = 23
-    """Illegal axis"""
     E24_PI_CNTR_PARAM_NR = 24
-    """Incorrect number of parameters"""
     E25_PI_CNTR_INVALID_REAL_NR = 25
-    """Invalid floating point number"""
     E26_PI_CNTR_MISSING_PARAM = 26
-    """Parameter missing"""
     E27_PI_CNTR_SOFT_LIMIT_OUT_OF_RANGE = 27
-    """Soft limit out of range"""
     E28_PI_CNTR_NO_MANUAL_PAD = 28
-    """No manual pad found"""
     E29_PI_CNTR_NO_JUMP = 29
-    """No more step-response values"""
     E30_PI_CNTR_INVALID_JUMP = 30
-    """No step-response values recorded"""
     E31_PI_CNTR_AXIS_HAS_NO_REFERENCE = 31
-    """Axis has no reference sensor"""
     E32_PI_CNTR_STAGE_HAS_NO_LIM_SWITCH = 32
-    """Axis has no limit switch"""
     E33_PI_CNTR_NO_RELAY_CARD = 33
-    """No relay card installed"""
     E34_PI_CNTR_CMD_NOT_ALLOWED_FOR_STAGE = 34
     E35_PI_CNTR_NO_DIGITAL_INPUT = 35
     E36_PI_CNTR_NO_DIGITAL_OUTPUT = 36
@@ -1637,7 +1414,7 @@ def translate_error(value):
     @return Error message as string.
     """
     try:
-        msg = '%s (%d)' % (__ERRMSG[value], value)
+        msg = "%s (%d)" % (__ERRMSG[value], value)
     except KeyError:
         msg = str(value)
     return msg
@@ -1646,13 +1423,13 @@ def translate_error(value):
 class GCSError(Exception):
     """GCSError exception."""
 
-    def __init__(self, value, message=''):
+    def __init__(self, value, message=""):
         Exception.__init__(self)
         self.val = value
         self.msg = translate_error(value)
         if message:
-            self.msg += ': %r' % message
-        logging.debug('GCSError: %s', self.msg)
+            self.msg += ": %r" % message
+        logging.debug("GCSError: %s", self.msg)
 
     def __str__(self):
         """Handle string representation."""

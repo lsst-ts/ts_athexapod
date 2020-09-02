@@ -7,7 +7,8 @@ pipeline {
         // Use the label to assign the node to run the test.
         // It is recommended by SQUARE to not add the label
         docker {
-            image 'lsstts/develop-env:sal_v4.0.0_salobj_v5.0.0_b27'
+            alwaysPull true
+            image 'lsstts/develop-env:develop'
             args "-u root --entrypoint=''"
         }
     }
@@ -21,18 +22,33 @@ pipeline {
         XML_REPORT="jenkinsReport/report.xml"
         // Module name used in the pytest coverage analysis
         MODULE_NAME="lsst.ts.ATHexapod"
+        user_ci = credentials('lsst-io')
+        LTD_USERNAME="${user_ci_USR}"
+        LTD_PASSWORD="${user_ci_PSW}"
+        work_branches = "${GIT_BRANCH} ${CHANGE_BRANCH} develop"
     }
 
     stages {
-        stage ('Install Requirements') {
+        stage ('Install Requirements And Update Branches') {
             steps {
                 // When using the docker container, we need to change
                 // the HOME path to WORKSPACE to have the authority
                 // to install the packages.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup.sh
-                        cd /home/saluser/repos/ts_idl && git fetch && git checkout v1.1.0 && cd /home/saluser/repos/ts_config_attcs && git fetch && git checkout v0.2.0 && cd /home/saluser/repos/ts_salobj && git fetch && git checkout v5.2.0
+                        source /home/saluser/.setup_dev.sh || echo loading env failed. Continuing...
+                        cd /home/saluser/repos/ts_xml
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_salobj
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_sal
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
+                        cd /home/saluser/repos/ts_idl
+                        /home/saluser/.checkout_repo.sh ${work_branches}
+                        git pull
                         make_idl_files.py ATHexapod
                     """
                 }
@@ -48,9 +64,22 @@ pipeline {
                 // Pytest needs to export the junit report.
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup.sh
+                        source /home/saluser/.setup_dev.sh || echo loading env failed. Continuing...
                         setup -k -r .
                         pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT}
+                    """
+                }
+            }
+        }
+        stage('Build and Upload Documentation') {
+            steps {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
+                    sh """
+                    source /home/saluser/.setup_dev.sh || echo loading env failed. Continuing...
+                    pip install .
+                    pip install -r doc/requirements.txt
+                    package-docs build
+                    ltd upload --product ts-athexapod --git-ref ${GIT_BRANCH} --dir doc/_build/html
                     """
                 }
             }

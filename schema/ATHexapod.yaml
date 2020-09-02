@@ -49,7 +49,12 @@ properties:
     type: boolean
     default: true
   host:
-    description: The ip address or host name of the hexapod controller or simulator.
+    description: >-
+      The ip address or host name of the hexapod controller or simulator.
+      It is also possible to use an environment variable as the host IP.
+      To enable this mode set host to start with "ENV." followed by the environment
+      variable name. For instance, to use ATHEXAPOD_HOST environment variable,
+      the configuration must be "ENV.ATHEXAPOD_HOST".
     type: string
     default: "127.0.0.1"
   port:
