@@ -5,6 +5,8 @@ config.log
 *.pyc
 ospl-info.log
 ospl-error.log
+.eggs
+*.egg-info
 
 # Built by sconsUtils
 bin/
