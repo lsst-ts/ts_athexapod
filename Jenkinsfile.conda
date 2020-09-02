@@ -1,8 +1,9 @@
 pipeline {
-    agent{ 
+    agent{
         docker {
             image 'lsstts/conda_package_builder:latest'
             alwaysPull 'true'
+            label 'CSC_Conda_Node'
             args "--env TS_CONFIG_ATTCS_DIR=/home/saluser/ts_config_attcs --env LSST_DDS_DOMAIN=citest -u root --entrypoint=''"
         }
     }
@@ -29,7 +30,7 @@ pipeline {
             steps {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                    cd ${HOME}/conda 
+                    cd ${HOME}/conda
                     source /home/saluser/miniconda3/bin/activate
                     conda config --add channels conda-forge
                     conda config --add channels lsstts
@@ -59,9 +60,10 @@ pipeline {
             }
         }
 
-        stage("Push Conda Release package") {
+        stage("Push Conda Release Candidate package") {
             when {
                 buildingTag()
+                tag pattern: "^v\\d\\.\\d\\.\\d-rc\\.\\d\$", comparator: "REGEXP"
             }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'CondaForge', passwordVariable: 'anaconda_pass', usernameVariable: 'anaconda_user')]) {
@@ -69,7 +71,27 @@ pipeline {
                         sh """
                         source /home/saluser/miniconda3/bin/activate
                         anaconda login --user ${anaconda_user} --password ${anaconda_pass}
-                        anaconda upload -u lsstts --force ~/miniconda3/conda-bld/linux-64/ts-${package_name}*.tar.bz2
+                        anaconda upload -u lsstts --label rc --force /home/saluser/miniconda3/conda-bld/linux-64/ts-${package_name}*.tar.bz2
+                        """
+                    }
+                }
+            }
+        }
+
+        stage("Push Conda Release package") {
+            when {
+                buildingTag()
+                not {
+                    tag pattern: "^v\\d\\.\\d\\.\\d-rc\\.\\d\$", comparator: "REGEXP"
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'CondaForge', passwordVariable: 'anaconda_pass', usernameVariable: 'anaconda_user')]) {
+                    withEnv(["HOME=${env.WORKSPACE}"]) {
+                        sh """
+                        source /home/saluser/miniconda3/bin/activate
+                        anaconda login --user ${anaconda_user} --password ${anaconda_pass}
+                        anaconda upload -u lsstts --force /home/saluser/miniconda3/conda-bld/linux-64/ts-${package_name}*.tar.bz2
                         """
                     }
                 }
