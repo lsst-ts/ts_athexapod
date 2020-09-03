@@ -21,8 +21,8 @@ GNU General Public License for more details.
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 '''
-
+import asyncio
 
 from lsst.ts.ATHexapod.csc import ATHexapodCSC
 
-ATHexapodCSC.main(index=None)
+asyncio.run(ATHexapodCSC.amain(index=None))
