@@ -2,6 +2,16 @@
 Version History
 ===============
 
+v0.6.0
+------
+* Added compatibility with ts_salobj v6
+
+v0.5.0
+------
+* Jenkinsfile updates
+* Expand and modernize the documentation
+* Expand the unit tests
+
 v0.4.1
 ------
 * Added Jenkinsfile for conda recipe
