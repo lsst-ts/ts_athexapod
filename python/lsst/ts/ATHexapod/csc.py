@@ -67,6 +67,8 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         The task that handles telemetry.
     """
 
+    valid_simulation_modes = [0]
+
     def __init__(
         self, config_dir=None, initial_state=salobj.State.STANDBY, simulation_mode=0
     ):
