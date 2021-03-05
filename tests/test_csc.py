@@ -39,7 +39,7 @@ TEST_CONFIG_DIR = pathlib.Path(__file__).parents[1].joinpath("tests", "data", "c
 
 class Harness:
     def __init__(self, initial_state, config_dir=None):
-        salobj.test_utils.set_random_lsst_dds_domain()
+        salobj.set_random_lsst_dds_domain()
         self.csc = ATHexapod.ATHexapodCSC(
             initial_state=initial_state, config_dir=config_dir
         )
