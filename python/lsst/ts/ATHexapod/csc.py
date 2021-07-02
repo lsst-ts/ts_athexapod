@@ -25,7 +25,6 @@ __all__ = ["ATHexapodCSC"]
 
 import os
 import asyncio
-import pathlib
 import traceback
 
 from lsst.ts import salobj
@@ -33,6 +32,8 @@ from lsst.ts.idl.enums import ATHexapod
 
 from .controller import ATHexapodController
 from .gcserror import translate_error
+from .version import __version__
+from .config_schema import CONFIG_SCHEMA
 
 CONNECTION_FAILED = 100
 TEL_LOOP_CLOSED = 101
@@ -68,17 +69,11 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
     """
 
     valid_simulation_modes = [0]
+    version = __version__
 
     def __init__(
         self, config_dir=None, initial_state=salobj.State.STANDBY, simulation_mode=0
     ):
-
-        schema_path = (
-            pathlib.Path(__file__)
-            .resolve()
-            .parents[4]
-            .joinpath("schema", "ATHexapod.yaml")
-        )
 
         super().__init__(
             name="ATHexapod",
@@ -86,7 +81,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             config_dir=config_dir,
             initial_state=initial_state,
             simulation_mode=simulation_mode,
-            schema_path=schema_path,
+            config_schema=CONFIG_SCHEMA,
         )
 
         self._detailed_state = ATHexapod.DetailedState.NOTINMOTION
@@ -206,7 +201,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         )
 
     async def end_start(self, data):
-        """ Execute after state transition from STANDBY to DISABLE.
+        """Execute after state transition from STANDBY to DISABLE.
 
         It will attempt to connect to the hexapod controller and start the
         telemetry loop. Transition to `FAULT` if it fails.
@@ -229,7 +224,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         await super().end_start(data)
 
     async def end_standby(self, data):
-        """ Executes after transition from DISABLE to STANDBY.
+        """Executes after transition from DISABLE to STANDBY.
 
         It will stop the telemetry loop and disconnect from the hexapod
         controller.
@@ -248,7 +243,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         await super().end_standby(data)
 
     async def end_enable(self, data):
-        """ Executed after state is enabled.
+        """Executed after state is enabled.
 
         This may cause the hexapod to move.
 
@@ -332,7 +327,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
     async def set_limits(
         self, xy_max, limit_z_min, limit_z_max, limit_uv_max, limit_w_min, limit_w_max
     ):
-        """ Set limits and publish events.
+        """Set limits and publish events.
 
         Parameters
         ----------
@@ -452,7 +447,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         )
         self.detailed_state = ATHexapod.DetailedState.INMOTION
         await self.controller.offset(data.x, data.y, data.z, data.u, data.v, data.w)
-        asyncio.wait_for(self.wait_movement_done(), self.config.movement_timeout)
+        await asyncio.wait_for(self.wait_movement_done(), self.config.movement_timeout)
         self.evt_inPosition.set_put(inPosition=True, force_output=True)
         self.detailed_state = ATHexapod.DetailedState.NOTINMOTION
         current_position = await self.controller.real_position()
@@ -610,16 +605,14 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             )
 
     async def is_referenced(self):
-        """Checks if Hexapod is referenced.
-        """
+        """Checks if Hexapod is referenced."""
 
         ref = await self.controller.referencing_result()
 
         return all(ref)
 
     async def wait_movement_done(self):
-        """Wait for the Hexapod movement to be done.
-        """
+        """Wait for the Hexapod movement to be done."""
         axis = "XYZUVW"
 
         while True:
@@ -643,3 +636,9 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
                 self.log.exception(e)
 
             await asyncio.sleep(self.heartbeat_interval)
+
+    async def close_tasks(self):
+        await super().close_tasks()
+        await self.close_telemetry_task()
+        if self.controller.is_connected:
+            await self.controller.disconnect()
