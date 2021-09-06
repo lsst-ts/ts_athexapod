@@ -32,7 +32,7 @@ from lsst.ts.idl.enums import ATHexapod
 
 from .controller import ATHexapodController
 from .gcserror import translate_error
-from .version import __version__
+from . import __version__
 from .config_schema import CONFIG_SCHEMA
 
 CONNECTION_FAILED = 100
