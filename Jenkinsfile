@@ -34,21 +34,21 @@ pipeline {
                 // When using the docker container, we need to change
                 // the HOME path to WORKSPACE to have the authority
                 // to install the packages.
-                withEnv(["HOME=${env.WORKSPACE}"]) {
+                withEnv(["WHOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup_dev.sh || echo loading env failed. Continuing...
+                        source /home/saluser/.setup.sh || echo loading env failed. Continuing...
                         cd /home/saluser/repos/ts_xml
                         /home/saluser/.checkout_repo.sh ${work_branches}
-                        git pull
+                        git pull || echo
                         cd /home/saluser/repos/ts_salobj
                         /home/saluser/.checkout_repo.sh ${work_branches}
-                        git pull
+                        git pull || echo
                         cd /home/saluser/repos/ts_sal
                         /home/saluser/.checkout_repo.sh ${work_branches}
-                        git pull
+                        git pull || echo
                         cd /home/saluser/repos/ts_idl
                         /home/saluser/.checkout_repo.sh ${work_branches}
-                        git pull
+                        git pull || echo
                         make_idl_files.py ATHexapod
                     """
                 }
@@ -62,10 +62,11 @@ pipeline {
                 // 'PATH' can only be updated in a single shell block.
                 // We can not update PATH in 'environment' block.
                 // Pytest needs to export the junit report.
-                withEnv(["HOME=${env.WORKSPACE}"]) {
+                withEnv(["WHOME=${env.WORKSPACE}"]) {
                     sh """
-                        source /home/saluser/.setup_dev.sh || echo loading env failed. Continuing...
+                        source /home/saluser/.setup.sh || echo loading env failed. Continuing...
                         setup -k -r .
+                        scons
                         pytest --cov-report html --cov=${env.MODULE_NAME} --junitxml=${env.XML_REPORT}
                     """
                 }
@@ -73,10 +74,10 @@ pipeline {
         }
         stage('Build and Upload Documentation') {
             steps {
-                withEnv(["HOME=${env.WORKSPACE}"]) {
+                withEnv(["WHOME=${env.WORKSPACE}"]) {
                     sh """
-                    source /home/saluser/.setup_dev.sh || echo loading env failed. Continuing...
-                    pip install .
+                    source /home/saluser/.setup.sh || echo loading env failed. Continuing...
+                    setup -kr .
                     pip install -r doc/requirements.txt
                     package-docs build
                     ltd upload --product ts-athexapod --git-ref ${GIT_BRANCH} --dir doc/_build/html

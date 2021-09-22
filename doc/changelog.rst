@@ -2,6 +2,17 @@
 Version History
 ===============
 
+v0.6.2
+======
+* Updated unit tests to use salobj.CscBaseTestCase
+* Added pytest-black
+* Updated schema to current format
+* Fixed missing await in ApplyPositionLimits
+* Removed docker folder and Jenkinsfile.deploy that were deprecated by the cycle build system.
+* Removed Travis CI file
+* Rename bin script to run_athexapod.py
+* Added missing softwareVersions field
+
 v0.6.1
 ======
 * Changed Jenkinsfile.conda to use Jenkins Shared Library

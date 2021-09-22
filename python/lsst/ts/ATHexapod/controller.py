@@ -1,7 +1,7 @@
 """
 This file is part of ts_ATHexapod
 
-Developed for the LSST Telescope and Site Systems.
+Developed for the Vera C. Rubin Observatory Telescope and Site Systems.
 This product includes software developed by the LSST Project
 (https://www.lsst.org).
 See the COPYRIGHT file at the top-level directory of this distribution
@@ -74,7 +74,7 @@ class ATHexapodController:
 
     @property
     def is_connected(self):
-        """ Check if connected to the controller.
+        """Check if connected to the controller.
 
         Returns
         -------
@@ -84,8 +84,7 @@ class ATHexapodController:
         return self.reader is not None and self.writer is not None
 
     async def connect(self):
-        """ Connect to hexapod controller.
-        """
+        """Connect to hexapod controller."""
 
         async with self.lock:
             if self.is_connected:
@@ -100,8 +99,7 @@ class ATHexapodController:
             )
 
     async def disconnect(self):
-        """ Disconnect from hexapod controller.
-        """
+        """Disconnect from hexapod controller."""
 
         async with self.lock:
 
@@ -116,7 +114,7 @@ class ATHexapodController:
                     self.writer = None
 
     async def write_command(self, cmd, has_response=True, num_line=1):
-        """ Send command to hexapod controller and return response.
+        """Send command to hexapod controller and return response.
 
         Parameters
         ----------
@@ -328,8 +326,7 @@ class ATHexapodController:
         return [float(val.split("=")[1]) == 1 for val in ret]
 
     async def reference(self):
-        """Perform a reference in all axes.
-        """
+        """Perform a reference in all axes."""
         await self.write_command("FRF X Y Z U V W", has_response=False)
 
     async def target_position(self):
