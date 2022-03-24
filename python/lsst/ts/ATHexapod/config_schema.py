@@ -6,7 +6,7 @@ CONFIG_SCHEMA = yaml.safe_load(
     """
 $schema: http://json-schema.org/draft-07/schema#
 $id: https://github.com/lsst-ts/ts_salobjATHexapod/blob/master/schema/ATHexapod.yaml
-title: ATHexapod v1
+title: ATHexapod v2
 description: Schema for ATHexapod configuration files
 type: object
 properties:

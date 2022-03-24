@@ -51,6 +51,7 @@ class CscTestCase(unittest.IsolatedAsyncioTestCase, salobj.BaseCscTestCase):
 
     async def asyncSetUp(self) -> None:
         self.server = ATHexapod.mock_server.MockServer()
+        os.environ["LSST_SITE"] = "athexapod"
         await self.server.start()
 
     async def asyncTearDown(self) -> None:
@@ -70,7 +71,7 @@ class CscTestCase(unittest.IsolatedAsyncioTestCase, salobj.BaseCscTestCase):
                 with self.subTest(bad_config_name=bad_config_name):
                     with salobj.assertRaisesAckError():
                         await self.remote.cmd_start.set_start(
-                            settingsToApply=bad_config_name, timeout=STD_TIMEOUT
+                            configurationOverride=bad_config_name, timeout=STD_TIMEOUT
                         )
 
             os.environ["ATHEXAPOD_HOST"] = "127.0.0.1"
@@ -78,7 +79,7 @@ class CscTestCase(unittest.IsolatedAsyncioTestCase, salobj.BaseCscTestCase):
             self.remote.evt_summaryState.flush()
 
             await self.remote.cmd_start.set_start(
-                settingsToApply="host_as_env.yaml", timeout=STD_TIMEOUT
+                configurationOverride="host_as_env.yaml", timeout=STD_TIMEOUT
             )
 
             state = await self.remote.evt_summaryState.next(
@@ -100,7 +101,7 @@ class CscTestCase(unittest.IsolatedAsyncioTestCase, salobj.BaseCscTestCase):
             self.remote.evt_summaryState.flush()
 
             await self.remote.cmd_start.set_start(
-                settingsToApply="all", timeout=STD_TIMEOUT
+                configurationOverride="all.yaml", timeout=STD_TIMEOUT
             )
 
             state = await self.remote.evt_summaryState.next(
