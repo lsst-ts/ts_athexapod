@@ -99,24 +99,18 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         Publishes any change in readiness as an event over SAL
 
-        Parameters
-        ----------
-        ready : `bool`
-            If true, publishes that the Hexapod is ready. If false, publishes
-            that the Hexapod is not ready.
-
-        Returns:
+        Returns
+        -------
             ready : `bool`
                 If true, the Hexapod is ready or if false, the Hexapod is not
                 ready.
 
         """
-        return self._ready
+        return self.evt_readyForCommand.data.ready
 
-    @ready.setter
-    def ready(self, ready):
-        self._ready = bool(ready)
-        self.evt_readyForCommand.set_put(ready=self._ready)
+    async def report_new_ready(self, ready):
+        """Report the new ready state of the ATHexapod"""
+        await self.evt_readyForCommand.set_write(ready=bool(ready))
 
     def assert_substate(self, substates, action):
         """Assert that the command is in a valid substate.
@@ -137,26 +131,17 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
     def detailed_state(self):
         """Return the substate of the CSC.
 
-        Parameters
-        ----------
-        sub_state : `ATHexapod.DetailedState`
-            The sub_state to be set to.
-
         Returns
         -------
         detailed_state : `ATHexapod.DetailedState`
             The validated substate of the CSC.
         """
-        return self._detailed_state
+        return self.evt_detailedState.data.detailedState
 
-    @detailed_state.setter
-    def detailed_state(self, sub_state):
-        self._detailed_state = ATHexapod.DetailedState(sub_state)
-        self.report_detailed_state()
-
-    def report_detailed_state(self):
+    async def report_detailed_state(self, new_detailed_state):
         """Publish the new detailed state."""
-        self.evt_detailedState.set_put(detailedState=self.detailed_state)
+        new_detailed_state = ATHexapod.DetailedState(new_detailed_state)
+        await self.evt_detailedState.set_write(detailedState=new_detailed_state)
 
     def get_config_pkg(self):
         """Return the name of the config directory for the ATHexapod CSC."""
@@ -188,15 +173,17 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         self.config = config
 
-        self.evt_settingsAppliedVelocities.set_put(systemSpeed=self.config.speed)
+        await self.evt_settingsAppliedVelocities.set_write(
+            systemSpeed=self.config.speed
+        )
 
-        self.evt_settingsAppliedPivot.set_put(
+        await self.evt_settingsAppliedPivot.set_write(
             pivotX=self.config.pivot_x,
             pivotY=self.config.pivot_y,
             pivotZ=self.config.pivot_z,
         )
 
-        self.evt_settingsAppliedTcp.set_put(
+        await self.evt_settingsAppliedTcp.set_write(
             ip=self.controller.host, port=self.controller.port
         )
 
@@ -260,8 +247,8 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         ----------
         data
         """
-        self.ready = False
-        self.detailed_state = ATHexapod.DetailedState.NOTINMOTION
+        await self.report_new_ready(False)
+        await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
 
         # Set soft limits
 
@@ -278,7 +265,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             await self.assert_ready("enable")
         except salobj.base.ExpectedError:
             self.log.exception("Hexapod controller not ready.")
-            self.fault(
+            await self.fault(
                 code=CONTROLLER_NOT_READY,
                 report="Hexapod controller not ready.",
                 traceback=traceback.format_exc(),
@@ -289,7 +276,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         if not ref:
             self.log.warning("Referencing Axis.")
             await self.controller.reference()
-            self.detailed_state = ATHexapod.DetailedState.INMOTION
+            await self.report_detailed_state(ATHexapod.DetailedState.INMOTION)
             try:
                 await asyncio.wait_for(
                     self.wait_movement_done(), timeout=self.config.reference_timeout
@@ -297,7 +284,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             except asyncio.TimeoutError as e:
                 self.log.error("Referencing time out.")
                 self.log.exception(e)
-                self.fault(
+                await self.fault(
                     code=REFERENCING_TIMEOUT,
                     report="Referencing time out.",
                     traceback=traceback.format_exc(),
@@ -305,7 +292,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             except Exception as e:
                 self.log.error("Exception happened while referencing.")
                 self.log.exception(e)
-                self.fault(
+                await self.fault(
                     code=REFERENCING_ERROR,
                     report="Exception happened while referencing hexapod.",
                     traceback=traceback.format_exc(),
@@ -313,7 +300,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         current_position = await self.controller.real_position()
 
-        self.evt_positionUpdate.set_put(
+        await self.evt_positionUpdate.set_write(
             positionX=current_position[0],
             positionY=current_position[1],
             positionZ=current_position[2],
@@ -351,7 +338,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             xy_max, xy_max, limit_z_max, limit_uv_max, limit_uv_max, limit_w_max
         )
 
-        self.evt_settingsAppliedPositionLimits.set_put(
+        await self.evt_settingsAppliedPositionLimits.set_write(
             limitXYMax=xy_max,
             limitZMin=limit_z_min,
             limitZMax=limit_z_max,
@@ -389,8 +376,8 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         self.assert_substate([ATHexapod.DetailedState.NOTINMOTION], "moveToPosition")
 
-        self.detailed_state = ATHexapod.DetailedState.INMOTION
-        self.evt_inPosition.set_put(inPosition=False, force_output=True)
+        await self.report_detailed_state(ATHexapod.DetailedState.INMOTION)
+        await self.evt_inPosition.set_write(inPosition=False, force_output=True)
 
         await self.controller.set_position(
             data.x, data.y, data.z, data.u, data.v, data.w
@@ -404,13 +391,13 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             self.log.exception("Error executing moveToPosition command")
             raise e
         else:
-            self.evt_inPosition.set_put(inPosition=True, force_output=True)
+            await self.evt_inPosition.set_write(inPosition=True, force_output=True)
         finally:
-            self.detailed_state = ATHexapod.DetailedState.NOTINMOTION
+            await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
 
             current_position = await self.controller.real_position()
 
-            self.evt_positionUpdate.set_put(
+            await self.evt_positionUpdate.set_write(
                 positionX=current_position[0],
                 positionY=current_position[1],
                 positionZ=current_position[2],
@@ -432,7 +419,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         )
         await self.controller.set_sv(velocity=data.speed)
         current_sv = await self.controller.get_sv()
-        self.evt_settingsAppliedVelocities.set_put(systemSpeed=current_sv)
+        await self.evt_settingsAppliedVelocities.set_write(systemSpeed=current_sv)
 
     async def do_applyPositionOffset(self, data):
         """Apply position offset.
@@ -445,13 +432,13 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         self.assert_substate(
             [ATHexapod.DetailedState.NOTINMOTION], "applyPositionOffset"
         )
-        self.detailed_state = ATHexapod.DetailedState.INMOTION
+        await self.report_detailed_state(ATHexapod.DetailedState.INMOTION)
         await self.controller.offset(data.x, data.y, data.z, data.u, data.v, data.w)
         await asyncio.wait_for(self.wait_movement_done(), self.config.movement_timeout)
-        self.evt_inPosition.set_put(inPosition=True, force_output=True)
-        self.detailed_state = ATHexapod.DetailedState.NOTINMOTION
+        await self.evt_inPosition.set_write(inPosition=True, force_output=True)
+        await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
         current_position = await self.controller.real_position()
-        self.evt_positionUpdate.set_put(
+        await self.evt_positionUpdate.set_write(
             positionX=current_position[0],
             positionY=current_position[1],
             positionZ=current_position[2],
@@ -471,7 +458,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         self.assert_substate([ATHexapod.DetailedState.NOTINMOTION], "pivot")
         await self.controller.set_pivot_point(data.x, data.y, data.z)
         current_pivot = await self.controller.getPivotPoint()
-        self.evt_settingsAppliedPivot.set_put(
+        await self.evt_settingsAppliedPivot.set_write(
             pivotX=current_pivot[0], pivotY=current_pivot[1], pivotZ=current_pivot[2]
         )
 
@@ -484,7 +471,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         """
         self.assert_enabled("stopAllAxes")
         await self.controller.stop_all_axes()
-        self.detailed_state = ATHexapod.DetailedState.NOTINMOTION
+        await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
 
     async def telemetry(self):
         """Handle telemetry publishing.
@@ -504,7 +491,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
             diff = [current_position[i] - target_position[i] for i in range(6)]
 
-            self.tel_positionStatus.set_put(
+            await self.tel_positionStatus.set_write(
                 setpointPosition=target_position,
                 reportedPosition=current_position,
                 positionFollowingError=diff,
@@ -515,13 +502,15 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             # Check for errors
             error = await self.controller.get_error()
             if error != 0:
-                self.fault(code=error, report=translate_error(error), traceback="")
+                await self.fault(
+                    code=error, report=translate_error(error), traceback=""
+                )
                 self.run_telemetry_task = False
             else:
                 await asyncio.sleep(self.heartbeat_interval / sub_tasks)
 
         if self.disabled_or_enabled:
-            self.fault(
+            await self.fault(
                 code=TEL_LOOP_CLOSED,
                 report=f"Telemetry loop closing while in {self.summary_state!r}.",
                 traceback="",
@@ -575,7 +564,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         ready = await self.controller.controller_ready()
 
         if ready != self.ready:
-            self.ready = ready
+            self.report_new_ready(ready)
 
         if not self.ready:
             # raise salobj.base.ExpectedError(f"{action} not allowed.
@@ -622,10 +611,12 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
                 if not any(ms):
                     self.log.debug("Hexapod not moving.")
-                    self.detailed_state = ATHexapod.DetailedState.NOTINMOTION
+                    await self.report_detailed_state(
+                        ATHexapod.DetailedState.NOTINMOTION
+                    )
                     return not (any(ms))
                 else:
-                    self.detailed_state = ATHexapod.DetailedState.INMOTION
+                    await self.report_detailed_state(ATHexapod.DetailedState.INMOTION)
                     moving = ""
                     for i in range(len(ms)):
                         if ms[i]:

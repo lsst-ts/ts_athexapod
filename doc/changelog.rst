@@ -2,6 +2,10 @@
 Version History
 ===============
 
+v0.7.0
+======
+* Updated CSC to support salobj 7
+
 v0.6.2
 ======
 * Updated unit tests to use salobj.CscBaseTestCase
