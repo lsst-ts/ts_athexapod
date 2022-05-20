@@ -201,7 +201,7 @@ class ATHexapodController:
         """
         ret = await self.write_command("\5", num_line=1)
 
-        code = int(ret[0])
+        code = int(ret[0], 16)
 
         return tuple([(code & (1 << i)) > 0 for i in range(6)])
 
