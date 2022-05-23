@@ -2,6 +2,10 @@
 Version History
 ===============
 
+v0.7.1
+======
+* Fixed bug where int conversion for responses was in base 10 instead of base 16 which was the cause for an error when all axes were moving
+
 v0.7.0
 ======
 * Updated CSC to support salobj 7
