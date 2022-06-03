@@ -2,6 +2,11 @@
 Version History
 ===============
 
+v0.8.0
+======
+* Use pyproject.toml
+* Remove extension from scripts
+
 v0.7.1
 ======
 * Fixed bug where int conversion for responses was in base 10 instead of base 16 which was the cause for an error when all axes were moving
