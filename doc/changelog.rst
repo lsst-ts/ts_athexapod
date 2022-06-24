@@ -2,6 +2,11 @@
 Version History
 ===============
 
+v0.8.1
+======
+* Inform conda that the build is for "noarch".
+
+
 v0.8.0
 ======
 * Use pyproject.toml
