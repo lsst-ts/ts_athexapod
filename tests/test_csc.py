@@ -34,7 +34,7 @@ SHORT_TIMEOUT = 5
 TEST_CONFIG_DIR = pathlib.Path(__file__).parents[1].joinpath("tests", "data", "config")
 
 
-class CscTestCase(unittest.IsolatedAsyncioTestCase, salobj.BaseCscTestCase):
+class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
     def basic_make_csc(
         self,
         initial_state=salobj.State.STANDBY,
