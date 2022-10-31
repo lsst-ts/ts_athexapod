@@ -2,6 +2,15 @@
 Version History
 ===============
 
+v0.8.2
+======
+
+* Add documentation regarding the TCP/IP settings of the controller. Also swap inherited classes so tests pass.
+* Improve ``CSC.close_telemetry_task`` so it won't issue unnecessary warning when running after it had already ran once.
+* Update conda package to the latest schema, and replace py.test with pytest.
+* Update pre-commit configuration.
+* Run isort in the package.
+
 v0.8.1
 ======
 * Inform conda that the build is for "noarch".

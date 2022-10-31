@@ -23,17 +23,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 __all__ = ["ATHexapodCSC"]
 
-import os
 import asyncio
+import os
 import traceback
 
-from lsst.ts import salobj
+from lsst.ts import salobj, utils
 from lsst.ts.idl.enums import ATHexapod
 
-from .controller import ATHexapodController
-from .gcserror import translate_error
 from . import __version__
 from .config_schema import CONFIG_SCHEMA
+from .controller import ATHexapodController
+from .gcserror import translate_error
 
 CONNECTION_FAILED = 100
 TEL_LOOP_CLOSED = 101
@@ -89,7 +89,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         self.controller = ATHexapodController(log=None)
 
         self.run_telemetry_task = False
-        self.telemetry_task = None
+        self.telemetry_task = utils.make_done_future()
 
         self._ready = False
 
@@ -523,7 +523,9 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         """
         self.run_telemetry_task = False
 
-        force_close = False
+        if self.telemetry_task.done():
+            self.log.debug("Telemetry task already completed. Nothing to do...")
+            return
 
         try:
             await asyncio.wait_for(
@@ -532,26 +534,28 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         except asyncio.TimeoutError:
             self.log.warning(
                 "Timed out waiting for telemetry task to finish. "
-                "Closing task instead."
+                "Canceling task instead."
             )
-            force_close = True
+            await self._cancel_telemetry_task()
         except Exception:
             self.log.exception(
-                "Unexpected exception stopping telemetry task. " "Closing task instead."
+                "Unexpected exception stopping telemetry task. Closing task instead."
             )
-            force_close = True
+            await self._cancel_telemetry_task()
 
-        if force_close:
-            self.telemetry_task.cancel()
-            try:
-                await self.telemetry_task
-            except asyncio.CancelledError:
-                self.log.debug("Telemetry task cancelled.")
-            except Exception as e:
-                self.log.error("Unexpected exception closing telemetry task.")
-                self.log.exception(e)
+    async def _cancel_telemetry_task(self):
+        """Cancel telemetry task and handle cancellation."""
+        if self.telemetry_task.done():
+            self.log.debug("Telemetry task already completed. Nothing to do...")
+            return
 
-        self.telemetry_task = None
+        self.telemetry_task.cancel()
+        try:
+            await self.telemetry_task
+        except asyncio.CancelledError:
+            self.log.debug("Telemetry task cancelled.")
+        except Exception:
+            self.log.exception("Unexpected exception closing telemetry task.")
 
     async def assert_ready(self, action):
         """Assert that the Hexapod is ready.

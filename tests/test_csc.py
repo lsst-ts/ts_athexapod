@@ -20,14 +20,13 @@ GNU General Public License for more details.
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import os
-import yaml
 import asyncio
+import os
 import pathlib
 import unittest
 
-from lsst.ts import salobj
-from lsst.ts import ATHexapod
+import yaml
+from lsst.ts import ATHexapod, salobj
 
 STD_TIMEOUT = 15
 SHORT_TIMEOUT = 5

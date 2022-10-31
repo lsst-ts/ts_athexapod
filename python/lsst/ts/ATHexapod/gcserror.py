@@ -22,9 +22,10 @@ GNU General Public License for more details.
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+import enum
+
 # Too many lines in module pylint: disable=C0302
 import logging
-import enum
 
 __signature__ = 0x1D86C75890C9CFDED5CD50105C096649
 
