@@ -117,6 +117,42 @@ Then pulling and running the image will work.
 
 Stopping the CSC is done by SIG-INTing the process, usually by :kbd:`ctrl` + :kbd:`c`
 
+.. _Troubleshooting:
+
+Troubleshooting
+===============
+
+
+Serial Connection
+-----------------
+
+There is a known issue with the internal firmware and the PiMikroMove software where the serial connection capability does not work.
+However, it is possible to connect using PiTerminal, which is installed on the lenovo (windows) machine (which can be reached via remote desktop to aux-brick01.cp.lsst.org).
+
+The serial connection uses a <LF> line termination for the command and receive terminations. 
+The default baud is 115200, data bits 8, stop bits 1, parity none, handshake (flow control) none (in the PI terminal)
+C877 manual says that the handshake is cts/rts, but if this is enabled then the computer can send commands but does not receive responses.
+
+Sending ``*IDN?<LF>`` should return something like "(c)2011-2019 Physik Instrumente (PI) GmbH & Co. KG,C-887,116027371,2.7.1.4"
+Sending ``IFS?`` returns the communication settings.
+Again, RSHSHK return 1, which corresponds to rts/cts, but this setting does not work.
+
+Successful connections to the device have been made via teraterm, but the serial and terminal settings must be correct.
+In setup->Terminal, make sure Receive and Transmit are set to LF; the Local-echo box should also be checked.
+In Setup->Serial Port, input the settings above.
+If any changes are made, the connection must be disconnected and reconnected.
+
+However, `YAT (yet another terminal) <https://sourceforge.net/projects/y-a-terminal/>`_ seems able to send but not receive responses; this is probably a setup issue but it's not yet been identified.
+
+TCP/IP connection
+-----------------
+
+The hexapod has a DNS name (``athexapod.cp.lsst.org``) and reserved DHCP address registered in our network, therefore, a reserved IP inside the hexapod itself should not be required.
+This means that the parameter ``IPSTART`` should be set to ``1`` to use the DHCP settings and not a manually assigned IP at the controller level.
+This can be performed either via the PIMikroMove software or using the terminal.
+A reset of the controller is required for the new settings to take effect.
+
+
 .. _Contributing:
 
 Contributing
@@ -142,12 +178,12 @@ Building the Documentation
 ==========================
 
 
-Pull the develop-env docker image (the example below uses version `b76`, but this should be changed to the current release), mounting the repository directory as a volume.
+Pull the develop-env docker image (the example below uses cycle ``c25``, revision ``5``, but this should be changed to the current release), mounting the repository directory as a volume.
 Then building the documentation is done by the following commands.
 
 .. prompt:: bash
 
-    docker run -it -v {repo_location}:/home/saluser/develop lsstts/develop-env:b76
+    docker run -it -v {repo_location}:/home/saluser/develop lsstts/develop-env:c0025.005 
     cd develop/ts_athexapod
     setup -kr . # or pip install .
     scons # this step is optional if using pip

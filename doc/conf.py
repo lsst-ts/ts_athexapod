@@ -3,8 +3,8 @@
 This configuration only affects single-package Sphinx documentation builds.
 """
 
-from documenteer.conf.pipelinespkg import *  # noqa
 import lsst.ts.ATHexapod  # noqa
+from documenteer.conf.pipelinespkg import *  # noqa
 
 project = "ts_athexapod"
 html_theme_options["logotext"] = project  # noqa

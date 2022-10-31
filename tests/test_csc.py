@@ -20,21 +20,20 @@ GNU General Public License for more details.
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
-import os
-import yaml
 import asyncio
+import os
 import pathlib
 import unittest
 
-from lsst.ts import salobj
-from lsst.ts import ATHexapod
+import yaml
+from lsst.ts import ATHexapod, salobj
 
 STD_TIMEOUT = 15
 SHORT_TIMEOUT = 5
 TEST_CONFIG_DIR = pathlib.Path(__file__).parents[1].joinpath("tests", "data", "config")
 
 
-class CscTestCase(unittest.IsolatedAsyncioTestCase, salobj.BaseCscTestCase):
+class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
     def basic_make_csc(
         self,
         initial_state=salobj.State.STANDBY,
