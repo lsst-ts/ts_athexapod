@@ -23,17 +23,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 __all__ = ["ATHexapodCSC"]
 
-import os
 import asyncio
+import os
 import traceback
 
-from lsst.ts import salobj
+from lsst.ts import salobj, utils
 from lsst.ts.idl.enums import ATHexapod
 
-from .controller import ATHexapodController
-from .gcserror import translate_error
 from . import __version__
 from .config_schema import CONFIG_SCHEMA
+from .controller import ATHexapodController
+from .gcserror import translate_error
 
 CONNECTION_FAILED = 100
 TEL_LOOP_CLOSED = 101
