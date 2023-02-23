@@ -55,7 +55,6 @@ class ATHexapodController:
     """
 
     def __init__(self, log=None):
-
         self.host = "127.0.0.1"
         self.port = 50000
         self.timeout = 2.0
@@ -102,7 +101,6 @@ class ATHexapodController:
         """Disconnect from hexapod controller."""
 
         async with self.lock:
-
             self.reader = None
 
             if self.writer is not None:
@@ -133,7 +131,6 @@ class ATHexapodController:
         """
 
         async with self.lock:
-
             if not self.is_connected:
                 raise RuntimeError(
                     "Not connected to hexapod controller. " "Call `connect` first"

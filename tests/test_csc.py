@@ -60,7 +60,6 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
         async with self.make_csc(
             initial_state=salobj.State.STANDBY, config_dir=TEST_CONFIG_DIR
         ):
-
             state = await self.remote.evt_summaryState.next(
                 flush=False, timeout=STD_TIMEOUT
             )

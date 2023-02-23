@@ -74,7 +74,6 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
     def __init__(
         self, config_dir=None, initial_state=salobj.State.STANDBY, simulation_mode=0
     ):
-
         super().__init__(
             name="ATHexapod",
             index=0,
@@ -482,7 +481,6 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         sub_tasks = 2
         while self.run_telemetry_task:
-
             # Get setpointPosition
             target_position = await self.controller.target_position()
 
@@ -609,7 +607,6 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         axis = "XYZUVW"
 
         while True:
-
             try:
                 ms = await self.controller.motion_status()
 
