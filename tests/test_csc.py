@@ -26,7 +26,7 @@ import pathlib
 import unittest
 
 import yaml
-from lsst.ts import ATHexapod, salobj
+from lsst.ts import athexapod, salobj
 
 STD_TIMEOUT = 15
 SHORT_TIMEOUT = 5
@@ -41,7 +41,7 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
         simulation_mode=1,
         **kwargs,
     ):
-        return ATHexapod.csc.ATHexapodCSC(
+        return athexapod.csc.ATHexapodCSC(
             initial_state=initial_state,
             config_dir=config_dir,
             simulation_mode=simulation_mode,
@@ -49,7 +49,7 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
         )
 
     async def asyncSetUp(self) -> None:
-        self.server = ATHexapod.mock_server.MockServer()
+        self.server = athexapod.mock_server.MockServer()
         os.environ["LSST_SITE"] = "athexapod"
         await self.server.start()
 
