@@ -2,6 +2,11 @@
 Version History
 ===============
 
+v0.8.3
+======
+* Update precommit to black 23, isort 5.12 & check-yaml 4.4.
+* Remove root workaround in Jenkinsfile.
+
 v0.8.2
 ======
 
