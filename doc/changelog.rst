@@ -2,6 +2,11 @@
 Version History
 ===============
 
+v0.8.4
+======
+* Lowercase namespace.
+* Make conda package python noarch.
+
 v0.8.3
 ======
 * Update precommit to black 23, isort 5.12 & check-yaml 4.4.
