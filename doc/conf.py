@@ -3,7 +3,7 @@
 This configuration only affects single-package Sphinx documentation builds.
 """
 
-import lsst.ts.ATHexapod  # noqa
+import lsst.ts.athexapod  # noqa
 from documenteer.conf.pipelinespkg import *  # noqa
 
 project = "ts_athexapod"
