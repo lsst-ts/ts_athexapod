@@ -2,6 +2,11 @@
 Version History
 ===============
 
+v0.8.5
+======
+* Reformat code with black.
+* Update the version of ts-conda-build to 0.4 in the conda recipe.
+
 v0.8.4
 ======
 * Lowercase namespace.
