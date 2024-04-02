@@ -231,6 +231,13 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(0.7, event.pivotY)
             self.assertEqual(0.2, event.pivotZ)
 
+    async def test_bin_script(self):
+        await self.check_bin_script(
+            name="ATHexapod",
+            index=None,
+            exe_name="run_athexapod",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
