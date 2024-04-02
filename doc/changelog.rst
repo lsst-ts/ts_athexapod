@@ -2,6 +2,14 @@
 Version History
 ===============
 
+v0.8.6
+======
+
+* Add missing import to the __init__ that was causing the executable to fail.
+* Add unit test for the CSC executable.
+* Update unit tests to make them more reliable with kafka.
+* Update build session of the conda package to also use ts-conda-build 0.4.
+
 v0.8.5
 ======
 * Reformat code with black.
