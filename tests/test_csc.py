@@ -61,10 +61,7 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
         async with self.make_csc(
             initial_state=salobj.State.STANDBY, config_dir=TEST_CONFIG_DIR
         ):
-            state = await self.remote.evt_summaryState.next(
-                flush=False, timeout=STD_TIMEOUT
-            )
-            self.assertEqual(state.summaryState, salobj.State.STANDBY)
+            await self.assert_next_summary_state(salobj.State.STANDBY)
 
             for bad_config_name in ("no_such_file.yaml", "bad_port.yaml"):
                 with self.subTest(bad_config_name=bad_config_name):
@@ -173,9 +170,10 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
                 timeout=STD_TIMEOUT, x=4, y=6, z=3, u=4, v=3, w=6
             )
             await asyncio.sleep(SHORT_TIMEOUT)
-            event = await self.remote.evt_inPosition.next(
-                flush=False, timeout=STD_TIMEOUT
+            event = await self.assert_next_sample(
+                self.remote.evt_inPosition, flush=False, timeout=STD_TIMEOUT
             )
+
             self.assertEqual(False, event.inPosition)
             event = await self.remote.evt_inPosition.next(
                 flush=False, timeout=STD_TIMEOUT
