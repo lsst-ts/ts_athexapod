@@ -2,6 +2,8 @@
 Version History
 ===============
 
+.. towncrier release notes start
+
 v0.8.6
 ======
 

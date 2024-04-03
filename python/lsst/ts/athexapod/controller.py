@@ -24,6 +24,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import logging
 
+from lsst.ts import tcpip
+
 
 class ATHexapodController:
     """Implements wrapper around ATHexapod server.
@@ -55,20 +57,11 @@ class ATHexapodController:
     """
 
     def __init__(self, log=None):
-        self.host = "127.0.0.1"
-        self.port = 50000
-        self.timeout = 2.0
-        self.long_timeout = 30.0
-
-        self.reader = None
-        self.writer = None
-
-        self.lock = asyncio.Lock()
-
         self.log = log
-
         if self.log is None:
             self.log = logging.getLogger(__name__)
+        self.client = tcpip.Client(host="", port=None, log=self.log)
+        self.lock = asyncio.Lock()
         self.log.debug("Controller created")
 
     @property
@@ -80,36 +73,30 @@ class ATHexapodController:
         connected : `bool`
 
         """
-        return self.reader is not None and self.writer is not None
+        return self.client.connected
 
     async def connect(self):
         """Connect to hexapod controller."""
 
-        async with self.lock:
-            if self.is_connected:
-                raise RuntimeError(
-                    "Reader or Writer not None. Try disconnecting first."
-                )
-
-            connect_task = asyncio.open_connection(host=self.host, port=self.port)
-
-            self.reader, self.writer = await asyncio.wait_for(
-                connect_task, timeout=self.long_timeout
-            )
+        self.client = tcpip.Client(
+            host=self.host,
+            port=self.port,
+            log=self.log,
+            name="ATHexapod client",
+            encoding="ISO-8859-1",
+            terminator=b"\n",
+        )
+        await self.client.start_task
 
     async def disconnect(self):
         """Disconnect from hexapod controller."""
 
-        async with self.lock:
-            self.reader = None
-
-            if self.writer is not None:
-                try:
-                    self.writer.write_eof()
-                    await asyncio.wait_for(self.writer.drain(), timeout=self.timeout)
-                finally:
-                    self.writer.close()
-                    self.writer = None
+        try:
+            await self.client.close()
+        except Exception:
+            self.log.exception("Failed to disconnect")
+        finally:
+            self.client = tcpip.Client(host="", port=None, log=self.log)
 
     async def write_command(self, cmd, has_response=True, num_line=1):
         """Send command to hexapod controller and return response.
@@ -129,33 +116,27 @@ class ATHexapodController:
             List with the response(s) from the command.
 
         """
-
-        async with self.lock:
-            if not self.is_connected:
-                raise RuntimeError(
-                    "Not connected to hexapod controller. " "Call `connect` first"
-                )
-
-            self.log.debug(f"Writing: {cmd.encode()!r}")
-            self.writer.write(f"{cmd}\n".encode())
-            await self.writer.drain()
-
-            if has_response:
-                try:
-                    replies = []
-                    for i in range(num_line):
-                        raw_line = await self.reader.readuntil(b"\n")
-                        line = raw_line.decode("ISO-8859-1").strip()
-                        self.log.debug(f"Read {i+1} of {num_line} lines: {line}")
-                        replies.append(line)
-                except asyncio.TimeoutError:
-                    self.log.warning(
-                        "Timed out waiting for response from controller. Result "
-                        "may be incomplete."
-                    )
-                    raise
-
-                return replies
+        if self.client.connected:
+            async with self.lock:
+                await self.client.write_str(cmd)
+                if has_response:
+                    try:
+                        replies = []
+                        for _ in range(num_line):
+                            line = await self.client.read_str()
+                            line = line.lstrip()
+                            self.log.debug(f"{line=}")
+                            replies.append(line)
+                        self.log.debug(f"{replies=}")
+                        return replies
+                    except asyncio.TimeoutError:
+                        self.log.warning(
+                            "Timed out waiting for response from controller. Result "
+                            "may be incomplete."
+                        )
+                        raise
+        else:
+            raise RuntimeError("Not connected.")
 
     async def real_position(self):
         """Return parsed real position string
@@ -247,8 +228,8 @@ class ATHexapodController:
         """
         ret = await self.write_command("\7", num_line=1)
 
-        comp = ret == chr(177)
-        self.log.debug(f"ret={ret} : {chr(177)} : comp={comp}")
+        comp = ret[0] == chr(177)
+        self.log.debug(f"{ret=} : {chr(177)} : {comp=}")
 
         return comp
 

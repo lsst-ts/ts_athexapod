@@ -1,0 +1,1 @@
+Update unit tests to use assert_next_sample and assert_summary_state for better kafka compatibility.

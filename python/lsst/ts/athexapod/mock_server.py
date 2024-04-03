@@ -21,13 +21,13 @@ You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-import asyncio
-import logging
 import re
 import types
 
+from lsst.ts import simactuators, tcpip
 
-class MockServer:
+
+class MockServer(tcpip.OneClientReadLoopServer):
     """Mock server for ATHexapod controller.
 
     A server which mimics responses from the controller by using asyncio's tcp
@@ -62,18 +62,35 @@ class MockServer:
     """
 
     def __init__(self, log=None):
-        self.host = "127.0.0.1"
-        self.port = 50000
+        super().__init__(
+            port=0,
+            host=tcpip.LOCAL_HOST,
+            log=log,
+            terminator=b"\n",
+            encoding="ISO-8859-1",
+            name="ATHexapod server",
+        )
         self.timeout = 2
         self.long_timeout = 30
-        self.connected = False
         self.ready = False
-        self.x = 0
-        self.y = 0
-        self.z = 0
-        self.u = 0
-        self.v = 0
-        self.w = 0
+        self.x = simactuators.PointToPointActuator(
+            min_position=-70, max_position=70, speed=1
+        )
+        self.y = simactuators.PointToPointActuator(
+            min_position=-70, max_position=70, speed=1
+        )
+        self.z = simactuators.PointToPointActuator(
+            min_position=-70, max_position=70, speed=1
+        )
+        self.u = simactuators.PointToPointActuator(
+            min_position=-70, max_position=70, speed=1
+        )
+        self.v = simactuators.PointToPointActuator(
+            min_position=-70, max_position=70, speed=1
+        )
+        self.w = simactuators.PointToPointActuator(
+            min_position=-70, max_position=70, speed=1
+        )
         self.target = types.SimpleNamespace(x=0, y=0, z=0, u=0, v=0, w=0)
         self.referenced = types.SimpleNamespace(x=0, y=0, z=0, u=0, v=0, w=0)
         self.sv = 1
@@ -148,82 +165,71 @@ class MockServer:
                 )
             ),
         ]
-        self.log = logging.getLogger(__name__)
 
-    async def start(self):
-        """Start the server."""
-        self.log.debug("Starting Server")
-        self.server = await asyncio.start_server(
-            client_connected_cb=self.cmd_loop, host=self.host, port=self.port
-        )
-        self.log.debug("Server started")
-
-    async def stop(self):
-        """Stop the server"""
-        self.log.debug("Closing server")
-        self.server.close()
-        await asyncio.wait_for(self.server.wait_closed(), timeout=5)
-        self.log.debug("Server closed")
-
-    async def cmd_loop(self, reader, writer):
-        """Handle received commands."""
-        while True:
-            line = await reader.readline()
-            self.log.debug(f"Received: {line}")
-            if not line:
-                writer.close()
-                return
-            line = line.decode()
-            self.log.debug(f"Decoded line: {line}")
-            for command in self.commands:
-                matched_command = command.match(line)
-                if matched_command:
-                    self.log.debug(f"Matched command {line}")
-                    command_group = matched_command.group("cmd")
-                    if command_group in self.command_calls:
-                        called_command = self.command_calls[command_group]
-                        self.log.debug(f"cmd group:{command_group}")
-                        if command_group in ["NLM", "MOV", "PLM", "MVR"]:
-                            self.log.debug(f"Grabbing command {command_group}")
-                            await called_command(
-                                x=matched_command.group("x_value"),
-                                y=matched_command.group("y_value"),
-                                z=matched_command.group("z_value"),
-                                u=matched_command.group("u_value"),
-                                v=matched_command.group("v_value"),
-                                w=matched_command.group("w_value"),
-                            )
-                        elif command_group in ["SPI"]:
-                            self.log.debug(f"Grabbing command {command_group}")
-                            await called_command(
-                                x=matched_command.group("x_value"),
-                                y=matched_command.group("y_value"),
-                                z=matched_command.group("z_value"),
-                            )
-                        elif command_group in ["VLS"]:
-                            self.log.debug(f"Grabbing command {command_group}")
-                            await called_command(
-                                velocity=matched_command.group("velocity")
-                            )
-                        elif await called_command() is not None:
-                            self.log.debug(f"Sent {await called_command()}")
-                            writer.write((await called_command()).encode())
-                            await writer.drain()
-                    else:
-                        raise Exception(f"{command_group} is not implemented.")
+    async def read_and_dispatch(self):
+        line = await self.read_str()
+        self.log.debug(f"{line=}")
+        for command in self.commands:
+            matched_command = command.match(line)
+            if matched_command:
+                self.log.debug(f"Matched command {line}")
+                command_group = matched_command.group("cmd")
+                if command_group in self.command_calls:
+                    called_command = self.command_calls[command_group]
+                    self.log.debug(f"cmd group:{command_group}")
+                    if command_group in ["NLM", "MOV", "PLM", "MVR"]:
+                        self.log.debug(f"Grabbing command {command_group}")
+                        await called_command(
+                            x=matched_command.group("x_value"),
+                            y=matched_command.group("y_value"),
+                            z=matched_command.group("z_value"),
+                            u=matched_command.group("u_value"),
+                            v=matched_command.group("v_value"),
+                            w=matched_command.group("w_value"),
+                        )
+                    elif command_group in ["SPI"]:
+                        self.log.debug(f"Grabbing command {command_group}")
+                        await called_command(
+                            x=matched_command.group("x_value"),
+                            y=matched_command.group("y_value"),
+                            z=matched_command.group("z_value"),
+                        )
+                    elif command_group in ["VLS"]:
+                        self.log.debug(f"Grabbing command {command_group}")
+                        await called_command(velocity=matched_command.group("velocity"))
+                    elif await called_command() is not None:
+                        self.log.debug(f"Sent {await called_command()}")
+                        await self.write_str((await called_command()))
+                else:
+                    raise Exception(f"{command_group} is not implemented.")
 
     async def format_real_position(self):
         """Return formatted position response."""
-        return f"X={self.x}\n Y={self.y}\n Z={self.z}\n U={self.u}\n V={self.v}\n W={self.w}\n"
+        return f"""X={self.x.position()}
+        Y={self.y.position()}
+        Z={self.z.position()}
+        U={self.u.position()}
+        V={self.v.position()}
+        W={self.w.position()}"""
 
     async def format_motion_status(self):
         """Return formatted motion status response."""
-        return "0\n"
+        moving = str(
+            int(
+                self.x.moving()
+                + self.y.moving()
+                + self.z.moving()
+                + self.u.moving()
+                + self.v.moving()
+                + self.w.moving()
+            )
+        )
+        return moving
 
     async def format_controller_ready(self):
         """Return formatted controller ready response."""
         self.ready = True
-        return f"{chr(177)}\n"
+        return f"{chr(177)}"
 
     async def stop_all_axes(self):
         """Stop all axes.
@@ -241,12 +247,12 @@ class MockServer:
         self.target.u = u
         self.target.v = v
         self.target.w = w
-        self.x = x
-        self.y = y
-        self.z = z
-        self.u = u
-        self.v = v
-        self.w = w
+        self.x.set_position(float(x))
+        self.y.set_position(float(y))
+        self.z.set_position(float(z))
+        self.u.set_position(float(u))
+        self.v.set_position(float(v))
+        self.w.set_position(float(w))
 
     async def format_referencing_result(self):
         """Return formatted reference result."""
@@ -256,7 +262,7 @@ class MockServer:
             f"Z={self.referenced.z}\n "
             f"U={self.referenced.u}\n "
             f"V={self.referenced.v}\n "
-            f"W={self.referenced.w}\n"
+            f"W={self.referenced.w}"
         )
 
     async def reference(self):
@@ -276,7 +282,7 @@ class MockServer:
             f"Z={self.target.z}\n "
             f"U={self.target.u}\n "
             f"V={self.target.v}\n "
-            f"W={self.target.w}\n"
+            f"W={self.target.w}"
         )
 
     async def set_low_position_soft_Limit(self, x, y, z, u, v, w):
@@ -296,7 +302,7 @@ class MockServer:
             f"Z={self.minimum_limit_z}\n "
             f"U={self.minimum_limit_u}\n "
             f"V={self.minimum_limit_v}\n "
-            f"W={self.minimum_limit_w}\n"
+            f"W={self.minimum_limit_w}"
         )
 
     async def set_high_position_soft_limit(self, x, y, z, u, v, w):
@@ -316,7 +322,7 @@ class MockServer:
             f"Z={self.maximum_limit_z}\n "
             f"U={self.maximum_limit_u}\n "
             f"V={self.maximum_limit_v}\n "
-            f"W={self.maximum_limit_w}\n"
+            f"W={self.maximum_limit_w}"
         )
 
     async def format_on_target(self):
@@ -334,17 +340,17 @@ class MockServer:
         """Set offset for hexapod."""
         self.log.debug("Setting offset.")
         await self.set_position(
-            x=self.x + float(x),
-            y=self.y + float(y),
-            z=self.z + float(z),
-            u=self.u + float(u),
-            v=self.v + float(v),
-            w=self.w + float(w),
+            x=self.x.position() + float(x),
+            y=self.y.position() + float(y),
+            z=self.z.position() + float(z),
+            u=self.u.position() + float(u),
+            v=self.v.position() + float(v),
+            w=self.w.position() + float(w),
         )
 
     async def check_offset(self, x, y, z, u, v, w):
         """Check that the hexapod can move."""
-        return "X=1\n Y=1\n Z=1\n U=1\n V=1\n W=1\n"
+        return "X=1\n Y=1\n Z=1\n U=1\n V=1\n W=1"
 
     async def set_pivot_point(self, x, y, z):
         """Set the pivot point."""
@@ -354,7 +360,7 @@ class MockServer:
 
     async def format_pivot_point(self):
         """Return formatted get pivot point string"""
-        return f"R={self.pivot.x}\n S={self.pivot.y}\n T={self.pivot.z}\n"
+        return f"R={self.pivot.x}\n S={self.pivot.y}\n T={self.pivot.z}"
 
     async def format_check_active_soft_limit(self):
         """Check that the software limits are active."""
@@ -378,8 +384,8 @@ class MockServer:
 
     async def format_sv(self):
         """Return the system velocity."""
-        return f"{self.sv}\n"
+        return f"{self.sv}"
 
     async def format_error(self):
         """Return get error string"""
-        return "0\n"
+        return "0"
