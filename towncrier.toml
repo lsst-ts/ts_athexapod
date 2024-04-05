@@ -1,8 +1,0 @@
-[tool.towncrier]
-directory = "doc/news"
-package = "lsst.ts.athexapod"
-package_dir = "python"
-filename = "doc/changelog.rst"
-name = "ts_athexapod"
-issue_format = "`{issue} <https://rubinobs.atlassian.net/{issue}>`_"
-

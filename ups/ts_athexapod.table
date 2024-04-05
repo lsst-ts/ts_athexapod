@@ -2,6 +2,9 @@
 # - Any package whose API is used directly should be listed explicitly.
 # - Common third-party packages can be assumed to be recursively included by
 #   the "sconsUtils" package.
+setupRequired(ts_salobj)
+setupRequired(ts_idl)
+setupRequired(ts_config_attcs)
 
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
 # The following is boilerplate for all packages.

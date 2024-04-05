@@ -40,25 +40,38 @@ class MockServer(tcpip.OneClientReadLoopServer):
 
     Attributes
     ----------
-    host : `str`
-    port : `int`
     timeout : `int`
+        Short timeout.
     long_timeout : `int`
-    connected : `bool`
+        Timeout for movement.
     ready : `bool`
-    x : `int`
-    y : `int`
-    z : `int`
-    u : `int`
-    v : `int`
-    w : `int`
+        Is the controller ready?
+    x : `lsst.ts.simactuators.PointToPointActuator`
+        The X axis.
+    y : `lsst.ts.simactuators.PointToPointActuator`
+        The Y axis.
+    z : `lsst.ts.simactuators.PointToPointActuator`
+        The Z axis.
+    u : `lsst.ts.simactuators.PointToPointActuator`
+        The U axis.
+    v : `lsst.ts.simactuators.PointToPointActuator`
+        The V axis.
+    w : `lsst.ts.simactuators.PointToPointActuator`
+        The W axis.
     target : `types.SimpleNamespace`
+        The target values for each axis.
     referenced : `types.SimpleNamespace`
+        Whether each axis is referenced.
     sv : `int`
+        The velocity of the controller.
     pivot : `types.SimpleNamespace`
+        The pivot value of each axis.
     command_calls : `dict`
+        The command calls for each function of the controller.
     commands : `list`
+        The regular expression for each command of the controller.
     log : `logging.Logger`
+        The logger.
     """
 
     def __init__(self, log=None):
@@ -167,6 +180,7 @@ class MockServer(tcpip.OneClientReadLoopServer):
         ]
 
     async def read_and_dispatch(self):
+        """Read one line and parse the command and return the response(s)."""
         line = await self.read_str()
         self.log.debug(f"{line=}")
         for command in self.commands:

@@ -26,28 +26,25 @@ import logging
 
 from lsst.ts import tcpip
 
+READY = chr(177)
+STOP = chr(24)
+
 
 class ATHexapodController:
     """Implements wrapper around ATHexapod server.
 
     Attributes
     ----------
-    host : `str`
-        The address of the host.
-    port : `int`
-        The port to connect to.
-    timeout : `float`
-        The regular timeout.
-    long_timeout : `float`
-        The longer timeout for actions which move the hexapod.
-    reader : `asyncio.StreamReader`
-        The asynchronous reader.
-    writer : `asyncio.StreamWriter`
-        The asynchronous writer.
+    host : `None`
+        The hostname of the ATHexapod controller.
+    port : `None`
+        The port of the ATHexapod controller.
+    log : `None` or `logging.Logger`
+        The logger.
+    client : `lsst.ts.tcpip.Client`
+        The TCPIP client.
     lock : `asyncio.Lock`
-        The lock on the connection.
-    log : `logging.Logger`
-        The log for this class.
+        The communication lock.
 
     Parameters
     ----------
@@ -57,6 +54,8 @@ class ATHexapodController:
     """
 
     def __init__(self, log=None):
+        self.host = None
+        self.port = None
         self.log = log
         if self.log is None:
             self.log = logging.getLogger(__name__)
@@ -98,7 +97,7 @@ class ATHexapodController:
         finally:
             self.client = tcpip.Client(host="", port=None, log=self.log)
 
-    async def write_command(self, cmd, has_response=True, num_line=1):
+    async def write_command(self, cmd, has_response=True, num_lines=1):
         """Send command to hexapod controller and return response.
 
         Parameters
@@ -107,7 +106,7 @@ class ATHexapodController:
             Command to send to hexapod. A 'newline' character will be appended.
         has_response : `bool`
             Does the command have a response?
-        num_line : `int`
+        num_lines : `int`
             The number of expected lines/replies.
 
         Returns
@@ -122,7 +121,7 @@ class ATHexapodController:
                 if has_response:
                     try:
                         replies = []
-                        for _ in range(num_line):
+                        for _ in range(num_lines):
                             line = await self.client.read_str()
                             line = line.lstrip()
                             self.log.debug(f"{line=}")
@@ -158,7 +157,7 @@ class ATHexapodController:
             W (deg) axis.
 
         """
-        ret = await self.write_command("\3", num_line=6)
+        ret = await self.write_command("\3", num_lines=6)
 
         return [float(val.split("=")[1]) for val in ret]
 
@@ -177,7 +176,7 @@ class ATHexapodController:
         is_moving : `tuple` of (`bool`, `bool`, `bool`, `bool`, `bool`, `bool`)
 
         """
-        ret = await self.write_command("\5", num_line=1)
+        ret = await self.write_command("\5", num_lines=1)
 
         code = int(ret[0], 16)
 
@@ -206,7 +205,7 @@ class ATHexapodController:
             The value of each axis changed or not.
 
         """
-        ret = await self.write_command("\6", num_line=1)
+        ret = await self.write_command("\6", num_lines=1)
 
         code = int(ret[0])
 
@@ -226,10 +225,10 @@ class ATHexapodController:
         comp : `str`
             A character indicating the controller is ready or not ready.
         """
-        ret = await self.write_command("\7", num_line=1)
+        ret = await self.write_command("\7", num_lines=1)
 
-        comp = ret[0] == chr(177)
-        self.log.debug(f"{ret=} : {chr(177)} : {comp=}")
+        comp = ret[0] == READY
+        self.log.debug(f"{ret=} : {READY} : {comp=}")
 
         return comp
 
@@ -238,7 +237,7 @@ class ATHexapodController:
 
         (p. 143) Stop All Axes To confirm that this worked, #5 has to be used.
         """
-        return await self.write_command(chr(24), has_response=False)
+        return await self.write_command(STOP, has_response=False)
 
     async def set_position(self, x=None, y=None, z=None, u=None, v=None, w=None):
         """Set position of Hexapod.
@@ -299,7 +298,7 @@ class ATHexapodController:
         response : `list` of `float`
             The current status of axii referenced or not referenced.
         """
-        ret = await self.write_command("FRF?", num_line=6)
+        ret = await self.write_command("FRF?", num_lines=6)
 
         return [float(val.split("=")[1]) == 1 for val in ret]
 
@@ -320,7 +319,7 @@ class ATHexapodController:
         response : `list` of `float`
             The current target position.
         """
-        ret = await self.write_command("MOV? X Y Z U V W", num_line=6)
+        ret = await self.write_command("MOV? X Y Z U V W", num_lines=6)
 
         return [float(val.split("=")[1]) for val in ret]
 
@@ -370,7 +369,7 @@ class ATHexapodController:
         response : `list` of `float`
             The current lower limit values.
         """
-        ret = await self.write_command("NLM? X Y Z U V W", num_line=6)
+        ret = await self.write_command("NLM? X Y Z U V W", num_lines=6)
 
         return [float(val.split("=")[1]) for val in ret.replace("\n", "").split(" ")]
 
@@ -417,7 +416,7 @@ class ATHexapodController:
         response : `list` of `float`
             The current higher limit values.
         """
-        ret = await self.write_command("PLM? X Y Z U V W", num_line=6)
+        ret = await self.write_command("PLM? X Y Z U V W", num_lines=6)
 
         return [float(val.split("=")[1]) for val in ret]
 
@@ -435,7 +434,7 @@ class ATHexapodController:
         response : `list` of `float`
             Current on target status of all axii.
         """
-        ret = await self.write_command("ONT?", num_line=6)
+        ret = await self.write_command("ONT?", num_lines=6)
 
         return [float(val.split("=")[1]) == 1 for val in ret]
 
@@ -451,7 +450,7 @@ class ATHexapodController:
         response : `list` of `str`
             The current units of the axii.
         """
-        ret = await self.write_command("PUN? X Y Z U V W", num_line=6)
+        ret = await self.write_command("PUN? X Y Z U V W", num_lines=6)
 
         return [val.split("=")[1] for val in ret]
 
@@ -524,7 +523,7 @@ class ATHexapodController:
         target += " V " + str(float(v)) if v is not None else ""
         target += " W " + str(float(w)) if w is not None else ""
 
-        ret = await self.write_command("VMO?" + target, num_line=6)
+        ret = await self.write_command("VMO?" + target, num_lines=6)
 
         return [float(val.split("=")[1]) == 1 for val in ret]
 
@@ -565,7 +564,7 @@ class ATHexapodController:
         response : `list` of `float`
             The current pivot points of the Hexapod.
         """
-        ret = await self.write_command("SPI?", num_line=3)
+        ret = await self.write_command("SPI?", num_lines=3)
 
         return [float(val.split("=")[1]) for val in ret]
 
@@ -579,7 +578,7 @@ class ATHexapodController:
         response : `list` of `float`
             The current status of the software limits for each axis.
         """
-        ret = await self.write_command("SSL?", num_line=6)
+        ret = await self.write_command("SSL?", num_lines=6)
 
         return [float(val.split("=")[1]) == 1 for val in ret]
 
@@ -664,7 +663,7 @@ class ATHexapodController:
         response : `list` of `float`
             The current closed loop velocity for each axis.
         """
-        ret = await self.write_command("VEL?", num_line=6)
+        ret = await self.write_command("VEL?", num_lines=6)
 
         return [float(val.split("=")[1]) == 1 for val in ret]
 
@@ -712,5 +711,5 @@ class ATHexapodController:
         response : `int`
             The latest error code.
         """
-        ret = await self.write_command("ERR?", num_line=1)
+        ret = await self.write_command("ERR?", num_lines=1)
         return int(ret[0])

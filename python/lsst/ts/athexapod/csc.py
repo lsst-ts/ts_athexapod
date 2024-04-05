@@ -21,7 +21,7 @@ You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-__all__ = ["ATHexapodCSC", "execute_csc"]
+__all__ = ["ATHexapodCSC", "run_csc"]
 
 import asyncio
 
@@ -41,7 +41,7 @@ REFERENCING_TIMEOUT = 103
 REFERENCING_ERROR = 104
 
 
-def execute_csc():
+def run_csc():
     asyncio.run(ATHexapodCSC.amain(index=None))
 
 
@@ -177,8 +177,31 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         )
 
     async def handle_summary_state(self):
+        """Handle the summary state transitions.
+
+        If transitioning to disabled:
+
+        * If in simulation mode, start the mock server.
+        * if not connected, connect to the controller.
+        * if telemetry task is not started, start the task.
+
+        If transitioning to enabled:
+
+        * Report the detailed state as not in motion.
+        * Report the controller as not ready by default.
+        * Set the configured limits for each axis.
+        * Check if ready, if not go to fault state.
+        * Check if referenced, if not reference the controller.
+        * If reference times out or fails, go to fault state.
+        * Publish the positionUpdate with current axis values.
+
+        If transitioning to standby:
+
+        * Stop the telemetry task.
+        * Disconnect from the controller.
+        * Stop the mock server and set it to None.
+        """
         if self.disabled_or_enabled:
-            self.log.info(f"{self.simulation_mode=}")
             if self.simulation_mode and self.mock_server is None:
                 self.log.debug("Starting simulator.")
                 self.mock_server = MockServer(self.log)
@@ -200,12 +223,31 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
                     self.config.limit_w_min,
                     self.config.limit_w_max,
                 )
-                await self.assert_ready("ready")
+                try:
+                    await self.assert_ready("ready")
+                except salobj.ExpectedError:
+                    self.log.exception("Controller not ready.")
+                    await self.fault(
+                        code=CONTROLLER_NOT_READY, report="Controller not ready."
+                    )
                 ref = await self.is_referenced()
                 if not ref:
-                    await self.controller.reference()
-                    await self.report_detailed_state(ATHexapod.DetailedState.INMOTION)
-                    await self.wait_movement_done()
+                    try:
+                        await self.controller.reference()
+                        await self.report_detailed_state(
+                            ATHexapod.DetailedState.INMOTION
+                        )
+                        await self.wait_movement_done()
+                    except asyncio.TimeoutError:
+                        self.log.exception("Referencing command timed out.")
+                        await self.fault(
+                            code=REFERENCING_TIMEOUT, report="Referencing timed out."
+                        )
+                    except Exception:
+                        self.log.exception("Referencing failed.")
+                        await self.fault(
+                            code=REFERENCING_ERROR, report="Referencing failed."
+                        )
                 current_position = await self.controller.real_position()
 
                 await self.evt_positionUpdate.set_write(

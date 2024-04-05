@@ -17,7 +17,7 @@ version = { attr = "setuptools_scm.get_version" }
 where = [ "python" ]
 
 [project.scripts]
-run_athexapod = "lsst.ts.athexapod:execute_csc"
+run_athexapod = "lsst.ts.athexapod:run_csc"
 
 [tool.setuptools_scm]
 write_to = "python/lsst/ts/athexapod/version.py"
