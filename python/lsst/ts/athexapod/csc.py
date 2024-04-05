@@ -24,6 +24,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 __all__ = ["ATHexapodCSC", "run_csc"]
 
 import asyncio
+import os
 import traceback
 
 from lsst.ts import salobj, utils
@@ -157,6 +158,18 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         config
         """
         host = config.host
+        # Support teststand connection via Environment Variable.
+        if host.startswith("ENV."):
+            env_name = host.split("ENV.")[1]
+            if env_name not in os.environ:
+                msg = f"""Failed to configure CSC
+                Environment variable {env_name} is not defined.
+                """
+                raise RuntimeError(msg)
+            host = os.environ[env_name]
+            self.log.debug(
+                f"Reading hexapod host name from environment variable. {env_name}={host}"
+            )
         self.controller.host = host
         self.controller.port = config.port
         self.controller.timeout = config.connection_timeout
@@ -210,17 +223,14 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         It will stop the telemetry loop and disconnect from the hexapod
         controller.
         """
-
         try:
             await self.close_telemetry_task()
         except Exception:
             self.log.exception("Exception closing telemetry task.")
-
         try:
             await self.controller.disconnect()
         except Exception:
             self.log.exception("Exception disconnecting from hexapod controller.")
-
         if self.mock_server is not None:
             await self.mock_server.close()
             self.mock_server = None
@@ -382,23 +392,26 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         )
 
         try:
-            await self.evt_positionUpdate.set_write(
-                positionX=data.x,
-                positionY=data.y,
-                positionZ=data.z,
-                positionU=data.u,
-                positionV=data.v,
-                positionW=data.z,
-                force_output=True,
-            )
             await asyncio.wait_for(
                 self.wait_movement_done(), timeout=self.config.movement_timeout
             )
             await self.evt_inPosition.set_write(inPosition=True, force_output=True)
-            await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
         except Exception as e:
             self.log.exception("Error executing moveToPosition command")
             raise e
+        finally:
+            # Report NOTINMOTION to avoid unclear state.
+            await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
+            current_position = await self.controller.real_position()
+            await self.evt_positionUpdate.set_write(
+                positionX=current_position[0],
+                positionY=current_position[1],
+                positionZ=current_position[2],
+                positionU=current_position[3],
+                positionV=current_position[4],
+                positionW=current_position[5],
+                force_output=True,
+            )
 
     async def do_setMaxSystemSpeeds(self, data):
         """Set max system speeds.

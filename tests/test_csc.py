@@ -54,7 +54,7 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         os.environ["LSST_SITE"] = "test"
 
-    async def test_configuration(self):
+    async def test_bad_configuration(self):
         async with self.make_csc(
             initial_state=salobj.State.STANDBY,
             config_dir=TEST_CONFIG_DIR,
@@ -69,6 +69,32 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
                             configurationOverride=bad_config_name, timeout=STD_TIMEOUT
                         )
 
+    async def test_env_configuration(self):
+        async with self.make_csc(
+            initial_state=salobj.State.STANDBY,
+            config_dir=TEST_CONFIG_DIR,
+            simulation_mode=1,
+        ):
+            os.environ["ATHEXAPOD_HOST"] = "127.0.0.1"
+            await self.assert_next_summary_state(state=salobj.State.STANDBY)
+            await self.remote.cmd_start.set_start(
+                configurationOverride="host_as_env.yaml", timeout=STD_TIMEOUT
+            )
+
+            await self.assert_next_summary_state(state=salobj.State.DISABLED)
+
+            await self.assert_next_sample(
+                topic=self.remote.evt_settingsAppliedTcp,
+                ip=os.environ["ATHEXAPOD_HOST"],
+            )
+
+    async def test_all_configuration(self):
+        async with self.make_csc(
+            initial_state=salobj.State.STANDBY,
+            config_dir=TEST_CONFIG_DIR,
+            simulation_mode=1,
+        ):
+            await self.assert_next_summary_state(salobj.State.STANDBY)
             await self.remote.cmd_start.set_start(
                 configurationOverride="all.yaml", timeout=STD_TIMEOUT
             )
