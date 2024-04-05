@@ -116,6 +116,9 @@ class ATHexapodController:
 
         """
         if self.client.connected:
+            # Need Lock as this method can be accessed by the telemetry method
+            # in the CSC as well as the wait_movement_done for determining
+            # movement status.
             async with self.lock:
                 await self.client.write_str(cmd)
                 if has_response:
