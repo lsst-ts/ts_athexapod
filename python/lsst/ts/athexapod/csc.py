@@ -24,6 +24,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 __all__ = ["ATHexapodCSC", "run_csc"]
 
 import asyncio
+import traceback
 
 from lsst.ts import salobj, utils
 from lsst.ts.xml.enums import ATHexapod
@@ -176,95 +177,137 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             ip=self.controller.host, port=self.controller.port
         )
 
-    async def handle_summary_state(self):
-        """Handle the summary state transitions.
+    async def end_start(self, data):
+        """Execute after state transition from STANDBY to DISABLE.
 
-        If transitioning to disabled:
+        It will attempt to connect to the hexapod controller and start the
+        telemetry loop. Transition to `FAULT` if it fails.
 
-        * If in simulation mode, start the mock server.
-        * if not connected, connect to the controller.
-        * if telemetry task is not started, start the task.
+        Parameters
+        ----------
+        data
 
-        If transitioning to enabled:
-
-        * Report the detailed state as not in motion.
-        * Report the controller as not ready by default.
-        * Set the configured limits for each axis.
-        * Check if ready, if not go to fault state.
-        * Check if referenced, if not reference the controller.
-        * If reference times out or fails, go to fault state.
-        * Publish the positionUpdate with current axis values.
-
-        If transitioning to standby:
-
-        * Stop the telemetry task.
-        * Disconnect from the controller.
-        * Stop the mock server and set it to None.
         """
-        if self.disabled_or_enabled:
-            if self.simulation_mode and self.mock_server is None:
-                self.log.debug("Starting simulator.")
-                self.mock_server = MockServer(self.log)
-                await self.mock_server.start_task
-                self.controller.port = self.mock_server.port
-            if not self.controller.is_connected:
-                await self.controller.connect()
-            if not self.run_telemetry_task:
-                self.run_telemetry_task = True
-                self.telemetry_task = asyncio.create_task(self.telemetry())
-            if self.summary_state == salobj.State.ENABLED:
-                await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
-                await self.report_new_ready(False)
-                await self.set_limits(
-                    self.config.limit_xy_max,
-                    self.config.limit_z_min,
-                    self.config.limit_z_max,
-                    self.config.limit_uv_max,
-                    self.config.limit_w_min,
-                    self.config.limit_w_max,
-                )
-                try:
-                    await self.assert_ready("ready")
-                except salobj.ExpectedError:
-                    self.log.exception("Controller not ready.")
-                    await self.fault(
-                        code=CONTROLLER_NOT_READY, report="Controller not ready."
-                    )
-                ref = await self.is_referenced()
-                if not ref:
-                    try:
-                        await self.controller.reference()
-                        await self.report_detailed_state(
-                            ATHexapod.DetailedState.INMOTION
-                        )
-                        await self.wait_movement_done()
-                    except asyncio.TimeoutError:
-                        self.log.exception("Referencing command timed out.")
-                        await self.fault(
-                            code=REFERENCING_TIMEOUT, report="Referencing timed out."
-                        )
-                    except Exception:
-                        self.log.exception("Referencing failed.")
-                        await self.fault(
-                            code=REFERENCING_ERROR, report="Referencing failed."
-                        )
-                current_position = await self.controller.real_position()
+        if self.simulation_mode and self.mock_server is None:
+            self.mock_server = MockServer(self.log)
+            await self.mock_server.start_task
+            self.controller.port = self.mock_server.port
+        try:
+            await self.controller.connect()
+            # TODO Add make_ackcmd call when it is released.
+        except Exception as e:
+            self.log.exception(e)
+            raise e
 
-                await self.evt_positionUpdate.set_write(
-                    positionX=current_position[0],
-                    positionY=current_position[1],
-                    positionZ=current_position[2],
-                    positionU=current_position[3],
-                    positionV=current_position[4],
-                    positionW=current_position[5],
-                )
-        else:
-            if self.run_telemetry_task:
-                await self.close_telemetry_task()
+        self.run_telemetry_task = True
+        self.telemetry_task = asyncio.create_task(self.telemetry())
+
+        await super().end_start(data)
+
+    async def end_standby(self, data):
+        """Executes after transition from DISABLE to STANDBY.
+
+        It will stop the telemetry loop and disconnect from the hexapod
+        controller.
+        """
+
+        try:
+            await self.close_telemetry_task()
+        except Exception:
+            self.log.exception("Exception closing telemetry task.")
+
+        try:
             await self.controller.disconnect()
-            if self.mock_server is not None:
-                await self.mock_server.close()
-                self.mock_server = None
+        except Exception:
+            self.log.exception("Exception disconnecting from hexapod controller.")
+
+        if self.mock_server is not None:
+            await self.mock_server.close()
+            self.mock_server = None
+
+        await super().end_standby(data)
+
+    async def end_enable(self, data):
+        """Executed after state is enabled.
+
+        This may cause the hexapod to move.
+
+        Actions performed by this task are:
+
+        1. - Set soft limits on the hexapod controller.
+        2. - Check that the hexapod axis are referenced.
+        3. - If axis are not referenced and `auto_reference=True`, will
+                reference axis.
+
+        The CSC will reject attempts to move axis that are not referenced.
+
+        Parameters
+        ----------
+        data
+        """
+        await self.report_new_ready(False)
+        await self.report_detailed_state(ATHexapod.DetailedState.NOTINMOTION)
+
+        # Set soft limits
+
+        await self.set_limits(
+            self.config.limit_xy_max,
+            self.config.limit_z_min,
+            self.config.limit_z_max,
+            self.config.limit_uv_max,
+            self.config.limit_w_min,
+            self.config.limit_w_max,
+        )
+
+        try:
+            await self.assert_ready("enable")
+        except salobj.base.ExpectedError:
+            self.log.exception("Hexapod controller not ready.")
+            await self.fault(
+                code=CONTROLLER_NOT_READY,
+                report="Hexapod controller not ready.",
+                traceback=traceback.format_exc(),
+            )
+
+        ref = await self.is_referenced()
+
+        if not ref:
+            self.log.warning("Referencing Axis.")
+            await self.controller.reference()
+            await self.report_detailed_state(ATHexapod.DetailedState.INMOTION)
+            try:
+                await asyncio.wait_for(
+                    self.wait_movement_done(), timeout=self.config.reference_timeout
+                )
+            except asyncio.TimeoutError as e:
+                self.log.error("Referencing time out.")
+                self.log.exception(e)
+                await self.fault(
+                    code=REFERENCING_TIMEOUT,
+                    report="Referencing time out.",
+                    traceback=traceback.format_exc(),
+                )
+            except Exception as e:
+                self.log.error("Exception happened while referencing.")
+                self.log.exception(e)
+                await self.fault(
+                    code=REFERENCING_ERROR,
+                    report="Exception happened while referencing hexapod.",
+                    traceback=traceback.format_exc(),
+                )
+
+        current_position = await self.controller.real_position()
+
+        await self.evt_positionUpdate.set_write(
+            positionX=current_position[0],
+            positionY=current_position[1],
+            positionZ=current_position[2],
+            positionU=current_position[3],
+            positionV=current_position[4],
+            positionW=current_position[5],
+        )
+
+        await super().end_enable(data)
 
     async def set_limits(
         self, xy_max, limit_z_min, limit_z_max, limit_uv_max, limit_w_min, limit_w_max
