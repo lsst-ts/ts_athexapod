@@ -622,7 +622,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         await super().close_tasks()
         if self.controller.is_connected:
             await self.controller.disconnect()
-        self.telemetry_task.cancel()
+        await self.close_telemetry_task()
         if self.mock_server is not None:
             await self.mock_server.close()
             await self.mock_server.done_task
