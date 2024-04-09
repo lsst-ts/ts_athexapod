@@ -138,7 +138,9 @@ class ATHexapodController:
                         )
                         raise
         else:
-            raise RuntimeError("Not connected.")
+            raise RuntimeError(
+                "Hexapod is not connected to controller. Please connect first."
+            )
 
     async def real_position(self):
         """Return parsed real position string

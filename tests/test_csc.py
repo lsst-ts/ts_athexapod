@@ -26,7 +26,6 @@ import os
 import pathlib
 import unittest
 
-import parameterized
 import yaml
 from lsst.ts import athexapod, salobj
 from lsst.ts.xml.enums import ATHexapod
@@ -212,21 +211,22 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
                 pivotZ=0.2,
             )
 
-    @parameterized.parameterized.expand(
-        [
-            "applyPositionLimits",
-            "moveToPosition",
-            "setMaxSystemSpeeds",
-            "applyPositionOffset",
-            "pivot",
-        ]
-    )
-    async def test_assert_substate(self, name):
+    async def test_assert_substate(self):
         async with self.make_csc(initial_state=salobj.State.ENABLED, simulation_mode=1):
-            await self.csc.report_detailed_state(ATHexapod.DetailedState.INMOTION)
-            with salobj.assertRaisesAckError():
-                command = getattr(self.remote, f"cmd_{name}")
-                await command.set_start(timeout=STD_TIMEOUT)
+            for command in [
+                "applyPositionLimits",
+                "moveToPosition",
+                "setMaxSystemSpeeds",
+                "applyPositionOffset",
+                "pivot",
+            ]:
+                with self.subTest(command=command):
+                    await self.csc.report_detailed_state(
+                        ATHexapod.DetailedState.INMOTION
+                    )
+                    with salobj.assertRaisesAckError():
+                        command = getattr(self.remote, f"cmd_{command}")
+                        await command.set_start(timeout=STD_TIMEOUT)
 
     async def test_bin_script(self):
         await self.check_bin_script(

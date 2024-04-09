@@ -60,6 +60,9 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
     simulation_mode : `int`
         Whether the csc starts in simulation mode or not.
 
+        * 0 - Use the standalone real or simulation controller.
+        * 1- Use the MockServer for unit testing.
+
     Attributes
     ----------
     controller : `None`
@@ -162,14 +165,15 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         if host.startswith("ENV."):
             env_name = host.split("ENV.")[1]
             if env_name not in os.environ:
-                msg = f"""Failed to configure CSC
-                Environment variable {env_name} is not defined.
-                """
-                raise RuntimeError(msg)
+                raise RuntimeError(
+                    "Failed to configure CSC."
+                    f"Environment variable {env_name} is not defined."
+                )
             host = os.environ[env_name]
             self.log.debug(
-                f"Reading hexapod host name from environment variable. {env_name}={host}"
+                f"Reading hexapod controller host from environment variable. {env_name}={host}."
             )
+
         self.controller.host = host
         self.controller.port = config.port
         self.controller.timeout = config.connection_timeout
