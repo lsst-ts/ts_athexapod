@@ -21,7 +21,7 @@ You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
 
-__all__ = ["ATHexapodCSC"]
+__all__ = ["ATHexapodCSC", "execute_csc"]
 
 import asyncio
 import os
@@ -40,6 +40,9 @@ TEL_LOOP_CLOSED = 101
 CONTROLLER_NOT_READY = 102
 REFERENCING_TIMEOUT = 103
 REFERENCING_ERROR = 104
+
+def execute_csc():
+    asyncio.run(ATHexapodCSC.amain(index=None))
 
 
 class ATHexapodCSC(salobj.ConfigurableCsc):

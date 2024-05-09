@@ -2,6 +2,12 @@
 Version History
 ===============
 
+v0.8.7
+======
+
+* Fix athexapod executable import and mark executable.
+* Move execute_csc into csc module.
+
 v0.8.6
 ======
 
