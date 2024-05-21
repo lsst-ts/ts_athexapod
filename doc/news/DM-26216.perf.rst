@@ -1,0 +1,1 @@
+Improve start by using ack_in_progress during begin_start hook.
