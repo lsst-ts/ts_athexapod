@@ -190,6 +190,18 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             ip=self.controller.host, port=self.controller.port
         )
 
+    async def begin_start(self, data):
+        """Execute before state transition from STANDBY to DISABLE.
+
+        Send a ack_in_progress for waiting for connection to device.
+        """
+        await self.cmd_start.ack_in_progress(
+            data=data,
+            timeout=self.controller.long_timeout,
+            result="Waiting for device connection",
+        )
+        await super().begin_start(data)
+
     async def end_start(self, data):
         """Execute after state transition from STANDBY to DISABLE.
 
@@ -203,7 +215,6 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         """
         try:
             await self.controller.connect()
-            # TODO Add make_ackcmd call when it is released.
         except Exception as e:
             self.log.exception(e)
             raise e
