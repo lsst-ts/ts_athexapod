@@ -4,6 +4,21 @@ Version History
 
 .. towncrier release notes start
 
+v0.8.8 (2024-05-31)
+===================
+
+Performance Enhancement
+-----------------------
+
+- Improve start by using ack_in_progress during begin_start hook. (`DM-26216 <https://rubinobs.atlassian.net//browse/DM-26216>`_)
+
+
+Documentation
+-------------
+
+- Add towncrier support. (`DM-26216 <https://rubinobs.atlassian.net//browse/DM-26216>`_)
+
+
 v0.8.7
 ======
 
