@@ -28,7 +28,7 @@ import os
 import traceback
 
 from lsst.ts import salobj, utils
-from lsst.ts.idl.enums import ATHexapod
+from lsst.ts.xml.enums import ATHexapod
 
 from . import __version__
 from .config_schema import CONFIG_SCHEMA
