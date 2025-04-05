@@ -28,12 +28,13 @@ import os
 import traceback
 
 from lsst.ts import salobj, utils
-from lsst.ts.idl.enums import ATHexapod
+from lsst.ts.xml.enums import ATHexapod
 
 from . import __version__
 from .config_schema import CONFIG_SCHEMA
 from .controller import ATHexapodController
 from .gcserror import translate_error
+from .mock_server import MockServer
 
 CONNECTION_FAILED = 100
 TEL_LOOP_CLOSED = 101
@@ -72,7 +73,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         The task that handles telemetry.
     """
 
-    valid_simulation_modes = [0]
+    valid_simulation_modes = (0, 1)
     version = __version__
 
     def __init__(
@@ -95,6 +96,8 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         self.telemetry_task = utils.make_done_future()
 
         self._ready = False
+
+        self._mock_server = None
 
     @property
     def ready(self):
@@ -157,20 +160,30 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         ----------
         config
         """
-        host = config.host
-        if host.startswith("ENV."):
-            env_name = host.split("ENV.")[1]
-            if env_name not in os.environ:
-                raise RuntimeError(
-                    "Failed to configure CSC."
-                    f"Environment variable {env_name} is not defined."
+        if self.simulation_mode == 0:
+            host = config.host
+            if host.startswith("ENV."):
+                env_name = host.split("ENV.")[1]
+                if env_name not in os.environ:
+                    raise RuntimeError(
+                        "Failed to configure CSC."
+                        f"Environment variable {env_name} is not defined."
+                    )
+                host = os.environ[env_name]
+                self.log.debug(
+                    f"Reading hexapod controller host from environment variable. {env_name}={host}."
                 )
-            host = os.environ[env_name]
-            self.log.debug(
-                f"Reading hexapod controller host from environment variable. {env_name}={host}."
-            )
+            self.controller.host = host
+        else:
+            self.controller.host = salobj.LOCAL_HOST
+            if self._mock_server is None:
+                self.log.info(
+                    "Mock server not running, starting it on {salobj.LOCAL_HOST}:{config.port}."
+                )
+                self._mock_server = MockServer()
+                self._mock_server.port = config.port
+                await self._mock_server.start()
 
-        self.controller.host = host
         self.controller.port = config.port
         self.controller.timeout = config.connection_timeout
 
@@ -240,6 +253,11 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             await self.controller.disconnect()
         except Exception:
             self.log.exception("Exception disconnecting from hexapod controller.")
+
+        if self._mock_server is not None:
+            self.log.debug("Stopping mock server.")
+            await self._mock_server.stop()
+            self._mock_server = None
 
         await super().end_standby(data)
 
@@ -496,31 +514,39 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         sub_tasks = 2
         while self.run_telemetry_task:
-            # Get setpointPosition
-            target_position = await self.controller.target_position()
+            try:
+                # Get setpointPosition
+                target_position = await self.controller.target_position()
 
-            # Get reportedPosition
-            current_position = await self.controller.real_position()
+                # Get reportedPosition
+                current_position = await self.controller.real_position()
 
-            diff = [current_position[i] - target_position[i] for i in range(6)]
+                diff = [current_position[i] - target_position[i] for i in range(6)]
 
-            await self.tel_positionStatus.set_write(
-                setpointPosition=target_position,
-                reportedPosition=current_position,
-                positionFollowingError=diff,
-            )
-
-            await asyncio.sleep(self.heartbeat_interval / sub_tasks)
-
-            # Check for errors
-            error = await self.controller.get_error()
-            if error != 0:
-                await self.fault(
-                    code=error, report=translate_error(error), traceback=""
+                await self.tel_positionStatus.set_write(
+                    setpointPosition=target_position,
+                    reportedPosition=current_position,
+                    positionFollowingError=diff,
                 )
-                self.run_telemetry_task = False
-            else:
+
                 await asyncio.sleep(self.heartbeat_interval / sub_tasks)
+
+                # Check for errors
+                error = await self.controller.get_error()
+                if error != 0:
+                    await self.fault(
+                        code=error, report=translate_error(error), traceback=""
+                    )
+                    self.run_telemetry_task = False
+                else:
+                    await asyncio.sleep(self.heartbeat_interval / sub_tasks)
+            except Exception:
+                await self.fault(
+                    code=TEL_LOOP_CLOSED,
+                    report=f"Telemetry loop closing while in {self.summary_state!r}.",
+                    traceback=traceback.format_exc(),
+                )
+                return
 
         if self.disabled_or_enabled:
             await self.fault(
@@ -645,6 +671,9 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             await asyncio.sleep(self.heartbeat_interval)
 
     async def close_tasks(self):
+        if self._mock_server is not None:
+            await self._mock_server.stop()
+            self._mock_server = None
         await super().close_tasks()
         await self.close_telemetry_task()
         if self.controller.is_connected:

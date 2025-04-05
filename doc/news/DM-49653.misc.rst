@@ -1,0 +1,1 @@
+Updated conda recipe to replace ts-idl with ts-xml and to pin versions of setuptools and setuptools_scm.
