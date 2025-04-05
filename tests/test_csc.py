@@ -223,6 +223,13 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(0.7, event.pivotY)
             self.assertEqual(0.2, event.pivotZ)
 
+    async def test_fault_if_disconnects(self):
+        async with self.make_csc(initial_state=salobj.State.ENABLED, simulation_mode=1):
+            await self.assert_next_sample(self.remote.evt_heartbeat, flush=True)
+            self.remote.evt_summaryState.flush()
+            await self.csc._mock_server.stop()
+            await self.assert_next_summary_state(salobj.State.FAULT, flush=False)
+
     async def test_bin_script(self):
         await self.check_bin_script(
             name="ATHexapod",
