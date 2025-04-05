@@ -68,6 +68,7 @@ class MockServer:
         self.long_timeout = 30
         self.connected = False
         self.ready = False
+        self.running = False
         self.x = 0
         self.y = 0
         self.z = 0
@@ -152,22 +153,24 @@ class MockServer:
 
     async def start(self):
         """Start the server."""
-        self.log.debug("Starting Server")
+        self.log.info("Starting Server")
+        self.running = True
         self.server = await asyncio.start_server(
             client_connected_cb=self.cmd_loop, host=self.host, port=self.port
         )
-        self.log.debug("Server started")
+        self.log.info("Server started")
 
     async def stop(self):
         """Stop the server"""
-        self.log.debug("Closing server")
+        self.log.info("Closing server")
+        self.running = False
         self.server.close()
         await asyncio.wait_for(self.server.wait_closed(), timeout=5)
-        self.log.debug("Server closed")
+        self.log.info("Server closed")
 
     async def cmd_loop(self, reader, writer):
         """Handle received commands."""
-        while True:
+        while self.running:
             line = await reader.readline()
             self.log.debug(f"Received: {line}")
             if not line:
@@ -211,6 +214,11 @@ class MockServer:
                             await writer.drain()
                     else:
                         raise Exception(f"{command_group} is not implemented.")
+
+        self.log.info("Command loop finished.")
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
 
     async def format_real_position(self):
         """Return formatted position response."""
