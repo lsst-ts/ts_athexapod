@@ -496,31 +496,39 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
 
         sub_tasks = 2
         while self.run_telemetry_task:
-            # Get setpointPosition
-            target_position = await self.controller.target_position()
+            try:
+                # Get setpointPosition
+                target_position = await self.controller.target_position()
 
-            # Get reportedPosition
-            current_position = await self.controller.real_position()
+                # Get reportedPosition
+                current_position = await self.controller.real_position()
 
-            diff = [current_position[i] - target_position[i] for i in range(6)]
+                diff = [current_position[i] - target_position[i] for i in range(6)]
 
-            await self.tel_positionStatus.set_write(
-                setpointPosition=target_position,
-                reportedPosition=current_position,
-                positionFollowingError=diff,
-            )
-
-            await asyncio.sleep(self.heartbeat_interval / sub_tasks)
-
-            # Check for errors
-            error = await self.controller.get_error()
-            if error != 0:
-                await self.fault(
-                    code=error, report=translate_error(error), traceback=""
+                await self.tel_positionStatus.set_write(
+                    setpointPosition=target_position,
+                    reportedPosition=current_position,
+                    positionFollowingError=diff,
                 )
-                self.run_telemetry_task = False
-            else:
+
                 await asyncio.sleep(self.heartbeat_interval / sub_tasks)
+
+                # Check for errors
+                error = await self.controller.get_error()
+                if error != 0:
+                    await self.fault(
+                        code=error, report=translate_error(error), traceback=""
+                    )
+                    self.run_telemetry_task = False
+                else:
+                    await asyncio.sleep(self.heartbeat_interval / sub_tasks)
+            except Exception:
+                await self.fault(
+                    code=TEL_LOOP_CLOSED,
+                    report=f"Telemetry loop closing while in {self.summary_state!r}.",
+                    traceback=traceback.format_exc(),
+                )
+                return
 
         if self.disabled_or_enabled:
             await self.fault(
