@@ -7,7 +7,7 @@ import lsst.ts.athexapod  # noqa
 from documenteer.conf.pipelinespkg import *  # noqa
 
 project = "ts_athexapod"
-html_theme_options["logotext"] = project  # noqa
+html_theme_options["logotext"] = project  # type: ignore # noqa
 html_title = project
 html_short_title = project
-doxylink = {}
+doxylink = {}  # type: ignore

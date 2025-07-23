@@ -25,9 +25,12 @@ import asyncio
 import os
 import pathlib
 import unittest
+from typing import Any
 
 import yaml
-from lsst.ts import athexapod, salobj
+from lsst.ts import athexapod
+from lsst.ts import salobj
+from lsst.ts.xml import sal_enums
 
 STD_TIMEOUT = 15
 SHORT_TIMEOUT = 5
@@ -37,11 +40,11 @@ TEST_CONFIG_DIR = pathlib.Path(__file__).parents[1].joinpath("tests", "data", "c
 class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
     def basic_make_csc(
         self,
-        initial_state=salobj.State.STANDBY,
-        config_dir=None,
-        simulation_mode=1,
-        **kwargs,
-    ):
+        initial_state: None | sal_enums.State | int = sal_enums.State.STANDBY,
+        config_dir: None | pathlib.Path | str = None,
+        simulation_mode: int = 1,
+        **kwargs: dict[str, Any],
+    ) -> athexapod.ATHexapodCSC:
         return athexapod.csc.ATHexapodCSC(
             initial_state=initial_state,
             config_dir=config_dir,
@@ -49,17 +52,9 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             **kwargs,
         )
 
-    async def asyncSetUp(self) -> None:
-        self.server = athexapod.mock_server.MockServer()
-        os.environ["LSST_SITE"] = "athexapod"
-        await self.server.start()
-
-    async def asyncTearDown(self) -> None:
-        await self.server.stop()
-
-    async def test_configuration(self):
+    async def test_configuration(self) -> None:
         async with self.make_csc(
-            initial_state=salobj.State.STANDBY, config_dir=TEST_CONFIG_DIR
+            initial_state=salobj.State.STANDBY, config_dir=TEST_CONFIG_DIR, simulation_mode=1
         ):
             await self.assert_next_summary_state(salobj.State.STANDBY)
 
@@ -77,50 +72,26 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             await self.remote.cmd_start.set_start(
                 configurationOverride="host_as_env.yaml", timeout=STD_TIMEOUT
             )
+            await self.assert_next_summary_state(salobj.State.DISABLED)
 
-            state = await self.remote.evt_summaryState.next(
-                flush=False, timeout=STD_TIMEOUT
-            )
-            self.assertEqual(state.summaryState, salobj.State.DISABLED)
-
-            settings = await self.remote.evt_settingsAppliedTcp.aget(
-                timeout=STD_TIMEOUT
-            )
+            settings = await self.remote.evt_settingsAppliedTcp.aget(timeout=STD_TIMEOUT)
 
             self.assertEqual(settings.ip, os.environ["ATHEXAPOD_HOST"])
 
             await self.remote.cmd_standby.start(timeout=STD_TIMEOUT)
 
-            state = await self.remote.evt_summaryState.aget(timeout=STD_TIMEOUT)
-            self.assertEqual(state.summaryState, salobj.State.STANDBY)
+            await self.assert_next_summary_state(salobj.State.STANDBY)
 
-            self.remote.evt_summaryState.flush()
-
-            await self.remote.cmd_start.set_start(
-                configurationOverride="all.yaml", timeout=STD_TIMEOUT
-            )
-
-            state = await self.remote.evt_summaryState.next(
-                flush=False, timeout=STD_TIMEOUT
-            )
-            self.assertEqual(
-                state.summaryState,
-                salobj.State.DISABLED,
-                f"got {salobj.State(state.summaryState)!r} expected {salobj.State.DISABLED!r}",
-            )
+            await self.remote.cmd_start.set_start(configurationOverride="all.yaml", timeout=STD_TIMEOUT)
+            await self.assert_next_summary_state(salobj.State.DISABLED)
 
             with open(TEST_CONFIG_DIR / "all.yaml") as fp:
                 config_all = yaml.safe_load(fp)
 
-            settings_velocity = await self.remote.evt_settingsAppliedVelocities.aget(
-                timeout=STD_TIMEOUT
-            )
-            settings_pivot = await self.remote.evt_settingsAppliedPivot.aget(
-                timeout=STD_TIMEOUT
-            )
-            settings_tcp = await self.remote.evt_settingsAppliedTcp.aget(
-                timeout=STD_TIMEOUT
-            )
+            await self.assert_next_sample(self.remote.evt_settingsAppliedVelocities)
+            settings_velocity = await self.assert_next_sample(self.remote.evt_settingsAppliedVelocities)
+            settings_pivot = await self.assert_next_sample(self.remote.evt_settingsAppliedPivot)
+            settings_tcp = await self.assert_next_sample(self.remote.evt_settingsAppliedTcp)
 
             self.assertEqual(settings_velocity.systemSpeed, config_all["speed"])
             self.assertEqual(settings_pivot.pivotX, config_all["pivot_x"])
@@ -129,8 +100,8 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(settings_tcp.ip, config_all["host"])
             self.assertEqual(settings_tcp.port, config_all["port"])
 
-    async def test_standard_state_transitions(self):
-        async with self.make_csc(initial_state=salobj.State.STANDBY):
+    async def test_standard_state_transitions(self) -> None:
+        async with self.make_csc(initial_state=salobj.State.STANDBY, simulation_mode=1):
             await self.check_standard_state_transitions(
                 enabled_commands=[
                     "applyPositionLimits",
@@ -142,19 +113,15 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
                 ]
             )
 
-    async def test_apply_position_limits(self):
-        async with self.make_csc(initial_state=salobj.State.STANDBY):
+    async def test_apply_position_limits(self) -> None:
+        async with self.make_csc(initial_state=salobj.State.STANDBY, simulation_mode=1):
             await self.remote.cmd_start.start(timeout=STD_TIMEOUT)
             await self.remote.cmd_enable.start(timeout=STD_TIMEOUT)
-            await self.remote.evt_settingsAppliedPositionLimits.next(
-                flush=False, timeout=STD_TIMEOUT
-            )
+            await self.remote.evt_settingsAppliedPositionLimits.next(flush=False, timeout=STD_TIMEOUT)
             await self.remote.cmd_applyPositionLimits.set_start(
                 timeout=STD_TIMEOUT, xyMax=12, zMin=-6, zMax=8, uvMax=5, wMin=-3, wMax=7
             )
-            event = await self.remote.evt_settingsAppliedPositionLimits.next(
-                flush=False, timeout=STD_TIMEOUT
-            )
+            event = await self.assert_next_sample(self.remote.evt_settingsAppliedPositionLimits)
             self.assertEqual(12, event.limitXYMax)
             self.assertEqual(-6, event.limitZMin)
             self.assertEqual(8, event.limitZMax)
@@ -162,24 +129,23 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(-3, event.limitWMin)
             self.assertEqual(7, event.limitWMax)
 
-    async def test_move_to_position(self):
-        async with self.make_csc(initial_state=salobj.State.STANDBY):
+    async def test_move_to_position(self) -> None:
+        async with self.make_csc(initial_state=salobj.State.STANDBY, simulation_mode=1):
             await self.remote.cmd_start.start(timeout=STD_TIMEOUT)
             await self.remote.cmd_enable.start(timeout=STD_TIMEOUT)
-            await self.remote.cmd_moveToPosition.set_start(
-                timeout=STD_TIMEOUT, x=4, y=6, z=3, u=4, v=3, w=6
-            )
+            await self.remote.cmd_moveToPosition.set_start(timeout=STD_TIMEOUT, x=4, y=6, z=3, u=4, v=3, w=6)
             await asyncio.sleep(SHORT_TIMEOUT)
             event = await self.assert_next_sample(
                 self.remote.evt_inPosition, flush=False, timeout=STD_TIMEOUT
             )
 
             self.assertEqual(False, event.inPosition)
-            event = await self.remote.evt_inPosition.next(
-                flush=False, timeout=STD_TIMEOUT
+            event = await self.assert_next_sample(
+                self.remote.evt_inPosition, flush=False, timeout=STD_TIMEOUT
             )
             self.assertEqual(True, event.inPosition)
-            event = await self.remote.evt_positionUpdate.aget(timeout=STD_TIMEOUT)
+            await self.assert_next_sample(self.remote.evt_positionUpdate)
+            event = await self.assert_next_sample(self.remote.evt_positionUpdate)
             self.assertEqual(4, event.positionX)
             self.assertEqual(6, event.positionY)
             self.assertEqual(3, event.positionZ)
@@ -187,28 +153,25 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(3, event.positionV)
             self.assertEqual(6, event.positionW)
 
-    async def test_set_max_system_speeds(self):
-        async with self.make_csc(initial_state=salobj.State.STANDBY):
+    async def test_set_max_system_speeds(self) -> None:
+        async with self.make_csc(initial_state=salobj.State.STANDBY, simulation_mode=1):
             await self.remote.cmd_start.start(timeout=STD_TIMEOUT)
             await self.remote.cmd_enable.start(timeout=STD_TIMEOUT)
-            await self.remote.cmd_setMaxSystemSpeeds.set_start(
-                timeout=STD_TIMEOUT, speed=1
-            )
-            event = await self.remote.evt_settingsAppliedVelocities.next(
-                flush=False, timeout=STD_TIMEOUT
-            )
+            await self.remote.cmd_setMaxSystemSpeeds.set_start(timeout=STD_TIMEOUT, speed=1)
+            event = await self.assert_next_sample(self.remote.evt_settingsAppliedVelocities)
             self.assertEqual(1, event.systemSpeed)
 
-    async def test_apply_position_offset(self):
-        async with self.make_csc(initial_state=salobj.State.STANDBY):
+    async def test_apply_position_offset(self) -> None:
+        async with self.make_csc(initial_state=salobj.State.STANDBY, simulation_mode=1):
             await self.remote.cmd_start.start(timeout=STD_TIMEOUT)
             await self.remote.cmd_enable.start(timeout=STD_TIMEOUT)
-            position = await self.remote.tel_positionStatus.aget()
+            position = await self.assert_next_sample(self.remote.tel_positionStatus)
             await self.remote.cmd_applyPositionOffset.set_start(
                 timeout=STD_TIMEOUT, x=3, y=2, z=1.5, u=0.6, v=0.5, w=0.3
             )
             await asyncio.sleep(SHORT_TIMEOUT)
-            event = await self.remote.evt_positionUpdate.aget()
+            await self.assert_next_sample(self.remote.evt_positionUpdate)
+            event = await self.assert_next_sample(self.remote.evt_positionUpdate)
             self.assertEqual(3 + position.reportedPosition[0], event.positionX)
             self.assertEqual(2 + position.reportedPosition[1], event.positionY)
             self.assertEqual(1.5 + position.reportedPosition[2], event.positionZ)
@@ -216,20 +179,16 @@ class CscTestCase(salobj.BaseCscTestCase, unittest.IsolatedAsyncioTestCase):
             self.assertEqual(0.5 + position.reportedPosition[4], event.positionV)
             self.assertEqual(0.3 + position.reportedPosition[5], event.positionW)
 
-    async def test_pivot(self):
-        async with self.make_csc(initial_state=salobj.State.ENABLED):
+    async def test_pivot(self) -> None:
+        async with self.make_csc(initial_state=salobj.State.ENABLED, simulation_mode=1):
             self.remote.evt_settingsAppliedPivot.flush()
-            await self.remote.cmd_pivot.set_start(
-                timeout=STD_TIMEOUT, x=0.3, y=0.7, z=0.2
-            )
-            event = await self.remote.evt_settingsAppliedPivot.next(
-                flush=False, timeout=STD_TIMEOUT
-            )
+            await self.remote.cmd_pivot.set_start(timeout=STD_TIMEOUT, x=0.3, y=0.7, z=0.2)
+            event = await self.assert_next_sample(self.remote.evt_settingsAppliedPivot)
             self.assertEqual(0.3, event.pivotX)
             self.assertEqual(0.7, event.pivotY)
             self.assertEqual(0.2, event.pivotZ)
 
-    async def test_bin_script(self):
+    async def test_bin_script(self) -> None:
         await self.check_bin_script(
             name="ATHexapod",
             index=None,

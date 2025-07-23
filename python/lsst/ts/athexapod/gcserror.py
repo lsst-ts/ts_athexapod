@@ -22,10 +22,12 @@ GNU General Public License for more details.
 You should have recieved a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 """
+
 import enum
 
 # Too many lines in module pylint: disable=C0302
 import logging
+from typing import Any
 
 __signature__ = 0x1D86C75890C9CFDED5CD50105C096649
 
@@ -1408,7 +1410,7 @@ __ERRMSG = {
 }
 
 
-def translate_error(value):
+def translate_error(value: int) -> str:
     """Return a readable error message of `value`.
 
     @param value : Error value as integer.
@@ -1424,7 +1426,7 @@ def translate_error(value):
 class GCSError(Exception):
     """GCSError exception."""
 
-    def __init__(self, value, message=""):
+    def __init__(self, value: int, message: str = "") -> None:
         Exception.__init__(self)
         self.val = value
         self.msg = translate_error(value)
@@ -1432,18 +1434,18 @@ class GCSError(Exception):
             self.msg += ": %r" % message
         logging.debug("GCSError: %s", self.msg)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Handle string representation."""
         return self.msg
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Intrepeter representation."""
         return self.msg
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Equality operator handler."""
         return self.val == other
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         """Inequality operator handler."""
         return self.val != other

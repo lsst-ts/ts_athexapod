@@ -1,0 +1,1 @@
+LONG_TIMEOUT = 30
