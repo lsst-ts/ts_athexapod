@@ -4,6 +4,27 @@ Version History
 
 .. towncrier release notes start
 
+v0.9.1 (2025-08-12)
+===================
+
+Bug Fixes
+---------
+
+- Fixed version field missing. (`OSW-720 <https://rubinobs.atlassian.net//browse/OSW-720>`_)
+
+
+Performance Enhancement
+-----------------------
+
+- Switched to ts-tcpip client and server architecture. (`OSW-720 <https://rubinobs.atlassian.net//browse/OSW-720>`_)
+
+
+Other Changes and Additions
+---------------------------
+
+- Added mypy type hints. (`OSW-720 <https://rubinobs.atlassian.net//browse/OSW-720>`_)
+
+
 v0.8.8 (2024-05-31)
 ===================
 
