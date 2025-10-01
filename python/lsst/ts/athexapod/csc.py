@@ -172,6 +172,8 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
                 raise RuntimeError(f"Failed to configure CSC.Environment variable {env_name} is not defined.")
             host = os.environ[env_name]
             self.log.debug(f"Reading hexapod controller host from environment variable. {env_name}={host}.")
+        if self.simulation_mode in [1]:
+            host = "127.0.0.1"
         self.host = host
 
         self.config = config
@@ -222,7 +224,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
             await self.controller.connect()
         except Exception as e:
             self.log.exception(e)
-            raise e
+            await self.fault(code=CONNECTION_FAILED, report="Failed to connect.")
 
         self.run_telemetry_task = True
         self.telemetry_task = asyncio.create_task(self.telemetry())

@@ -1,0 +1,1 @@
+Made failed connect call transition to fault state.
