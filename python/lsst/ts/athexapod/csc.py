@@ -237,9 +237,7 @@ class ATHexapodCSC(salobj.ConfigurableCsc):
         It will stop the telemetry loop and disconnect from the hexapod
         controller.
         """
-        await self.cmd_standby.ack_in_progress(
-            data, LONG_TIMEOUT, result="Waiting for disconnection."
-        )
+        await self.cmd_standby.ack_in_progress(data, LONG_TIMEOUT, result="Waiting for disconnection.")
         try:
             await self.close_telemetry_task()
         except Exception:
