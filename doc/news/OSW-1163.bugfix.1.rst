@@ -1,1 +1,0 @@
-Set host to localhost when in simulation mode.

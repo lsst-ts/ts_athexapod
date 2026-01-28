@@ -4,6 +4,22 @@ Version History
 
 .. towncrier release notes start
 
+v0.9.2 (2026-01-23)
+===================
+
+Bug Fixes
+---------
+
+- Made failed connect call transition to fault state. (`OSW-1163 <https://rubinobs.atlassian.net//browse/OSW-1163>`_)
+- Set host to localhost when in simulation mode. (`OSW-1163 <https://rubinobs.atlassian.net//browse/OSW-1163>`_)
+
+
+Other Changes and Additions
+---------------------------
+
+- Added python version to build string for conda package. (`OSW-1484 <https://rubinobs.atlassian.net//browse/OSW-1484>`_)
+
+
 v0.9.1 (2025-08-12)
 ===================
 
